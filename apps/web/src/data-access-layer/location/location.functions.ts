@@ -265,6 +265,23 @@ export const listLocationTimezones = createServerFn({ method: "GET" }).handler(a
   return rows.map((row) => row.timezone);
 });
 
+export const listAllLocationsForAssignment = createServerFn({ method: "GET" }).handler(async () => {
+  await requireSessionRoles([ROLE.admin]);
+
+  const db = await getDb();
+  const rows = await db.query.location.findMany({
+    orderBy: (location, { asc }) => [asc(location.name)],
+    columns: {
+      id: true,
+      name: true,
+      timezone: true,
+      address: true,
+    },
+  });
+
+  return rows
+});
+
 export const getLocationSummary = createServerFn({ method: "GET" }).handler(async () => {
   const { session, role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
   const db = await getDb();

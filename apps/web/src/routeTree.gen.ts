@@ -30,6 +30,7 @@ import { Route as DashboardAdminLocationsIndexRouteImport } from './routes/_dash
 import { Route as DashboardAdminUsersIndexRouteImport } from './routes/_dashboard/admin/users/index'
 import { Route as DashboardManagerLocationsIndexRouteImport } from './routes/_dashboard/manager/locations/index'
 import { Route as DashboardManagerTeamIndexRouteImport } from './routes/_dashboard/manager/team/index'
+import { Route as DashboardAdminUsersUserIdIndexRouteImport } from './routes/_dashboard/admin/users/$userId/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -139,6 +140,12 @@ const DashboardManagerTeamIndexRoute =
     path: '/team/',
     getParentRoute: () => DashboardManagerRoute,
   } as any)
+const DashboardAdminUsersUserIdIndexRoute =
+  DashboardAdminUsersUserIdIndexRouteImport.update({
+    id: '/users/$userId/',
+    path: '/users/$userId/',
+    getParentRoute: () => DashboardAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -161,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/': typeof DashboardAdminUsersIndexRoute
   '/manager/locations/': typeof DashboardManagerLocationsIndexRoute
   '/manager/team/': typeof DashboardManagerTeamIndexRoute
+  '/admin/users/$userId/': typeof DashboardAdminUsersUserIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -180,6 +188,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof DashboardAdminUsersIndexRoute
   '/manager/locations': typeof DashboardManagerLocationsIndexRoute
   '/manager/team': typeof DashboardManagerTeamIndexRoute
+  '/admin/users/$userId': typeof DashboardAdminUsersUserIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -204,6 +213,7 @@ export interface FileRoutesById {
   '/_dashboard/admin/users/': typeof DashboardAdminUsersIndexRoute
   '/_dashboard/manager/locations/': typeof DashboardManagerLocationsIndexRoute
   '/_dashboard/manager/team/': typeof DashboardManagerTeamIndexRoute
+  '/_dashboard/admin/users/$userId/': typeof DashboardAdminUsersUserIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/admin/users/'
     | '/manager/locations/'
     | '/manager/team/'
+    | '/admin/users/$userId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/manager/locations'
     | '/manager/team'
+    | '/admin/users/$userId'
   id:
     | '__root__'
     | '/'
@@ -270,6 +282,7 @@ export interface FileRouteTypes {
     | '/_dashboard/admin/users/'
     | '/_dashboard/manager/locations/'
     | '/_dashboard/manager/team/'
+    | '/_dashboard/admin/users/$userId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -431,6 +444,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardManagerTeamIndexRouteImport
       parentRoute: typeof DashboardManagerRoute
     }
+    '/_dashboard/admin/users/$userId/': {
+      id: '/_dashboard/admin/users/$userId/'
+      path: '/users/$userId'
+      fullPath: '/admin/users/$userId/'
+      preLoaderRoute: typeof DashboardAdminUsersUserIdIndexRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
   }
 }
 
@@ -438,12 +458,14 @@ interface DashboardAdminRouteChildren {
   DashboardAdminIndexRoute: typeof DashboardAdminIndexRoute
   DashboardAdminLocationsIndexRoute: typeof DashboardAdminLocationsIndexRoute
   DashboardAdminUsersIndexRoute: typeof DashboardAdminUsersIndexRoute
+  DashboardAdminUsersUserIdIndexRoute: typeof DashboardAdminUsersUserIdIndexRoute
 }
 
 const DashboardAdminRouteChildren: DashboardAdminRouteChildren = {
   DashboardAdminIndexRoute: DashboardAdminIndexRoute,
   DashboardAdminLocationsIndexRoute: DashboardAdminLocationsIndexRoute,
   DashboardAdminUsersIndexRoute: DashboardAdminUsersIndexRoute,
+  DashboardAdminUsersUserIdIndexRoute: DashboardAdminUsersUserIdIndexRoute,
 }
 
 const DashboardAdminRouteWithChildren = DashboardAdminRoute._addFileChildren(

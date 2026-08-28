@@ -4,21 +4,27 @@ import { ROLE } from "@/lib/better-auth/roles";
 import { parseAppRole } from "@/lib/better-auth/roles";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
 import { getDb } from "@/lib/drizzle/client";
+import { location as locationTable, userLocation } from "@/lib/drizzle/schema/locations-schema";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import { and, asc, count, desc, eq, like, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, like, or, type SQL } from "drizzle-orm";
 import { requireSessionRoles } from "./team.auth";
 import {
   createTeamUserInputSchema,
+  getTeamMemberInputSchema,
   listTeamMembersInputSchema,
+  updateTeamMemberLocationsInputSchema,
   type CreateTeamUserInput,
   DEFAULT_TEAM_MEMBER_SORT_BY,
   DEFAULT_TEAM_MEMBER_SORT_DIRECTION,
+  type GetTeamMemberInput,
   type ListTeamMembersInput,
   type TeamMember,
+  type TeamMemberDetail,
   type TeamMemberSortBy,
   type SortDirection,
   type TeamMembersPage,
+  type UpdateTeamMemberLocationsInput,
 } from "./team.types";
 
 function mapTeamMember(row: typeof userTable.$inferSelect): TeamMember {
@@ -132,4 +138,90 @@ export const createTeamUser = createServerFn({ method: "POST" })
       banReason: result.user.banReason ?? null,
       banExpires: result.user.banExpires ?? null,
     });
+  });
+
+async function getTeamMemberDetail(userId: string): Promise<TeamMemberDetail> {
+  const db = await getDb();
+
+  const [userRow] = await db
+    .select()
+    .from(userTable)
+    .where(eq(userTable.id, userId))
+    .limit(1);
+
+  if (!userRow) {
+    throw new Error("User not found.");
+  }
+
+  const role = parseAppRole(userRow.role);
+  if (role !== ROLE.manager && role !== ROLE.staff) {
+    throw new Error("Only managers and staff can be managed here.");
+  }
+
+  const locationRows = await db
+    .select({
+      id: locationTable.id,
+      name: locationTable.name,
+      timezone: locationTable.timezone,
+      address: locationTable.address,
+    })
+    .from(userLocation)
+    .innerJoin(locationTable, eq(userLocation.locationId, locationTable.id))
+    .where(eq(userLocation.userId, userId))
+    .orderBy(asc(locationTable.name));
+
+  return {
+    ...mapTeamMember(userRow),
+    locations: locationRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      timezone: row.timezone,
+      address: row.address ?? null,
+    })),
+  };
+}
+
+export const getTeamMember = createServerFn({ method: "GET" })
+  .validator((data: GetTeamMemberInput) => getTeamMemberInputSchema.parse(data))
+  .handler(async ({ data }) => {
+    await requireSessionRoles([ROLE.admin]);
+    return getTeamMemberDetail(data.userId);
+  });
+
+export const updateTeamMemberLocations = createServerFn({ method: "POST" })
+  .validator((data: UpdateTeamMemberLocationsInput) =>
+    updateTeamMemberLocationsInputSchema.parse(data),
+  )
+  .handler(async ({ data }) => {
+    await requireSessionRoles([ROLE.admin]);
+
+    const db = await getDb();
+    const uniqueLocationIds = [...new Set(data.locationIds)];
+
+    if (uniqueLocationIds.length > 0) {
+      const existingLocations = await db
+        .select({ id: locationTable.id })
+        .from(locationTable)
+        .where(inArray(locationTable.id, uniqueLocationIds));
+
+      if (existingLocations.length !== uniqueLocationIds.length) {
+        throw new Error("One or more locations were not found.");
+      }
+    }
+
+    await getTeamMemberDetail(data.userId);
+
+    await db.delete(userLocation).where(eq(userLocation.userId, data.userId));
+
+    if (uniqueLocationIds.length > 0) {
+      await db.insert(userLocation).values(
+        uniqueLocationIds.map((locationId) => ({
+          id: crypto.randomUUID(),
+          userId: data.userId,
+          locationId,
+        })),
+      );
+    }
+
+    return getTeamMemberDetail(data.userId);
   });

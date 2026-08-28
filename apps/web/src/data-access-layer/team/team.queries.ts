@@ -1,8 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
-import { listTeamMembers } from "./team.functions";
+import { getTeamMember, listTeamMembers } from "./team.functions";
 import {
   DEFAULT_TEAM_MEMBER_SORT_BY,
   DEFAULT_TEAM_MEMBER_SORT_DIRECTION,
+  type GetTeamMemberInput,
   type ListTeamMembersInput,
 } from "./team.types";
 
@@ -16,5 +17,12 @@ export function teamMembersQueryOptions(input: ListTeamMembersInput = {}) {
       input.sortDirection ?? DEFAULT_TEAM_MEMBER_SORT_DIRECTION,
     ],
     queryFn: () => listTeamMembers({ data: input }),
+  });
+}
+
+export function teamMemberQueryOptions(input: GetTeamMemberInput) {
+  return queryOptions({
+    queryKey: ["team-member", input.userId],
+    queryFn: () => getTeamMember({ data: input }),
   });
 }

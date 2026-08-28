@@ -49,3 +49,26 @@ export type TeamMembersPage = {
   perPage: typeof ADMIN_LIST_PER_PAGE;
   totalPages: number;
 };
+
+export type TeamMemberLocation = {
+  id: string;
+  name: string;
+  timezone: string;
+  address: string | null;
+};
+
+export type TeamMemberDetail = TeamMember & {
+  locations: TeamMemberLocation[];
+};
+
+export const getTeamMemberInputSchema = z.object({
+  userId: z.string().min(1),
+});
+
+export const updateTeamMemberLocationsInputSchema = z.object({
+  userId: z.string().min(1),
+  locationIds: z.array(z.string().min(1)),
+});
+
+export type GetTeamMemberInput = z.infer<typeof getTeamMemberInputSchema>;
+export type UpdateTeamMemberLocationsInput = z.infer<typeof updateTeamMemberLocationsInputSchema>;

@@ -29,7 +29,7 @@ function AdminOverviewPage() {
             <h2 className="text-lg font-semibold tracking-tight">Users</h2>
           </div>
           <p className="text-base-content/70 text-sm">
-            Create managers and staff, search the team directory, and sign in as any user for support.
+            Create managers and staff, search the team directory, and manage location assignments.
           </p>
         </Link>
         <Link

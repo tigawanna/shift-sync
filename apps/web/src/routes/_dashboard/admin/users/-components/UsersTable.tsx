@@ -1,12 +1,11 @@
 import type { TeamMember } from "@/data-access-layer/team/team.types";
 import type { SortDirection, TeamMemberSortBy } from "@/data-access-layer/team/team.types";
-import { useViewer } from "@/data-access-layer/auth/viewer";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ROLE, getUserAppRole } from "@/lib/better-auth/roles";
+import { ROLE } from "@/lib/better-auth/roles";
 import { formatDate } from "@/utils/date";
+import { Link } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { ImpersonateUserButton } from "../../../-components/team/ImpersonateUserButton";
 
 type UsersTableProps = {
   data: TeamMember[] | undefined;
@@ -72,12 +71,8 @@ export function UsersTable({
   sortDirection,
   onSort,
 }: UsersTableProps) {
-  const { viewer } = useViewer();
-  const viewerRole = getUserAppRole(viewer.user);
-  const canShowImpersonate = viewerRole === ROLE.admin || viewerRole === ROLE.manager;
-
   if (isLoading) {
-    return <UsersTableSkeleton showImpersonate={canShowImpersonate} />;
+    return <UsersTableSkeleton />;
   }
 
   if (!data || data.length === 0) {
@@ -127,13 +122,20 @@ export function UsersTable({
               sortDirection={sortDirection}
               onSort={onSort}
             />
-            {canShowImpersonate ? <th className="px-4 py-3 font-medium">Actions</th> : null}
           </tr>
         </thead>
         <tbody className="divide-base-content/10 divide-y">
           {data.map((member) => (
-            <tr key={member.id} className="bg-base-100/70">
-              <td className="px-4 py-3 font-medium">{member.name}</td>
+            <tr key={member.id} className="bg-base-100/70 hover:bg-base-200/40 transition-colors">
+              <td className="px-4 py-3 font-medium">
+                <Link
+                  to="/admin/users/$userId"
+                  params={{ userId: member.id }}
+                  className="hover:text-primary transition-colors"
+                >
+                  {member.name}
+                </Link>
+              </td>
               <td className="text-base-content/70 px-4 py-3">{member.email}</td>
               <td className="px-4 py-3">
                 <span
@@ -143,14 +145,6 @@ export function UsersTable({
                 </span>
               </td>
               <td className="text-base-content/70 px-4 py-3">{formatDate(member.createdAt)}</td>
-              {canShowImpersonate ? (
-                <td className="px-4 py-3">
-                  <ImpersonateUserButton
-                    member={member}
-                    viewerRole={viewerRole as typeof ROLE.admin | typeof ROLE.manager}
-                  />
-                </td>
-              ) : null}
             </tr>
           ))}
         </tbody>
@@ -159,7 +153,7 @@ export function UsersTable({
   );
 }
 
-function UsersTableSkeleton({ showImpersonate }: { showImpersonate: boolean }) {
+function UsersTableSkeleton() {
   return (
     <div className="border-base-content/10 overflow-hidden rounded-2xl border">
       <table className="w-full text-left text-sm">
@@ -169,7 +163,6 @@ function UsersTableSkeleton({ showImpersonate }: { showImpersonate: boolean }) {
             <th className="px-4 py-3 font-medium">Email</th>
             <th className="px-4 py-3 font-medium">Role</th>
             <th className="px-4 py-3 font-medium">Joined</th>
-            {showImpersonate ? <th className="px-4 py-3 font-medium">Actions</th> : null}
           </tr>
         </thead>
         <tbody className="divide-base-content/10 divide-y">
@@ -187,11 +180,6 @@ function UsersTableSkeleton({ showImpersonate }: { showImpersonate: boolean }) {
               <td className="px-4 py-3">
                 <Skeleton className="h-4 w-24" />
               </td>
-              {showImpersonate ? (
-                <td className="px-4 py-3">
-                  <Skeleton className="h-8 w-24" />
-                </td>
-              ) : null}
             </tr>
           ))}
         </tbody>
