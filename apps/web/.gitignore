@@ -1,0 +1,15 @@
+.output
+.tanstack
+node_modules
+dist
+*.tsbuildinfo
+.env
+.env.local
+.dev.vars
+.vercel
+data/
+*.db
+*.db-journal
+db.sqlite
+db.sqlite-journal
+/test-results

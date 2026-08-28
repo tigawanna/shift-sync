@@ -1,0 +1,16 @@
+pnpm-lock.yaml
+**/pnpm-lock.yaml
+**/routeTree.gen.ts
+dist
+.output
+.wrangler
+node_modules
+.turbo
+drizzle/meta
+.agents
+apps/mobile
+SiteIcon.tsx
+favicon
+expo-icons
+docs
+*.md

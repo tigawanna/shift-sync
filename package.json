@@ -1,0 +1,29 @@
+{
+  "name": "shift-sync",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "check-types": "pnpm --filter web check-types",
+    "lint": "pnpm --filter web lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:e2e": "pnpm --filter web test:e2e"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "tsx": "^4.22.4",
+    "turbo": "^2.5.4",
+    "typescript": "7.0.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm": "0.45.2"
+    }
+  },
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  }
+}

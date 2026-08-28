@@ -1,0 +1,323 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@plugin "daisyui" {
+  themes: false;
+  logs: false;
+}
+
+/* Pretty Progress–inspired palette: navy + turquoise on clean surfaces */
+@plugin "daisyui/theme" {
+  name: "light";
+  default: true;
+  color-scheme: light;
+  --color-base-100: oklch(from #ffffff l c h);
+  --color-base-200: oklch(from #f5f5f5 l c h);
+  --color-base-300: oklch(from #ebebeb l c h);
+  --color-base-content: oklch(from #0a0a0a l c h);
+  --color-primary: oklch(from #2f384f l c h);
+  --color-primary-content: oklch(from #56efe6 l c h);
+  --color-secondary: oklch(from #e8f8f7 l c h);
+  --color-secondary-content: oklch(from #2f384f l c h);
+  --color-accent: oklch(from #59d9d1 l c h);
+  --color-accent-content: oklch(from #0a0a0a l c h);
+  --color-neutral: oklch(from #f3f3f3 l c h);
+  --color-neutral-content: oklch(from #3b4150 l c h);
+  --color-error: oklch(from #e05555 l c h);
+  --color-error-content: oklch(from #ffffff l c h);
+  --radius-selector: 0.75rem;
+  --radius-field: 0.75rem;
+  --radius-box: 1rem;
+}
+
+@plugin "daisyui/theme" {
+  name: "dark";
+  prefersdark: true;
+  color-scheme: dark;
+  --color-base-100: oklch(from #181b24 l c h);
+  --color-base-200: oklch(from #222733 l c h);
+  --color-base-300: oklch(from #2f384f l c h);
+  --color-base-content: oklch(from #f5f5f5 l c h);
+  --color-primary: oklch(from #59d9d1 l c h);
+  --color-primary-content: oklch(from #181b24 l c h);
+  --color-secondary: oklch(from #242a38 l c h);
+  --color-secondary-content: oklch(from #56efe6 l c h);
+  --color-accent: oklch(from #56efe6 l c h);
+  --color-accent-content: oklch(from #181b24 l c h);
+  --color-neutral: oklch(from #1e222e l c h);
+  --color-neutral-content: oklch(from #a8adb8 l c h);
+  --color-error: oklch(from #f07171 l c h);
+  --color-error-content: oklch(from #1a0b0b l c h);
+}
+
+:root,
+[data-theme="light"] {
+  /* Brand: teal (accent) + navy (solid CTAs) — flag-* kept as aliases for existing utilities */
+  --brand-teal: #59d9d1;
+  --brand-teal-bright: #56efe6;
+  --brand-navy: #2f384f;
+  --brand-slate: #3b4150;
+
+  --flag-green: #1a9e96;
+  --flag-green-solid: #2f384f;
+  --flag-green-content: #56efe6;
+  --flag-green-soft: color-mix(in oklch, #59d9d1 14%, transparent);
+
+  --flag-red: #3b4150;
+  --flag-red-solid: #3b4150;
+  --flag-red-content: #e8f8f7;
+  --flag-red-soft: color-mix(in oklch, #3b4150 10%, transparent);
+
+  --flag-black: #0a0a0a;
+  --flag-white: #ffffff;
+}
+
+[data-theme="dark"] {
+  --brand-teal: #59d9d1;
+  --brand-teal-bright: #56efe6;
+  --brand-navy: #2f384f;
+  --brand-slate: #3b4150;
+
+  --flag-green: #59d9d1;
+  --flag-green-solid: #59d9d1;
+  --flag-green-content: #181b24;
+  --flag-green-soft: color-mix(in oklch, #59d9d1 16%, transparent);
+
+  --flag-red: #8b93a8;
+  --flag-red-solid: #3b4150;
+  --flag-red-content: #e8f8f7;
+  --flag-red-soft: color-mix(in oklch, #8b93a8 14%, transparent);
+
+  --flag-black: #0a0a0a;
+  --flag-white: #ffffff;
+}
+
+@theme inline {
+  --color-brand-teal: var(--brand-teal);
+  --color-brand-teal-bright: var(--brand-teal-bright);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-slate: var(--brand-slate);
+  --color-flag-red: var(--flag-red);
+  --color-flag-red-solid: var(--flag-red-solid);
+  --color-flag-red-content: var(--flag-red-content);
+  --color-flag-red-soft: var(--flag-red-soft);
+  --color-flag-green: var(--flag-green);
+  --color-flag-green-solid: var(--flag-green-solid);
+  --color-flag-green-content: var(--flag-green-content);
+  --color-flag-green-soft: var(--flag-green-soft);
+  --color-flag-black: var(--flag-black);
+  --color-flag-white: var(--flag-white);
+}
+
+@layer base {
+  html {
+    font-family:
+      "DM Sans",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Inter",
+      Helvetica,
+      system-ui,
+      sans-serif;
+    scroll-behavior: smooth;
+  }
+}
+
+@utility bg-grid {
+  background-image: radial-gradient(circle, var(--color-base-content) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+}
+
+.bg-grid {
+  position: relative;
+}
+
+.bg-grid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--color-base-content) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  opacity: 0.07;
+  z-index: 0;
+}
+
+.bg-grid > * {
+  position: relative;
+  z-index: 1;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+.reveal[data-revealed="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+@theme inline {
+  --font-display:
+    "DM Sans", -apple-system, BlinkMacSystemFont, "Inter", Helvetica, system-ui, sans-serif;
+  --animate-cell-ripple: cell-ripple var(--duration, 200ms) ease-out none 1 var(--delay, 0ms);
+  --animate-fade-in: fade-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-fade-up: fade-up 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-radar-ping: radar-ping 4.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-radar-blip: radar-blip 4.4s ease-out infinite;
+  --animate-flag-sheen: flag-sheen 5s ease-in-out infinite;
+  --animate-blob-float: blob-float 9s ease-in-out infinite;
+  --animate-wiggle: wiggle 6s ease-in-out infinite;
+  --animate-progress-spin: progress-spin 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+
+  @keyframes cell-ripple {
+    0% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 0.4;
+    }
+  }
+
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-up {
+    0% {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes radar-sweep {
+    to {
+      transform: translate(-50%, -50%) rotate(360deg);
+    }
+  }
+
+  @keyframes radar-ping {
+    0% {
+      transform: translate(-50%, -50%) scale(0.05);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.7;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0;
+    }
+  }
+
+  @keyframes blob-float {
+    0%,
+    100% {
+      transform: translate(0, 0) rotate(var(--blob-rotate, 0deg)) scale(1);
+    }
+    50% {
+      transform: translate(0, -14px) rotate(calc(var(--blob-rotate, 0deg) + 6deg)) scale(1.04);
+    }
+  }
+
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(var(--blob-rotate, -6deg));
+    }
+    50% {
+      transform: rotate(calc(var(--blob-rotate, -6deg) * -1));
+    }
+  }
+
+  @keyframes flag-sheen {
+    0% {
+      transform: translateX(-120%);
+    }
+    60%,
+    100% {
+      transform: translateX(320%);
+    }
+  }
+
+  @keyframes progress-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes radar-blip {
+    0%,
+    55% {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+    60% {
+      opacity: 1;
+      transform: scale(1.25);
+    }
+    80% {
+      opacity: 0.6;
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
+}
+
+@utility btn {
+  @apply rounded-full;
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-sidebar: var(--color-base-100);
+  --color-sidebar-foreground: var(--color-base-content);
+  --color-sidebar-primary: var(--color-primary);
+  --color-sidebar-primary-foreground: var(--color-primary-content);
+  --color-sidebar-accent: color-mix(in oklch, var(--color-primary) 40%, transparent);
+  --color-sidebar-accent-foreground: var(--color-sidebar-foreground);
+  --color-sidebar-border: color-mix(in oklch, var(--color-base-content) 20%, transparent);
+  --color-sidebar-ring: var(--color-neutral);
+  --color-muted: var(--color-base-300);
+  --color-muted-foreground: color-mix(in oklch, var(--color-base-content) 65%, transparent);
+  --color-border: color-mix(in oklch, var(--color-base-content) 15%, transparent);
+  --color-card: var(--color-base-200);
+  --color-popover: var(--color-base-100);
+  --color-popover-foreground: var(--color-base-content);
+  --color-accent-foreground: var(--color-accent-content);
+  --color-destructive: var(--color-error);
+  --color-destructive-foreground: var(--color-error-content);
+}
