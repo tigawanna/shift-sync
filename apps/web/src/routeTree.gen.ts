@@ -26,7 +26,9 @@ import { Route as DashboardAdminIndexRouteImport } from './routes/_dashboard/adm
 import { Route as DashboardManagerIndexRouteImport } from './routes/_dashboard/manager/index'
 import { Route as DashboardStaffIndexRouteImport } from './routes/_dashboard/staff/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as DashboardAdminLocationsIndexRouteImport } from './routes/_dashboard/admin/locations/index'
 import { Route as DashboardAdminUsersIndexRouteImport } from './routes/_dashboard/admin/users/index'
+import { Route as DashboardManagerLocationsIndexRouteImport } from './routes/_dashboard/manager/locations/index'
 import { Route as DashboardManagerTeamIndexRouteImport } from './routes/_dashboard/manager/team/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -113,11 +115,23 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardAdminLocationsIndexRoute =
+  DashboardAdminLocationsIndexRouteImport.update({
+    id: '/locations/',
+    path: '/locations/',
+    getParentRoute: () => DashboardAdminRoute,
+  } as any)
 const DashboardAdminUsersIndexRoute =
   DashboardAdminUsersIndexRouteImport.update({
     id: '/users/',
     path: '/users/',
     getParentRoute: () => DashboardAdminRoute,
+  } as any)
+const DashboardManagerLocationsIndexRoute =
+  DashboardManagerLocationsIndexRouteImport.update({
+    id: '/locations/',
+    path: '/locations/',
+    getParentRoute: () => DashboardManagerRoute,
   } as any)
 const DashboardManagerTeamIndexRoute =
   DashboardManagerTeamIndexRouteImport.update({
@@ -143,7 +157,9 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof DashboardAdminIndexRoute
   '/manager/': typeof DashboardManagerIndexRoute
   '/staff/': typeof DashboardStaffIndexRoute
+  '/admin/locations/': typeof DashboardAdminLocationsIndexRoute
   '/admin/users/': typeof DashboardAdminUsersIndexRoute
+  '/manager/locations/': typeof DashboardManagerLocationsIndexRoute
   '/manager/team/': typeof DashboardManagerTeamIndexRoute
 }
 export interface FileRoutesByTo {
@@ -160,7 +176,9 @@ export interface FileRoutesByTo {
   '/admin': typeof DashboardAdminIndexRoute
   '/manager': typeof DashboardManagerIndexRoute
   '/staff': typeof DashboardStaffIndexRoute
+  '/admin/locations': typeof DashboardAdminLocationsIndexRoute
   '/admin/users': typeof DashboardAdminUsersIndexRoute
+  '/manager/locations': typeof DashboardManagerLocationsIndexRoute
   '/manager/team': typeof DashboardManagerTeamIndexRoute
 }
 export interface FileRoutesById {
@@ -182,7 +200,9 @@ export interface FileRoutesById {
   '/_dashboard/admin/': typeof DashboardAdminIndexRoute
   '/_dashboard/manager/': typeof DashboardManagerIndexRoute
   '/_dashboard/staff/': typeof DashboardStaffIndexRoute
+  '/_dashboard/admin/locations/': typeof DashboardAdminLocationsIndexRoute
   '/_dashboard/admin/users/': typeof DashboardAdminUsersIndexRoute
+  '/_dashboard/manager/locations/': typeof DashboardManagerLocationsIndexRoute
   '/_dashboard/manager/team/': typeof DashboardManagerTeamIndexRoute
 }
 export interface FileRouteTypes {
@@ -204,7 +224,9 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/manager/'
     | '/staff/'
+    | '/admin/locations/'
     | '/admin/users/'
+    | '/manager/locations/'
     | '/manager/team/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -221,7 +243,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/manager'
     | '/staff'
+    | '/admin/locations'
     | '/admin/users'
+    | '/manager/locations'
     | '/manager/team'
   id:
     | '__root__'
@@ -242,7 +266,9 @@ export interface FileRouteTypes {
     | '/_dashboard/admin/'
     | '/_dashboard/manager/'
     | '/_dashboard/staff/'
+    | '/_dashboard/admin/locations/'
     | '/_dashboard/admin/users/'
+    | '/_dashboard/manager/locations/'
     | '/_dashboard/manager/team/'
   fileRoutesById: FileRoutesById
 }
@@ -377,12 +403,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_dashboard/admin/locations/': {
+      id: '/_dashboard/admin/locations/'
+      path: '/locations'
+      fullPath: '/admin/locations/'
+      preLoaderRoute: typeof DashboardAdminLocationsIndexRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
     '/_dashboard/admin/users/': {
       id: '/_dashboard/admin/users/'
       path: '/users'
       fullPath: '/admin/users/'
       preLoaderRoute: typeof DashboardAdminUsersIndexRouteImport
       parentRoute: typeof DashboardAdminRoute
+    }
+    '/_dashboard/manager/locations/': {
+      id: '/_dashboard/manager/locations/'
+      path: '/locations'
+      fullPath: '/manager/locations/'
+      preLoaderRoute: typeof DashboardManagerLocationsIndexRouteImport
+      parentRoute: typeof DashboardManagerRoute
     }
     '/_dashboard/manager/team/': {
       id: '/_dashboard/manager/team/'
@@ -396,11 +436,13 @@ declare module '@tanstack/react-router' {
 
 interface DashboardAdminRouteChildren {
   DashboardAdminIndexRoute: typeof DashboardAdminIndexRoute
+  DashboardAdminLocationsIndexRoute: typeof DashboardAdminLocationsIndexRoute
   DashboardAdminUsersIndexRoute: typeof DashboardAdminUsersIndexRoute
 }
 
 const DashboardAdminRouteChildren: DashboardAdminRouteChildren = {
   DashboardAdminIndexRoute: DashboardAdminIndexRoute,
+  DashboardAdminLocationsIndexRoute: DashboardAdminLocationsIndexRoute,
   DashboardAdminUsersIndexRoute: DashboardAdminUsersIndexRoute,
 }
 
@@ -410,11 +452,13 @@ const DashboardAdminRouteWithChildren = DashboardAdminRoute._addFileChildren(
 
 interface DashboardManagerRouteChildren {
   DashboardManagerIndexRoute: typeof DashboardManagerIndexRoute
+  DashboardManagerLocationsIndexRoute: typeof DashboardManagerLocationsIndexRoute
   DashboardManagerTeamIndexRoute: typeof DashboardManagerTeamIndexRoute
 }
 
 const DashboardManagerRouteChildren: DashboardManagerRouteChildren = {
   DashboardManagerIndexRoute: DashboardManagerIndexRoute,
+  DashboardManagerLocationsIndexRoute: DashboardManagerLocationsIndexRoute,
   DashboardManagerTeamIndexRoute: DashboardManagerTeamIndexRoute,
 }
 

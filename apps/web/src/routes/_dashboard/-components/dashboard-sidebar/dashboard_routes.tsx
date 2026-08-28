@@ -14,6 +14,7 @@ export const dashboard_admin_routes = [
     sublinks: [
       { title: "Overview", href: "/admin" },
       { title: "Users", href: "/admin/users" },
+      { title: "Locations", href: "/admin/locations" },
     ],
   },
 ] satisfies SidebarItem[];
@@ -29,6 +30,7 @@ export function getDashboardPrimaryRoutes(role: AppRole): SidebarItem[] {
       sublinks: [
         { title: "Overview", href: "/manager" },
         { title: "Team", href: "/manager/team" },
+        { title: "Locations", href: "/manager/locations" },
       ],
     });
   }

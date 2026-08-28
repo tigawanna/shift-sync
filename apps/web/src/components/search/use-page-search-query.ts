@@ -1,10 +1,8 @@
-import {
-  useNavigate,
-  useSearch,
-  type RegisteredRouter,
-  type RouteIds,
-} from "@tanstack/react-router";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
+import { getRouteApi, type RegisteredRouter, type RouteIds } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+
+const SEARCH_DEBOUNCE_MS = 400;
 
 type SearchWithQPage = {
   q?: string;
@@ -14,67 +12,58 @@ type SearchWithQPage = {
 type ListRouteId = RouteIds<RegisteredRouter["routeTree"]>;
 
 /**
- * Local search input + debounced URL `q`. Resets `page` when the committed query changes.
- * Pass the file route id (e.g. `/_dashboard/admin/waitlist/`), not the path.
+ * Debounced URL `q` search for a TanStack Router route id.
+ *
+ * Keeps a local input value in sync with the committed `q` search param and
+ * resets `page` whenever the query commits or clears.
+ *
+ * @param routeID - File route id (e.g. `"/_dashboard/admin/users/"`).
  */
-export function usePageSearchQuery(from: ListRouteId, debounceMs = 400) {
-  // TSR `from` generics don't accept a widened RouteIds parameter; cast at the boundary.
-  const search = useSearch({ from: from as never }) as SearchWithQPage;
-  const navigate = useNavigate({ from: from as never });
-  const committedQ = search.q ?? "";
-
-  const [inputValue, setInputValue] = useState(committedQ);
-  const [isDebouncing, setIsDebouncing] = useState(false);
+export function usePageSearchQuery(routeID: ListRouteId, debounceMs = SEARCH_DEBOUNCE_MS) {
+  const routeApi = getRouteApi(routeID);
+  const routeSearch = routeApi.useSearch() as SearchWithQPage;
+  const navigate = routeApi.useNavigate();
+  const searchQuery = routeSearch.q ?? "";
+  const [inputValue, setInputValue] = useState(searchQuery);
 
   useEffect(() => {
-    setInputValue(committedQ);
-  }, [committedQ]);
+    setInputValue(searchQuery);
+  }, [searchQuery]);
 
-  useEffect(() => {
-    if (inputValue === committedQ) {
-      setIsDebouncing(false);
-      return;
-    }
-
-    setIsDebouncing(true);
-    const timeout = window.setTimeout(() => {
-      const trimmed = inputValue.trim();
+  const commitSearch = useDebouncedCallback(
+    (value: string) => {
+      const trimmed = value.trim();
       void navigate({
-        search: ((prev: SearchWithQPage) => ({
+        search: (prev: SearchWithQPage) => ({
           ...prev,
-          q: trimmed || undefined,
+          q: trimmed.length > 0 ? trimmed : undefined,
           page: undefined,
-        })) as never,
+        }),
         replace: true,
       });
-      setIsDebouncing(false);
-    }, debounceMs);
-
-    return () => window.clearTimeout(timeout);
-  }, [inputValue, committedQ, debounceMs, navigate]);
+    },
+    { wait: debounceMs },
+  );
 
   function onSearchChange(value: string) {
     setInputValue(value);
+    commitSearch(value);
   }
 
+  /** Clears the search input and URL `q` immediately (no debounce). */
   function clearSearch() {
     setInputValue("");
-    setIsDebouncing(false);
     void navigate({
-      search: ((prev: SearchWithQPage) => ({
+      search: (prev: SearchWithQPage) => ({
         ...prev,
         q: undefined,
         page: undefined,
-      })) as never,
+      }),
       replace: true,
     });
   }
 
-  return {
-    inputValue,
-    onSearchChange,
-    isDebouncing,
-    clearSearch,
-    committedQ,
-  };
+  const isDebouncing = inputValue.trim() !== searchQuery;
+
+  return { inputValue, onSearchChange, clearSearch, isDebouncing };
 }

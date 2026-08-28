@@ -6,14 +6,18 @@ import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
 import { getDb } from "@/lib/drizzle/client";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import { and, count, desc, eq, like, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, like, or, type SQL } from "drizzle-orm";
 import { requireSessionRoles } from "./team.auth";
 import {
   createTeamUserInputSchema,
   listTeamMembersInputSchema,
   type CreateTeamUserInput,
+  DEFAULT_TEAM_MEMBER_SORT_BY,
+  DEFAULT_TEAM_MEMBER_SORT_DIRECTION,
   type ListTeamMembersInput,
   type TeamMember,
+  type TeamMemberSortBy,
+  type SortDirection,
   type TeamMembersPage,
 } from "./team.types";
 
@@ -26,6 +30,16 @@ function mapTeamMember(row: typeof userTable.$inferSelect): TeamMember {
     createdAt: row.createdAt,
     banned: row.banned ?? false,
   };
+}
+
+function buildOrderBy(sortBy: TeamMemberSortBy, sortDirection: SortDirection) {
+  const column = {
+    name: userTable.name,
+    email: userTable.email,
+    role: userTable.role,
+    createdAt: userTable.createdAt,
+  }[sortBy];
+  return sortDirection === "asc" ? asc(column) : desc(column);
 }
 
 function buildSearchFilter(search: string | undefined): SQL | undefined {
@@ -48,6 +62,8 @@ async function listMembersForViewer(input: ListTeamMembersInput, viewerRole: typ
 
   const searchFilter = buildSearchFilter(input.search);
   const where = searchFilter ? and(roleFilter, searchFilter) : roleFilter;
+  const sortBy = input.sortBy ?? DEFAULT_TEAM_MEMBER_SORT_BY;
+  const sortDirection = input.sortDirection ?? DEFAULT_TEAM_MEMBER_SORT_DIRECTION;
 
   const db = await getDb();
 
@@ -56,7 +72,7 @@ async function listMembersForViewer(input: ListTeamMembersInput, viewerRole: typ
       .select()
       .from(userTable)
       .where(where)
-      .orderBy(desc(userTable.createdAt))
+      .orderBy(buildOrderBy(sortBy, sortDirection))
       .limit(perPage)
       .offset(offset),
     db.select({ total: count() }).from(userTable).where(where),
@@ -75,14 +91,14 @@ async function listMembersForViewer(input: ListTeamMembersInput, viewerRole: typ
 }
 
 export const listTeamMembers = createServerFn({ method: "GET" })
-  .inputValidator((data: ListTeamMembersInput) => listTeamMembersInputSchema.parse(data))
+  .validator((data: ListTeamMembersInput) => listTeamMembersInputSchema.parse(data))
   .handler(async ({ data }) => {
     const { role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
     return listMembersForViewer(data, role === ROLE.admin ? ROLE.admin : ROLE.manager);
   });
 
 export const createTeamUser = createServerFn({ method: "POST" })
-  .inputValidator((data: CreateTeamUserInput) => createTeamUserInputSchema.parse(data))
+  .validator((data: CreateTeamUserInput) => createTeamUserInputSchema.parse(data))
   .handler(async ({ data }) => {
     await requireSessionRoles([ROLE.admin]);
 

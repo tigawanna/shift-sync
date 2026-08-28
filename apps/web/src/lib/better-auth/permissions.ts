@@ -8,8 +8,11 @@ export const ac = createAccessControl(statement);
 /** Corporate admin — full user management via the Better Auth admin API. */
 export const adminRole = ac.newRole({ ...adminAc.statements });
 
-/** Manager — scheduling workflows only; no admin API powers. */
-export const managerRole = ac.newRole({ ...userAc.statements });
+/** Manager — scheduling workflows; can impersonate staff for support. */
+export const managerRole = ac.newRole({
+  ...userAc.statements,
+  user: ["impersonate"],
+});
 
 /** Staff — self-service shifts, swaps, and availability only. */
 export const staffRole = ac.newRole({ ...userAc.statements });

@@ -1,13 +1,4 @@
-import {
-  useNavigate,
-  useSearch,
-  type RegisteredRouter,
-  type RouteIds,
-} from "@tanstack/react-router";
-
-type SearchWithPage = {
-  page?: number;
-};
+import { getRouteApi, type RegisteredRouter, type RouteIds } from "@tanstack/react-router";
 
 type ListRouteId = RouteIds<RegisteredRouter["routeTree"]>;
 
@@ -21,10 +12,10 @@ type TSRListPaginationProps = {
  * Returns null when there is only one page (or none).
  */
 export function TSRListPagination({ routeID, totalPages }: TSRListPaginationProps) {
-  // TSR `from` generics don't accept a widened RouteIds parameter; cast at the boundary.
-  const search = useSearch({ from: routeID as never }) as SearchWithPage;
-  const navigate = useNavigate({ from: routeID as never });
-  const page = search.page ?? 1;
+  const routeApi = getRouteApi(routeID);
+  const search = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
+  const page = "page" in search ? (search.page ?? 1) : 1;
 
   if (totalPages <= 1) {
     return null;
@@ -32,10 +23,12 @@ export function TSRListPagination({ routeID, totalPages }: TSRListPaginationProp
 
   function goToPage(nextPage: number) {
     void navigate({
-      search: ((prev: SearchWithPage) => ({
+      to: ".",
+      search: (prev) => ({
         ...prev,
         page: nextPage > 1 ? nextPage : undefined,
-      })) as never,
+      }),
+      replace: true,
     });
   }
 

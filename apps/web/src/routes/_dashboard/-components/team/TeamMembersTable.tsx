@@ -1,10 +1,13 @@
 import type { TeamMember } from "@/data-access-layer/team/team.types";
-import { ROLE } from "@/lib/better-auth/roles";
+import { useViewer } from "@/data-access-layer/auth/viewer";
+import { ROLE, getUserAppRole } from "@/lib/better-auth/roles";
 import { formatDate } from "@/utils/date";
+import { ImpersonateUserButton } from "./ImpersonateUserButton";
 
 type TeamMembersTableProps = {
   members: TeamMember[];
   emptyMessage: string;
+  showImpersonate?: boolean;
 };
 
 function roleBadgeClass(role: TeamMember["role"]) {
@@ -23,7 +26,16 @@ function roleLabel(role: TeamMember["role"]) {
   return "Staff";
 }
 
-export function TeamMembersTable({ members, emptyMessage }: TeamMembersTableProps) {
+export function TeamMembersTable({
+  members,
+  emptyMessage,
+  showImpersonate = false,
+}: TeamMembersTableProps) {
+  const { viewer } = useViewer();
+  const viewerRole = getUserAppRole(viewer.user);
+  const canShowImpersonate =
+    showImpersonate && (viewerRole === ROLE.admin || viewerRole === ROLE.manager);
+
   if (members.length === 0) {
     return (
       <div className="border-base-content/10 bg-base-100/50 rounded-2xl border px-6 py-10 text-center">
@@ -41,6 +53,7 @@ export function TeamMembersTable({ members, emptyMessage }: TeamMembersTableProp
             <th className="px-4 py-3 font-medium">Email</th>
             <th className="px-4 py-3 font-medium">Role</th>
             <th className="px-4 py-3 font-medium">Joined</th>
+            {canShowImpersonate ? <th className="px-4 py-3 font-medium">Actions</th> : null}
           </tr>
         </thead>
         <tbody className="divide-base-content/10 divide-y">
@@ -56,6 +69,14 @@ export function TeamMembersTable({ members, emptyMessage }: TeamMembersTableProp
                 </span>
               </td>
               <td className="text-base-content/70 px-4 py-3">{formatDate(member.createdAt)}</td>
+              {canShowImpersonate ? (
+                <td className="px-4 py-3">
+                  <ImpersonateUserButton
+                    member={member}
+                    viewerRole={viewerRole as typeof ROLE.admin | typeof ROLE.manager}
+                  />
+                </td>
+              ) : null}
             </tr>
           ))}
         </tbody>

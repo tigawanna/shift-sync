@@ -1,29 +1,43 @@
 import { ROLE } from "@/lib/better-auth/roles";
 import { AppConfig } from "@/utils/system";
 import { teamMembersQueryOptions } from "@/data-access-layer/team/team.queries";
+import {
+  DEFAULT_TEAM_MEMBER_SORT_BY,
+  DEFAULT_TEAM_MEMBER_SORT_DIRECTION,
+  SORT_DIRECTIONS,
+  TEAM_MEMBER_SORT_KEYS,
+} from "@/data-access-layer/team/team.types";
 import type { TeamMemberRole } from "@/data-access-layer/team/team.types";
 import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { Suspense, useState } from "react";
-import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
+import { useState } from "react";
 import { CreateTeamUserForm } from "../../-components/team/CreateTeamUserForm";
-import { TeamMembersPanel } from "../../-components/team/TeamMembersPanel";
+import { ListUsers } from "./-components/ListUsers";
 import { DashboardPageHeader } from "../../-components/DashboardPageHeader";
 import { z } from "zod";
 
 const usersSearchSchema = z.object({
-  page: z.number().optional(),
+  page: z.coerce.number().int().min(1).optional(),
   q: z.string().optional(),
+  sortBy: z.enum(TEAM_MEMBER_SORT_KEYS).optional(),
+  sortDirection: z.enum(SORT_DIRECTIONS).optional(),
 });
 
 export const Route = createFileRoute("/_dashboard/admin/users/")({
   validateSearch: (search) => usersSearchSchema.parse(search),
-  loaderDeps: ({ search }) => ({ page: search.page, q: search.q }),
+  loaderDeps: ({ search }) => ({
+    page: search.page,
+    q: search.q,
+    sortBy: search.sortBy,
+    sortDirection: search.sortDirection,
+  }),
   loader: async ({ context, deps }) => {
     await context.queryClient.ensureQueryData(
       teamMembersQueryOptions({
         page: deps.page,
         search: deps.q || undefined,
+        sortBy: deps.sortBy ?? DEFAULT_TEAM_MEMBER_SORT_BY,
+        sortDirection: deps.sortDirection ?? DEFAULT_TEAM_MEMBER_SORT_DIRECTION,
       }),
     );
   },
@@ -46,7 +60,7 @@ function AdminUsersPage() {
     <div className="flex flex-col gap-8">
       <DashboardPageHeader
         title="Users"
-        description="Managers and staff who can be scheduled. Location assignments will refine this list once locations are configured."
+        description="Managers and staff who can be scheduled across Coastal Eats locations."
         actions={
           <>
             <button
@@ -75,12 +89,7 @@ function AdminUsersPage() {
         />
       ) : null}
 
-      <Suspense fallback={<RouterPendingComponent />}>
-        <TeamMembersPanel
-          routeId="/_dashboard/admin/users/"
-          emptyMessage="No managers or staff yet. Use the buttons above to create accounts."
-        />
-      </Suspense>
+      <ListUsers />
     </div>
   );
 }

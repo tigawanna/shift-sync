@@ -9,9 +9,20 @@ export type TeamMemberRole = Exclude<AppRole, typeof ROLE.admin>;
 
 export const TEAM_MEMBER_ROLES = [ROLE.manager, ROLE.staff] as const satisfies readonly TeamMemberRole[];
 
+export const TEAM_MEMBER_SORT_KEYS = ["name", "email", "role", "createdAt"] as const;
+export type TeamMemberSortBy = (typeof TEAM_MEMBER_SORT_KEYS)[number];
+
+export const SORT_DIRECTIONS = ["asc", "desc"] as const;
+export type SortDirection = (typeof SORT_DIRECTIONS)[number];
+
+export const DEFAULT_TEAM_MEMBER_SORT_BY = "createdAt" satisfies TeamMemberSortBy;
+export const DEFAULT_TEAM_MEMBER_SORT_DIRECTION = "desc" satisfies SortDirection;
+
 export const listTeamMembersInputSchema = z.object({
   page: z.number().int().min(1).optional(),
   search: z.string().optional(),
+  sortBy: z.enum(TEAM_MEMBER_SORT_KEYS).optional(),
+  sortDirection: z.enum(SORT_DIRECTIONS).optional(),
 });
 
 export const createTeamUserInputSchema = z.object({

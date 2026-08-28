@@ -14,6 +14,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { QueryActivityNprogress } from "@/components/navigation/nprogress/QueryActivityNprogress";
+import { ImpersonationBanner } from "../ImpersonationBanner";
 import { TSRBreadCrumbs } from "@/lib/tanstack/router/TSRBreadCrumbs";
 import { isAdminUser, useViewer } from "@/data-access-layer/auth/viewer";
 import { getUserAppRole } from "@/lib/better-auth/roles";
@@ -80,6 +81,7 @@ export function DashboardLayout({
         <SidebarRail />
       </Sidebar>
       <SidebarInset className="min-h-0">
+        <ImpersonationBanner />
         <header className="bg-base-100 sticky top-0 z-30 flex h-16 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />

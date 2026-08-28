@@ -18,3 +18,17 @@ export function formatDate(
     day: "numeric",
   });
 }
+
+export function formatTimezone(timezone: string) {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      timeZoneName: "shortOffset",
+    });
+    const parts = formatter.formatToParts(new Date());
+    const offset = parts.find((part) => part.type === "timeZoneName")?.value;
+    return offset ? `${timezone} (${offset})` : timezone;
+  } catch {
+    return timezone;
+  }
+}
