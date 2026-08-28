@@ -1,6 +1,7 @@
 import { PasswordInput } from "@/components/ui/password-input";
 import { viewerqueryOptions } from "@/data-access-layer/auth/viewer";
 import { authClient } from "@/lib/better-auth/client";
+import { getUserAppRole, resolveDashboardPath } from "@/lib/better-auth/roles";
 import { AppConfig } from "@/utils/system";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -47,8 +48,9 @@ export function SigninComponent() {
     onSuccess: async () => {
       toast.success("Signed in");
       await router.invalidate();
-      await qc.fetchQuery(viewerqueryOptions);
-      void router.navigate({ to: returnTo || "/manager" });
+      const viewer = await qc.fetchQuery(viewerqueryOptions);
+      const role = getUserAppRole(viewer.data?.user);
+      void router.navigate({ to: resolveDashboardPath(returnTo, role) });
     },
   });
 
@@ -81,7 +83,7 @@ export function SigninComponent() {
             Password
             <Link
               to="/auth/forgot-password"
-              search={{ returnTo }}
+              search={{ returnTo: returnTo ?? "" }}
               className="link link-primary text-xs font-normal"
             >
               Forgot password?
@@ -96,7 +98,7 @@ export function SigninComponent() {
 
         <p className="text-base-content/70 text-center text-sm">
           No account?{" "}
-          <Link to="/auth/signup" search={{ returnTo }} className="link link-primary">
+          <Link to="/auth/signup" search={{ returnTo: returnTo ?? "" }} className="link link-primary">
             Sign up
           </Link>
         </p>

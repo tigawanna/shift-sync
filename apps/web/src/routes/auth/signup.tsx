@@ -1,10 +1,11 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import { AppConfig } from "@/utils/system";
+import { getUserAppRole, resolveDashboardPath } from "@/lib/better-auth/roles";
 import { SignupComponent } from "./-components/SignupComponent";
 
 const searchparams = z.object({
-  returnTo: z.string().default("/manager"),
+  returnTo: z.string().optional(),
 });
 
 export const Route = createFileRoute("/auth/signup")({
@@ -13,7 +14,8 @@ export const Route = createFileRoute("/auth/signup")({
   beforeLoad: ({ context, search }) => {
     const user = context.viewer?.user;
     if (!user) return;
-    throw redirect({ to: search.returnTo || "/manager" });
+    const role = getUserAppRole(user);
+    throw redirect({ to: resolveDashboardPath(search.returnTo, role) });
   },
   head: () => ({
     meta: [{ title: `${AppConfig.name} | Sign up` }],

@@ -1,6 +1,7 @@
 import { PasswordInput } from "@/components/ui/password-input";
 import { viewerqueryOptions } from "@/data-access-layer/auth/viewer";
 import { authClient } from "@/lib/better-auth/client";
+import { getUserAppRole, resolveDashboardPath } from "@/lib/better-auth/roles";
 import { AppConfig } from "@/utils/system";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -50,8 +51,9 @@ export function SignupComponent() {
     onSuccess: async () => {
       toast.success("Account created");
       await router.invalidate();
-      await qc.fetchQuery(viewerqueryOptions);
-      void router.navigate({ to: returnTo || "/manager" });
+      const viewer = await qc.fetchQuery(viewerqueryOptions);
+      const role = getUserAppRole(viewer.data?.user);
+      void router.navigate({ to: resolveDashboardPath(returnTo, role) });
     },
   });
 
@@ -95,7 +97,7 @@ export function SignupComponent() {
 
         <p className="text-base-content/70 text-center text-sm">
           Already have an account?{" "}
-          <Link to="/auth" search={{ returnTo }} className="link link-primary">
+          <Link to="/auth" search={{ returnTo: returnTo ?? "" }} className="link link-primary">
             Sign in
           </Link>
         </p>

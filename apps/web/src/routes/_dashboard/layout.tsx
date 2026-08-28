@@ -9,7 +9,6 @@ import { DashboardLayout } from "./-components/dashboard-sidebar/DashboardLayout
 import {
   dashboard_account_routes,
   dashboard_admin_routes,
-  getDashboardPrimaryRoutes,
 } from "./-components/dashboard-sidebar/dashboard_routes";
 
 export const Route = createFileRoute("/_dashboard")({
@@ -38,7 +37,6 @@ function DashboardShell() {
   return (
     <Suspense fallback={<RouterPendingComponent />}>
       <DashboardLayout
-        sidebarRoutes={getDashboardPrimaryRoutes()}
         sidebarLabel="Menu"
         accountRoutes={dashboard_account_routes}
         accountLabel="Account"

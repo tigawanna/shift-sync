@@ -1,6 +1,15 @@
 import { getSession } from "@/data-access-layer/auth/auth.functions";
 import { getAuth } from "@/lib/auth";
 import { authClient, type BetterAuthSession } from "@/lib/better-auth/client";
+import {
+  ROLE,
+  type AppRole,
+  getUserAppRole,
+  hasAppRole,
+  isAdminRole,
+  isManagerRole,
+  isStaffRole,
+} from "@/lib/better-auth/roles";
 import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { redirect, useRouter } from "@tanstack/react-router";
 import { createMiddleware } from "@tanstack/react-start";
@@ -15,10 +24,26 @@ export type TViewer = {
 
 export type TViewerLoginPayload = { email: string; password: string };
 
-export const ADMIN_ROLE = "admin";
+export { ROLE, type AppRole, getUserAppRole } from "@/lib/better-auth/roles";
 
 export function isAdminUser(user: ViewerUser | undefined): boolean {
-  return user?.role === ADMIN_ROLE;
+  return isAdminRole(getUserAppRole(user));
+}
+
+export function isManagerUser(user: ViewerUser | undefined): boolean {
+  return isManagerRole(getUserAppRole(user));
+}
+
+export function isStaffUser(user: ViewerUser | undefined): boolean {
+  return isStaffRole(getUserAppRole(user));
+}
+
+export function requireAppRole(user: ViewerUser | undefined, allowed: readonly AppRole[]): AppRole {
+  const role = getUserAppRole(user);
+  if (!hasAppRole(role, allowed)) {
+    throw redirect({ to: "/auth", search: { returnTo: "/" } });
+  }
+  return role;
 }
 
 export const viewerqueryOptions = queryOptions({

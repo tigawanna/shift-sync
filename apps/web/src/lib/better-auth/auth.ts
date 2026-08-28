@@ -1,6 +1,7 @@
 import type { AppDatabase } from "@/lib/drizzle/client";
 import * as authSchema from "@/lib/drizzle/schema/auth-schema";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
+import { ac, ROLE, roles } from "@/lib/better-auth/permissions";
 import { betterAuth, type BetterAuthPlugin } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin } from "better-auth/plugins/admin";
@@ -39,14 +40,21 @@ export function createAuth(options: CreateAuthOptions) {
             if (adminEmail && createdUser.email === adminEmail) {
               await db
                 .update(userTable)
-                .set({ role: "admin" })
+                .set({ role: ROLE.admin })
                 .where(eq(userTable.id, createdUser.id));
             }
           },
         },
       },
     },
-    plugins: [admin(), ...plugins],
+    plugins: [
+      admin({
+        ac,
+        roles,
+        defaultRole: ROLE.staff,
+      }),
+      ...plugins,
+    ],
   });
 }
 

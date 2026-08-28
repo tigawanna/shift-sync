@@ -16,13 +16,14 @@ import {
 import { QueryActivityNprogress } from "@/components/navigation/nprogress/QueryActivityNprogress";
 import { TSRBreadCrumbs } from "@/lib/tanstack/router/TSRBreadCrumbs";
 import { isAdminUser, useViewer } from "@/data-access-layer/auth/viewer";
+import { getUserAppRole } from "@/lib/better-auth/roles";
 import { AppConfig } from "@/utils/system";
 import { Outlet } from "@tanstack/react-router";
 import { DashboardSidebarFooter } from "./DashboardSidebarFooter";
 import { DashboardSidebarHeader } from "./DashboardSidebarHeader";
+import { getDashboardPrimaryRoutes } from "./dashboard_routes";
 
 interface DashboardLayoutProps {
-  sidebarRoutes: SidebarItem[];
   sidebarLabel: string;
   accountRoutes: SidebarItem[];
   accountLabel: string;
@@ -31,7 +32,6 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({
-  sidebarRoutes,
   sidebarLabel,
   accountRoutes,
   accountLabel,
@@ -39,6 +39,8 @@ export function DashboardLayout({
   adminLabel,
 }: DashboardLayoutProps) {
   const { viewer } = useViewer();
+  const role = getUserAppRole(viewer.user);
+  const sidebarRoutes = getDashboardPrimaryRoutes(role);
   const visibleAdminRoutes = isAdminUser(viewer.user) ? adminRoutes : [];
 
   return (
