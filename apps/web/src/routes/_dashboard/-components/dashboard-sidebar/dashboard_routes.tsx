@@ -7,14 +7,30 @@ export const dashboard_account_routes = [
 ] satisfies SidebarItem[];
 
 export const dashboard_admin_routes = [
-  { title: "Admin", href: "/admin", icon: Shield },
+  {
+    title: "Administration",
+    href: "/admin",
+    icon: Shield,
+    sublinks: [
+      { title: "Overview", href: "/admin" },
+      { title: "Users", href: "/admin/users" },
+    ],
+  },
 ] satisfies SidebarItem[];
 
 export function getDashboardPrimaryRoutes(role: AppRole): SidebarItem[] {
   const routes: SidebarItem[] = [];
 
   if (role === ROLE.admin || role === ROLE.manager) {
-    routes.push({ title: "Manager", href: "/manager", icon: LayoutDashboard });
+    routes.push({
+      title: "Manager",
+      href: "/manager",
+      icon: LayoutDashboard,
+      sublinks: [
+        { title: "Overview", href: "/manager" },
+        { title: "Team", href: "/manager/team" },
+      ],
+    });
   }
 
   if (role === ROLE.admin || role === ROLE.staff) {
