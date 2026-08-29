@@ -9,12 +9,6 @@ export function ImpersonationBanner() {
   const { viewer } = useViewer();
   const qc = useQueryClient();
   const router = useRouter();
-
-  const impersonatedBy = viewer.session?.impersonatedBy;
-  if (!impersonatedBy || !viewer.user) {
-    return null;
-  }
-
   const stopMutation = useMutation({
     mutationFn: async () => stopImpersonating(),
     onSuccess: async () => {
@@ -25,6 +19,11 @@ export function ImpersonationBanner() {
       await router.navigate({ to: getHomePathForRole(role) });
     },
   });
+
+  const impersonatedBy = viewer.session?.impersonatedBy;
+  if (!impersonatedBy || !viewer.user) {
+    return null;
+  }
 
   return (
     <div className="bg-warning/15 border-warning/30 text-warning-content flex items-center justify-between gap-4 border-b px-4 py-2 text-sm">
