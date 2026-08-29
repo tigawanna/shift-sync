@@ -1,7 +1,25 @@
 import { currentYearMonth, formatDateInZone, yearMonthOf } from "@/lib/time/zoned";
+import { cn } from "@/lib/utils";
+import { cva } from "class-variance-authority";
 import type { ReactNode } from "react";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+
+const monthCellVariants = cva(
+  "flex h-full min-h-0 flex-col rounded-xl border px-1.5 py-1.5 text-left transition-colors sm:px-2 sm:py-2",
+  {
+    variants: {
+      state: {
+        default: "border-base-content/10 bg-base-100/70 hover:border-base-content/20",
+        today: "border-base-content/25 bg-base-200/50",
+        selected: "border-base-content/40 bg-base-300/70",
+      },
+    },
+    defaultVariants: {
+      state: "default",
+    },
+  },
+);
 
 type MonthCalendarGridProps = {
   month: string;
@@ -38,16 +56,15 @@ export function MonthCalendarGrid({
           const inMonth = yearMonthOf(date) === month;
           const selected = date === selectedDate;
           const isToday = date === today && month === thisMonth;
+          const state = selected ? "selected" : isToday ? "today" : "default";
           const content = (
             <>
               <span
-                className={`tabular-nums ${
-                  selected
-                    ? "text-sm font-semibold"
-                    : isToday
-                      ? "text-sm font-semibold"
-                      : "text-sm font-medium"
-                } ${inMonth ? "" : "opacity-40"}`}
+                className={cn(
+                  "text-sm tabular-nums",
+                  selected || isToday ? "font-semibold" : "font-medium",
+                  !inMonth && "opacity-40",
+                )}
               >
                 {date.slice(8)}
               </span>
@@ -55,13 +72,7 @@ export function MonthCalendarGrid({
             </>
           );
 
-          const className = `flex h-full min-h-0 flex-col rounded-xl border px-1.5 py-1.5 text-left transition-colors sm:px-2 sm:py-2 ${
-            selected
-              ? "border-base-content/40 bg-base-300/70"
-              : isToday
-                ? "border-base-content/25 bg-base-200/50"
-                : "border-base-content/10 bg-base-100/70 hover:border-base-content/20"
-          }`;
+          const className = monthCellVariants({ state });
 
           if (onSelectDate) {
             return (

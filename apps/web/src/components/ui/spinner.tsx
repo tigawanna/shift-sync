@@ -1,26 +1,10 @@
-import { SiteIcon } from "@/components/icon/SiteIcon";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
+import { Loader2Icon } from "lucide-react"
 
-type SpinnerProps = {
-  className?: string;
-  /** Pixel size of the animated site icon. */
-  size?: number;
-};
-
-/**
- * Compact branded loading indicator — animated SiteIcon.
- * Prefer this over ad-hoc Loader2 / animate-spin circles.
- */
-function Spinner({ className, size = 16 }: SpinnerProps) {
+function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
   return (
-    <span
-      role="status"
-      aria-label="Loading"
-      className={cn("inline-flex shrink-0 items-center justify-center", className)}
-    >
-      <SiteIcon size={size} animate aria-hidden />
-    </span>
-  );
+    <Loader2Icon data-slot="spinner" role="status" aria-label="Loading" className={cn("size-4 animate-spin", className)} {...props} />
+  )
 }
 
-export { Spinner };
+export { Spinner }
