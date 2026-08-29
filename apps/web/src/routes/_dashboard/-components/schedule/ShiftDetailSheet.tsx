@@ -115,8 +115,7 @@ export function ShiftDetailSheet({ shift, onClose }: ShiftDetailSheetProps) {
             <div className="flex flex-col gap-6 px-4 pb-8">
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm">
-                  Coverage{" "}
-                  <span className="font-medium tabular-nums">{coverageLabel(shift)}</span>
+                  Coverage <span className="font-medium tabular-nums">{coverageLabel(shift)}</span>
                 </p>
                 {shift.locked ? (
                   <span className="badge badge-ghost badge-sm">Locked (48h cutoff)</span>
@@ -134,9 +133,7 @@ export function ShiftDetailSheet({ shift, onClose }: ShiftDetailSheetProps) {
                 )}
               </div>
 
-              {shift.notes ? (
-                <p className="text-base-content/70 text-sm">{shift.notes}</p>
-              ) : null}
+              {shift.notes ? <p className="text-base-content/70 text-sm">{shift.notes}</p> : null}
 
               {shift.assignees.length > 0 ? (
                 <div className="flex flex-col gap-2">

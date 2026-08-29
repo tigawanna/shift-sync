@@ -157,10 +157,8 @@ export function UserLocationEditor({
           {previewQuery.data.blockingShifts.length > 0 ? (
             <p className="text-error mt-1">
               Upcoming shifts still at a location you would remove:{" "}
-              {previewQuery.data.blockingShifts
-                .map((shift) => shift.locationName)
-                .join(", ")}
-              . Reassign those shifts before moving them.
+              {previewQuery.data.blockingShifts.map((shift) => shift.locationName).join(", ")}.
+              Reassign those shifts before moving them.
             </p>
           ) : null}
         </div>

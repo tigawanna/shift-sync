@@ -1,8 +1,5 @@
 import { accessibleLocationsQueryOptions } from "@/data-access-layer/location/location.queries";
-import {
-  publishWeek,
-  unpublishWeek,
-} from "@/data-access-layer/schedule/schedule.functions";
+import { publishWeek, unpublishWeek } from "@/data-access-layer/schedule/schedule.functions";
 import {
   monthOverviewQueryOptions,
   overviewDayQueryOptions,
@@ -10,7 +7,12 @@ import {
 } from "@/data-access-layer/schedule/schedule.queries";
 import type { WeekShift } from "@/data-access-layer/schedule/schedule.types";
 import { AppConfig } from "@/utils/system";
-import { addDaysYmd, currentYearMonth, mondayOfWeekContaining, yearMonthOf } from "@/lib/time/zoned";
+import {
+  addDaysYmd,
+  currentYearMonth,
+  mondayOfWeekContaining,
+  yearMonthOf,
+} from "@/lib/time/zoned";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { formatTimezone } from "@/utils/date";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -21,7 +23,10 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { DashboardPageHeader } from "../../-components/DashboardPageHeader";
 import { CreateShiftForm } from "../../-components/schedule/CreateShiftForm";
-import { EmptyScheduleLocations, WeekScheduleBoard } from "../../-components/schedule/WeekScheduleBoard";
+import {
+  EmptyScheduleLocations,
+  WeekScheduleBoard,
+} from "../../-components/schedule/WeekScheduleBoard";
 import { ShiftDetailSheet } from "../../-components/schedule/ShiftDetailSheet";
 import { ScheduleBirdsEye } from "../../-components/schedule/ScheduleBirdsEye";
 
@@ -63,9 +68,7 @@ export const Route = createFileRoute("/_dashboard/manager/schedule/")({
     }
     const timezone = locations.find((location) => location.id === locationId)?.timezone ?? "UTC";
     const weekStart = deps.week ?? mondayOfWeekContaining(new Date(), timezone);
-    await context.queryClient.ensureQueryData(
-      weekScheduleQueryOptions({ locationId, weekStart }),
-    );
+    await context.queryClient.ensureQueryData(weekScheduleQueryOptions({ locationId, weekStart }));
   },
   component: ManagerSchedulePage,
   head: () => ({
@@ -112,16 +115,20 @@ function ManagerScheduleContent() {
       search: { locationId: selectedLocation.id, week: weekStart },
       replace: true,
     });
-  }, [isOverview, month, navigate, search.date, search.locationId, search.month, search.week, selectedLocation, weekStart]);
+  }, [
+    isOverview,
+    month,
+    navigate,
+    search.date,
+    search.locationId,
+    search.month,
+    search.week,
+    selectedLocation,
+    weekStart,
+  ]);
 
   if (isOverview) {
-    return (
-      <ManagerOverviewBoard
-        locations={locations}
-        month={month}
-        selectedDate={search.date}
-      />
-    );
+    return <ManagerOverviewBoard locations={locations} month={month} selectedDate={search.date} />;
   }
 
   if (!selectedLocation) {

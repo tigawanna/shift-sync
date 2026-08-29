@@ -54,9 +54,7 @@ export const publishWeekInputSchema = z.object({
   weekStart: weekStartDateSchema,
 });
 
-export const yearMonthSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}$/, "Month must be YYYY-MM");
+export const yearMonthSchema = z.string().regex(/^\d{4}-\d{2}$/, "Month must be YYYY-MM");
 
 export const listMyScheduleInputSchema = z.object({
   month: yearMonthSchema,

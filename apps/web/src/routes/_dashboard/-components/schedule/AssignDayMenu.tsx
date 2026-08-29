@@ -78,7 +78,10 @@ export function AssignDayMenu({ userId, month, menu, onClose }: AssignDayMenuPro
     <div
       data-assign-day-menu
       className="border-base-content/15 bg-base-100 fixed z-50 max-h-80 w-72 overflow-y-auto rounded-xl border p-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.28)]"
-      style={{ left: Math.min(menu.x, window.innerWidth - 300), top: Math.min(menu.y, window.innerHeight - 80) }}
+      style={{
+        left: Math.min(menu.x, window.innerWidth - 300),
+        top: Math.min(menu.y, window.innerHeight - 80),
+      }}
     >
       <p className="text-base-content/60 px-2 py-1.5 text-[11px] font-medium tracking-wide uppercase">
         Assign · {formatDayLabel(menu.date)}
@@ -98,7 +101,9 @@ export function AssignDayMenu({ userId, month, menu, onClose }: AssignDayMenuPro
       ) : null}
       {grouped.map((group) => (
         <div key={group.locationId} className="mt-1">
-          <p className="text-base-content/50 px-2 py-1 text-[11px] font-medium">{group.locationName}</p>
+          <p className="text-base-content/50 px-2 py-1 text-[11px] font-medium">
+            {group.locationName}
+          </p>
           {group.shifts.map((shift) => {
             const alreadyOn = shift.assignees.some((assignee) => assignee.userId === userId);
             const disabled = alreadyOn || shift.locked || assignMutation.isPending;
@@ -111,7 +116,9 @@ export function AssignDayMenu({ userId, month, menu, onClose }: AssignDayMenuPro
                 onClick={() => assignMutation.mutate(shift.id)}
               >
                 <span className="font-medium">{shift.skillName}</span>
-                <span className="text-base-content/60 ml-1.5 tabular-nums">{shiftTimeLabel(shift)}</span>
+                <span className="text-base-content/60 ml-1.5 tabular-nums">
+                  {shiftTimeLabel(shift)}
+                </span>
                 {alreadyOn ? (
                   <span className="text-base-content/45 ml-1.5 text-xs">already on</span>
                 ) : null}

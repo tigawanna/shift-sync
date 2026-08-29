@@ -8,10 +8,7 @@ import {
   shift as shiftTable,
   shiftAssignment as shiftAssignmentTable,
 } from "@/lib/drizzle/schema/schedule-schema";
-import {
-  EDIT_CUTOFF_HOURS,
-  isPastEditCutoff,
-} from "@/lib/schedule/constraints";
+import { EDIT_CUTOFF_HOURS, isPastEditCutoff } from "@/lib/schedule/constraints";
 import { SKILLS } from "@/lib/schedule/skills";
 import {
   addDaysYmd,
@@ -101,7 +98,9 @@ async function assertCanViewUser(viewerId: string, role: string, targetUserId: s
           db
             .select({ id: managerLoc.id })
             .from(managerLoc)
-            .where(and(eq(managerLoc.userId, viewerId), eq(managerLoc.locationId, staffLoc.locationId))),
+            .where(
+              and(eq(managerLoc.userId, viewerId), eq(managerLoc.locationId, staffLoc.locationId)),
+            ),
         ),
       ),
     )
@@ -198,7 +197,10 @@ async function isWeekPublished(locationId: string, weekStart: string) {
     .select()
     .from(scheduleWeekTable)
     .where(
-      and(eq(scheduleWeekTable.locationId, locationId), eq(scheduleWeekTable.weekStartDate, weekStart)),
+      and(
+        eq(scheduleWeekTable.locationId, locationId),
+        eq(scheduleWeekTable.weekStartDate, weekStart),
+      ),
     )
     .limit(1);
 
@@ -285,10 +287,14 @@ export const updateShift = createServerFn({ method: "POST" })
     await assertLocationAccess(session.user.id, role, context.shift.locationId);
     assertUnlocked(context.shift.startsAt, context.published, "edit this shift");
 
-    const startDate = data.startDate ?? formatDateInZone(context.shift.startsAt, context.location.timezone);
-    const startTime = data.startTime ?? formatTimeInZone(context.shift.startsAt, context.location.timezone);
-    const endTime = data.endTime ?? formatTimeInZone(context.shift.endsAt, context.location.timezone);
-    const endDate = data.endDate ?? formatDateInZone(context.shift.endsAt, context.location.timezone);
+    const startDate =
+      data.startDate ?? formatDateInZone(context.shift.startsAt, context.location.timezone);
+    const startTime =
+      data.startTime ?? formatTimeInZone(context.shift.startsAt, context.location.timezone);
+    const endTime =
+      data.endTime ?? formatTimeInZone(context.shift.endsAt, context.location.timezone);
+    const endDate =
+      data.endDate ?? formatDateInZone(context.shift.endsAt, context.location.timezone);
     const { startsAt, endsAt } = resolveShiftRange({
       startDate,
       startTime,
@@ -432,11 +438,14 @@ async function certifyStaffAtLocation(userId: string, locationId: string) {
     .where(and(eq(userLocation.userId, userId), eq(userLocation.locationId, locationId)))
     .limit(1);
   if (existing) return;
-  await db.insert(userLocation).values({
-    id: crypto.randomUUID(),
-    userId,
-    locationId,
-  }).onConflictDoNothing();
+  await db
+    .insert(userLocation)
+    .values({
+      id: crypto.randomUUID(),
+      userId,
+      locationId,
+    })
+    .onConflictDoNothing();
 }
 
 export const listDayAssignableShifts = createServerFn({ method: "GET" })
@@ -481,7 +490,10 @@ export const unassignStaffFromShift = createServerFn({ method: "POST" })
     await db
       .delete(shiftAssignmentTable)
       .where(
-        and(eq(shiftAssignmentTable.shiftId, data.shiftId), eq(shiftAssignmentTable.userId, data.userId)),
+        and(
+          eq(shiftAssignmentTable.shiftId, data.shiftId),
+          eq(shiftAssignmentTable.userId, data.userId),
+        ),
       );
 
     return { ok: true as const };
@@ -635,30 +647,34 @@ export const listOverviewDay = createServerFn({ method: "GET" })
       string,
       {
         location: { id: string; name: string; timezone: string };
-        people: Map<string, { userId: string; name: string; email: string; shifts: ReturnType<typeof mapShiftSqlRow>[] }>;
+        people: Map<
+          string,
+          {
+            userId: string;
+            name: string;
+            email: string;
+            shifts: ReturnType<typeof mapShiftSqlRow>[];
+          }
+        >;
       }
     >();
 
     for (const row of rows) {
       const shift = mapShiftSqlRow(row);
-      const block =
-        byLocation.get(row.location_id) ??
-        {
-          location: {
-            id: row.location_id,
-            name: row.location_name,
-            timezone: row.timezone,
-          },
-          people: new Map(),
-        };
-      const person =
-        block.people.get(row.user_id) ??
-        {
-          userId: row.user_id,
-          name: row.user_name,
-          email: row.user_email,
-          shifts: [],
-        };
+      const block = byLocation.get(row.location_id) ?? {
+        location: {
+          id: row.location_id,
+          name: row.location_name,
+          timezone: row.timezone,
+        },
+        people: new Map(),
+      };
+      const person = block.people.get(row.user_id) ?? {
+        userId: row.user_id,
+        name: row.user_name,
+        email: row.user_email,
+        shifts: [],
+      };
       person.shifts.push(shift);
       block.people.set(row.user_id, person);
       byLocation.set(row.location_id, block);

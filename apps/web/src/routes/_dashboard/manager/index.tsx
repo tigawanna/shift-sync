@@ -29,7 +29,8 @@ function ManagerOverviewPage() {
             <h2 className="text-lg font-semibold tracking-tight">Schedule</h2>
           </div>
           <p className="text-base-content/70 text-sm">
-            Build a location week, or open All locations for a bird's-eye view of everyone you manage.
+            Build a location week, or open All locations for a bird's-eye view of everyone you
+            manage.
           </p>
         </Link>
         <Link

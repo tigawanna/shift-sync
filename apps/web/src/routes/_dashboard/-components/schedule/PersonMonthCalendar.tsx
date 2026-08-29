@@ -1,4 +1,8 @@
-import type { PersonCalendarWeekStat, PersonMonthSchedule, WeekShift } from "@/data-access-layer/schedule/schedule.types";
+import type {
+  PersonCalendarWeekStat,
+  PersonMonthSchedule,
+  WeekShift,
+} from "@/data-access-layer/schedule/schedule.types";
 import { userScheduleQueryOptions } from "@/data-access-layer/schedule/schedule.queries";
 import { teamMemberQueryOptions } from "@/data-access-layer/team/team.queries";
 import { ROLE } from "@/lib/better-auth/roles";
@@ -388,11 +392,7 @@ export function PersonMonthCalendar({
         month={schedule.month}
         shifts={schedule.shifts}
         weekStats={schedule.weekStats ?? []}
-        onAssignDate={
-          assignUserId
-            ? (date, x, y) => setAssignMenu({ date, x, y })
-            : undefined
-        }
+        onAssignDate={assignUserId ? (date, x, y) => setAssignMenu({ date, x, y }) : undefined}
       />
       {assignUserId && assignMenu ? (
         <AssignDayMenu

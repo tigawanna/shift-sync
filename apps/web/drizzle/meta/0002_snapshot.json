@@ -103,9 +103,7 @@
       "indexes": {
         "account_userId_idx": {
           "name": "account_userId_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -114,12 +112,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -199,16 +193,12 @@
       "indexes": {
         "session_token_unique": {
           "name": "session_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "session_userId_idx": {
           "name": "session_userId_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -217,12 +207,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -319,9 +305,7 @@
       "indexes": {
         "user_email_unique": {
           "name": "user_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         }
       },
@@ -381,9 +365,7 @@
       "indexes": {
         "verification_identifier_idx": {
           "name": "verification_identifier_idx",
-          "columns": [
-            "identifier"
-          ],
+          "columns": ["identifier"],
           "isUnique": false
         }
       },
@@ -482,24 +464,17 @@
       "indexes": {
         "user_location_user_location_idx": {
           "name": "user_location_user_location_idx",
-          "columns": [
-            "user_id",
-            "location_id"
-          ],
+          "columns": ["user_id", "location_id"],
           "isUnique": true
         },
         "user_location_userId_idx": {
           "name": "user_location_userId_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "user_location_locationId_idx": {
           "name": "user_location_locationId_idx",
-          "columns": [
-            "location_id"
-          ],
+          "columns": ["location_id"],
           "isUnique": false
         }
       },
@@ -508,12 +483,8 @@
           "name": "user_location_user_id_user_id_fk",
           "tableFrom": "user_location",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -521,12 +492,8 @@
           "name": "user_location_location_id_location_id_fk",
           "tableFrom": "user_location",
           "tableTo": "location",
-          "columnsFrom": [
-            "location_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["location_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -601,18 +568,12 @@
       "indexes": {
         "user_availability_userId_idx": {
           "name": "user_availability_userId_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "user_availability_user_weekday_start_idx": {
           "name": "user_availability_user_weekday_start_idx",
-          "columns": [
-            "user_id",
-            "weekday",
-            "start_minute"
-          ],
+          "columns": ["user_id", "weekday", "start_minute"],
           "isUnique": true
         }
       },
@@ -621,12 +582,8 @@
           "name": "user_availability_user_id_user_id_fk",
           "tableFrom": "user_availability",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -671,24 +628,17 @@
       "indexes": {
         "user_skill_user_skill_idx": {
           "name": "user_skill_user_skill_idx",
-          "columns": [
-            "user_id",
-            "skill_id"
-          ],
+          "columns": ["user_id", "skill_id"],
           "isUnique": true
         },
         "user_skill_userId_idx": {
           "name": "user_skill_userId_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "user_skill_skillId_idx": {
           "name": "user_skill_skillId_idx",
-          "columns": [
-            "skill_id"
-          ],
+          "columns": ["skill_id"],
           "isUnique": false
         }
       },
@@ -697,12 +647,8 @@
           "name": "user_skill_user_id_user_id_fk",
           "tableFrom": "user_skill",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -710,12 +656,8 @@
           "name": "user_skill_skill_id_skill_id_fk",
           "tableFrom": "user_skill",
           "tableTo": "skill",
-          "columnsFrom": [
-            "skill_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["skill_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -766,17 +708,12 @@
       "indexes": {
         "schedule_week_location_week_idx": {
           "name": "schedule_week_location_week_idx",
-          "columns": [
-            "location_id",
-            "week_start_date"
-          ],
+          "columns": ["location_id", "week_start_date"],
           "isUnique": true
         },
         "schedule_week_locationId_idx": {
           "name": "schedule_week_locationId_idx",
-          "columns": [
-            "location_id"
-          ],
+          "columns": ["location_id"],
           "isUnique": false
         }
       },
@@ -785,12 +722,8 @@
           "name": "schedule_week_location_id_location_id_fk",
           "tableFrom": "schedule_week",
           "tableTo": "location",
-          "columnsFrom": [
-            "location_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["location_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -798,12 +731,8 @@
           "name": "schedule_week_published_by_user_id_user_id_fk",
           "tableFrom": "schedule_week",
           "tableTo": "user",
-          "columnsFrom": [
-            "published_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["published_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -891,17 +820,12 @@
       "indexes": {
         "shift_locationId_startsAt_idx": {
           "name": "shift_locationId_startsAt_idx",
-          "columns": [
-            "location_id",
-            "starts_at"
-          ],
+          "columns": ["location_id", "starts_at"],
           "isUnique": false
         },
         "shift_startsAt_idx": {
           "name": "shift_startsAt_idx",
-          "columns": [
-            "starts_at"
-          ],
+          "columns": ["starts_at"],
           "isUnique": false
         }
       },
@@ -910,12 +834,8 @@
           "name": "shift_location_id_location_id_fk",
           "tableFrom": "shift",
           "tableTo": "location",
-          "columnsFrom": [
-            "location_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["location_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -923,12 +843,8 @@
           "name": "shift_skill_id_skill_id_fk",
           "tableFrom": "shift",
           "tableTo": "skill",
-          "columnsFrom": [
-            "skill_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["skill_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -936,12 +852,8 @@
           "name": "shift_created_by_user_id_user_id_fk",
           "tableFrom": "shift",
           "tableTo": "user",
-          "columnsFrom": [
-            "created_by_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -986,24 +898,17 @@
       "indexes": {
         "shift_assignment_shift_user_idx": {
           "name": "shift_assignment_shift_user_idx",
-          "columns": [
-            "shift_id",
-            "user_id"
-          ],
+          "columns": ["shift_id", "user_id"],
           "isUnique": true
         },
         "shift_assignment_userId_idx": {
           "name": "shift_assignment_userId_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "shift_assignment_shiftId_idx": {
           "name": "shift_assignment_shiftId_idx",
-          "columns": [
-            "shift_id"
-          ],
+          "columns": ["shift_id"],
           "isUnique": false
         }
       },
@@ -1012,12 +917,8 @@
           "name": "shift_assignment_shift_id_shift_id_fk",
           "tableFrom": "shift_assignment",
           "tableTo": "shift",
-          "columnsFrom": [
-            "shift_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["shift_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1025,12 +926,8 @@
           "name": "shift_assignment_user_id_user_id_fk",
           "tableFrom": "shift_assignment",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

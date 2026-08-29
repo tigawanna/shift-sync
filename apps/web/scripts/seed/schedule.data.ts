@@ -48,18 +48,24 @@ function staffIndexFromEmail(email: string) {
 }
 
 export function emailsWithSkill(emails: string[], skillId: SkillId) {
-  return emails.filter((email) => skillIdsForStaffIndex(staffIndexFromEmail(email)).includes(skillId));
+  return emails.filter((email) =>
+    skillIdsForStaffIndex(staffIndexFromEmail(email)).includes(skillId),
+  );
 }
 
 export function staffEmailsAtLocation(locationId: string) {
   return Object.entries(SEED_USER_LOCATIONS)
-    .filter(([email, locationIds]) => email.startsWith("staff-") && locationIds.includes(locationId))
+    .filter(
+      ([email, locationIds]) => email.startsWith("staff-") && locationIds.includes(locationId),
+    )
     .map(([email]) => email);
 }
 
 export function managerEmailAtLocation(locationId: string) {
   const emails = Object.entries(SEED_USER_LOCATIONS)
-    .filter(([email, locationIds]) => email.startsWith("manager-") && locationIds.includes(locationId))
+    .filter(
+      ([email, locationIds]) => email.startsWith("manager-") && locationIds.includes(locationId),
+    )
     .map(([email]) => email)
     .sort();
   return emails[0] ?? null;
@@ -92,19 +98,123 @@ type ShiftTemplate = {
  * so the person calendar can draw a continuous bar.
  */
 const WEEK_TEMPLATES: ShiftTemplate[] = [
-  { slug: "mon-dinner", skillId: "server", dayOffset: 0, startTime: "16:00", endTime: "22:00", notes: "Dinner service", daytimeOk: false },
-  { slug: "tue-dinner", skillId: "server", dayOffset: 1, startTime: "16:00", endTime: "22:00", notes: "Dinner service", daytimeOk: false },
-  { slug: "wed-dinner", skillId: "server", dayOffset: 2, startTime: "16:00", endTime: "22:00", notes: "Dinner service", daytimeOk: false },
-  { slug: "sun-brunch", skillId: "server", dayOffset: 6, startTime: "09:00", endTime: "15:00", notes: "Sunday brunch", daytimeOk: true },
-  { slug: "mon-line", skillId: "line_cook", dayOffset: 0, startTime: "11:00", endTime: "19:00", notes: "Prep and lunch", daytimeOk: false },
-  { slug: "thu-line", skillId: "line_cook", dayOffset: 3, startTime: "14:00", endTime: "22:00", notes: "Dinner line", daytimeOk: false },
-  { slug: "sat-cook", skillId: "line_cook", dayOffset: 5, startTime: "15:00", endTime: "23:00", notes: "Saturday line", daytimeOk: false },
-  { slug: "tue-host", skillId: "host", dayOffset: 1, startTime: "16:00", endTime: "22:00", notes: "Dinner door", daytimeOk: false },
-  { slug: "thu-host", skillId: "host", dayOffset: 3, startTime: "11:00", endTime: "16:00", notes: "Lunch door", daytimeOk: true },
-  { slug: "sat-host", skillId: "host", dayOffset: 5, startTime: "16:00", endTime: "22:00", notes: "Saturday door", daytimeOk: false },
-  { slug: "fri-bar", skillId: "bartender", dayOffset: 4, startTime: "17:00", endTime: "23:00", notes: "Friday bar", daytimeOk: false },
-  { slug: "sat-overnight", skillId: "bartender", dayOffset: 5, startTime: "23:00", endTime: "03:00", notes: "Overnight close", daytimeOk: false },
-  { slug: "sun-bar", skillId: "bartender", dayOffset: 6, startTime: "10:00", endTime: "16:00", notes: "Sunday service", daytimeOk: true },
+  {
+    slug: "mon-dinner",
+    skillId: "server",
+    dayOffset: 0,
+    startTime: "16:00",
+    endTime: "22:00",
+    notes: "Dinner service",
+    daytimeOk: false,
+  },
+  {
+    slug: "tue-dinner",
+    skillId: "server",
+    dayOffset: 1,
+    startTime: "16:00",
+    endTime: "22:00",
+    notes: "Dinner service",
+    daytimeOk: false,
+  },
+  {
+    slug: "wed-dinner",
+    skillId: "server",
+    dayOffset: 2,
+    startTime: "16:00",
+    endTime: "22:00",
+    notes: "Dinner service",
+    daytimeOk: false,
+  },
+  {
+    slug: "sun-brunch",
+    skillId: "server",
+    dayOffset: 6,
+    startTime: "09:00",
+    endTime: "15:00",
+    notes: "Sunday brunch",
+    daytimeOk: true,
+  },
+  {
+    slug: "mon-line",
+    skillId: "line_cook",
+    dayOffset: 0,
+    startTime: "11:00",
+    endTime: "19:00",
+    notes: "Prep and lunch",
+    daytimeOk: false,
+  },
+  {
+    slug: "thu-line",
+    skillId: "line_cook",
+    dayOffset: 3,
+    startTime: "14:00",
+    endTime: "22:00",
+    notes: "Dinner line",
+    daytimeOk: false,
+  },
+  {
+    slug: "sat-cook",
+    skillId: "line_cook",
+    dayOffset: 5,
+    startTime: "15:00",
+    endTime: "23:00",
+    notes: "Saturday line",
+    daytimeOk: false,
+  },
+  {
+    slug: "tue-host",
+    skillId: "host",
+    dayOffset: 1,
+    startTime: "16:00",
+    endTime: "22:00",
+    notes: "Dinner door",
+    daytimeOk: false,
+  },
+  {
+    slug: "thu-host",
+    skillId: "host",
+    dayOffset: 3,
+    startTime: "11:00",
+    endTime: "16:00",
+    notes: "Lunch door",
+    daytimeOk: true,
+  },
+  {
+    slug: "sat-host",
+    skillId: "host",
+    dayOffset: 5,
+    startTime: "16:00",
+    endTime: "22:00",
+    notes: "Saturday door",
+    daytimeOk: false,
+  },
+  {
+    slug: "fri-bar",
+    skillId: "bartender",
+    dayOffset: 4,
+    startTime: "17:00",
+    endTime: "23:00",
+    notes: "Friday bar",
+    daytimeOk: false,
+  },
+  {
+    slug: "sat-overnight",
+    skillId: "bartender",
+    dayOffset: 5,
+    startTime: "23:00",
+    endTime: "03:00",
+    notes: "Overnight close",
+    daytimeOk: false,
+  },
+  {
+    slug: "sun-bar",
+    skillId: "bartender",
+    dayOffset: 6,
+    startTime: "10:00",
+    endTime: "16:00",
+    notes: "Sunday service",
+    daytimeOk: true,
+  },
 ];
 
 function canWorkTemplate(email: string, template: ShiftTemplate) {

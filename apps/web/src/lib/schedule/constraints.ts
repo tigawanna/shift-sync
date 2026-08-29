@@ -98,7 +98,9 @@ export function evaluateAssignmentConstraints(input: {
   }
 
   for (const other of input.otherShifts) {
-    if (intervalsOverlap(input.candidateStartsAt, input.candidateEndsAt, other.startsAt, other.endsAt)) {
+    if (
+      intervalsOverlap(input.candidateStartsAt, input.candidateEndsAt, other.startsAt, other.endsAt)
+    ) {
       const where = other.locationName ? ` at ${other.locationName}` : "";
       failures.push({
         rule: "double_booking",
@@ -109,7 +111,9 @@ export function evaluateAssignmentConstraints(input: {
   }
 
   for (const other of input.otherShifts) {
-    if (intervalsOverlap(input.candidateStartsAt, input.candidateEndsAt, other.startsAt, other.endsAt)) {
+    if (
+      intervalsOverlap(input.candidateStartsAt, input.candidateEndsAt, other.startsAt, other.endsAt)
+    ) {
       continue;
     }
 
@@ -140,7 +144,8 @@ export function evaluateAssignmentConstraints(input: {
     if (!isFullyCoveredByAvailability(input)) {
       failures.push({
         rule: "availability",
-        message: "This shift falls outside their stated availability (checked in the location timezone).",
+        message:
+          "This shift falls outside their stated availability (checked in the location timezone).",
       });
     }
   }
@@ -192,7 +197,9 @@ function isFullyCoveredByAvailability(input: {
     const weekday = weekdayInZone(cursor, input.locationTimezone);
     const minute = minutesFromMidnight(cursor, input.locationTimezone);
     const windows = input.availability.filter((window) => window.weekday === weekday);
-    const covering = windows.find((window) => minute >= window.startMinute && minute < window.endMinute);
+    const covering = windows.find(
+      (window) => minute >= window.startMinute && minute < window.endMinute,
+    );
     if (!covering) return false;
 
     const ymd = formatDateInZone(cursor, input.locationTimezone);

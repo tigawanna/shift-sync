@@ -1,8 +1,21 @@
 import { getDb } from "@/lib/drizzle/client";
 import { location as locationTable } from "@/lib/drizzle/schema/locations-schema";
 import { scheduleWeek as scheduleWeekTable } from "@/lib/drizzle/schema/schedule-schema";
-import { EDIT_CUTOFF_HOURS, MIN_REST_HOURS, DAILY_HOURS_WARN, DAILY_HOURS_BLOCK, WEEKLY_HOURS_WARN, WEEKLY_HOURS_SOFT_CAP } from "@/lib/schedule/constraints";
-import { addDaysYmd, formatDateInZone, formatTimeInZone, monthGridDates, zonedWallTimeToUtc } from "@/lib/time/zoned";
+import {
+  EDIT_CUTOFF_HOURS,
+  MIN_REST_HOURS,
+  DAILY_HOURS_WARN,
+  DAILY_HOURS_BLOCK,
+  WEEKLY_HOURS_WARN,
+  WEEKLY_HOURS_SOFT_CAP,
+} from "@/lib/schedule/constraints";
+import {
+  addDaysYmd,
+  formatDateInZone,
+  formatTimeInZone,
+  monthGridDates,
+  zonedWallTimeToUtc,
+} from "@/lib/time/zoned";
 import { and, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 import type { ConstraintFailure, ConstraintWarning } from "@/lib/schedule/constraints";
 import type { ShiftAssignee, WeekShift, PersonCalendarWeekStat } from "./schedule.types";
@@ -19,13 +32,20 @@ export function weekBoundsForLocation(weekStart: string, timezone: string) {
   return rangeBoundsForLocation(weekStart, addDaysYmd(weekStart, 7), timezone);
 }
 
-export function rangeBoundsForLocation(startYmd: string, endExclusiveYmd: string, timezone: string) {
+export function rangeBoundsForLocation(
+  startYmd: string,
+  endExclusiveYmd: string,
+  timezone: string,
+) {
   const start = zonedWallTimeToUtc(startYmd, "00:00", timezone);
   const end = zonedWallTimeToUtc(endExclusiveYmd, "00:00", timezone);
   return { startMs: start.getTime(), endMs: end.getTime() };
 }
 
-export async function loadLocationBounds(locationIds: string[], weekStart: string): Promise<LocationBound[]> {
+export async function loadLocationBounds(
+  locationIds: string[],
+  weekStart: string,
+): Promise<LocationBound[]> {
   return loadLocationRangeBounds(locationIds, weekStart, addDaysYmd(weekStart, 7));
 }
 
@@ -175,7 +195,10 @@ export function mapShiftSqlRow(row: ShiftSqlRow, nowMs = Date.now()): WeekShift 
     assignees,
     locked: published && row.starts_at < cutoffMs,
     managers: row.manager_names
-      ? row.manager_names.split(",").map((name) => name.trim()).filter(Boolean)
+      ? row.manager_names
+          .split(",")
+          .map((name) => name.trim())
+          .filter(Boolean)
       : [],
     createdByName: row.created_by_name,
   };
@@ -202,9 +225,7 @@ export async function queryWeekShiftsSql(input: {
   const weekFilter = shiftInLocationWeeksSql(input.bounds);
   if (!weekFilter) return [];
 
-  const publishedClause = input.publishedOnly
-    ? sql`AND schedule_week.id IS NOT NULL`
-    : sql``;
+  const publishedClause = input.publishedOnly ? sql`AND schedule_week.id IS NOT NULL` : sql``;
   const assigneeClause = input.assigneeUserId
     ? sql`AND EXISTS (
         SELECT 1 FROM shift_assignment mine
@@ -409,9 +430,7 @@ export async function queryPersonCalendarWeekStatsSql(input: {
       }),
     ),
   );
-  const weekParts = input.weekStarts.map(
-    (weekStart) => sql`SELECT ${weekStart} AS week_start`,
-  );
+  const weekParts = input.weekStarts.map((weekStart) => sql`SELECT ${weekStart} AS week_start`);
 
   const locStartMs = Math.min(
     ...input.weekStarts.flatMap((weekStart) =>
@@ -749,7 +768,11 @@ export type FutureAssignmentSqlRow = {
   hours: number;
 };
 
-export async function queryFutureAssignmentsAtLocationsSql(userId: string, locationIds: string[], nowMs: number) {
+export async function queryFutureAssignmentsAtLocationsSql(
+  userId: string,
+  locationIds: string[],
+  nowMs: number,
+) {
   if (locationIds.length === 0) return [];
   return sqlAll<FutureAssignmentSqlRow>(sql`
     SELECT
@@ -793,7 +816,11 @@ export async function queryHoursAtLocationsInRangeSql(
   return Number(row?.hours ?? 0);
 }
 
-export async function queryLockedShiftExistsSql(locationId: string, weekStart: string, cutoffMs: number) {
+export async function queryLockedShiftExistsSql(
+  locationId: string,
+  weekStart: string,
+  cutoffMs: number,
+) {
   const [row] = await sqlAll<{ found: number }>(sql`
     SELECT 1 AS found
     FROM shift
@@ -969,7 +996,9 @@ export async function queryOverlappingShiftsSql(input: {
   return rows.map((row) => mapShiftSqlRow(row));
 }
 
-export async function queryOverlappingPeopleSql(bounds: LocationBound[]): Promise<PeopleAssignmentSqlRow[]> {
+export async function queryOverlappingPeopleSql(
+  bounds: LocationBound[],
+): Promise<PeopleAssignmentSqlRow[]> {
   const rangeFilter = shiftOverlapsLocationRangesSql(bounds);
   if (!rangeFilter) return [];
 

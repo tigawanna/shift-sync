@@ -34,7 +34,11 @@ export function WeekScheduleBoard({
                 <p className="text-base-content/60 text-xs tabular-nums">{day.date.slice(5)}</p>
               </div>
               {onAddDay ? (
-                <button type="button" className="btn btn-ghost btn-xs" onClick={() => onAddDay(day.date)}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-xs"
+                  onClick={() => onAddDay(day.date)}
+                >
                   Add
                 </button>
               ) : null}
@@ -60,7 +64,9 @@ export function WeekScheduleBoard({
                         className={`mt-1 text-[11px] font-medium ${understaffed ? "text-error" : "opacity-80"}`}
                       >
                         {coverageLabel(shift)}
-                        {shift.assignees.length > 0 ? ` · ${shift.assignees.map((person) => person.name).join(", ")}` : ""}
+                        {shift.assignees.length > 0
+                          ? ` · ${shift.assignees.map((person) => person.name).join(", ")}`
+                          : ""}
                         {shift.locked ? " · locked" : ""}
                       </p>
                     </>
@@ -77,7 +83,9 @@ export function WeekScheduleBoard({
                           {body}
                         </button>
                       ) : (
-                        <div className={`rounded-xl border px-2.5 py-2 ${skillAccentClass(shift.skillId)}`}>
+                        <div
+                          className={`rounded-xl border px-2.5 py-2 ${skillAccentClass(shift.skillId)}`}
+                        >
                           {body}
                         </div>
                       )}

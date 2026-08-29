@@ -67,9 +67,7 @@ export function ScheduleMonthView({
           return (
             <p className="leading-tight">
               <span className="text-lg font-semibold tabular-nums sm:text-xl">{count}</span>
-              <span className="text-base-content/55 mt-0.5 block text-[11px]">
-                working
-              </span>
+              <span className="text-base-content/55 mt-0.5 block text-[11px]">working</span>
             </p>
           );
         }}
@@ -117,7 +115,10 @@ function OverviewDayPanel({
           const open = openLocationId === block.location.id;
           const peopleCount = block.people.length;
           return (
-            <li key={block.location.id} className="border-base-content/10 overflow-hidden rounded-xl border">
+            <li
+              key={block.location.id}
+              className="border-base-content/10 overflow-hidden rounded-xl border"
+            >
               <button
                 type="button"
                 className="hover:bg-base-200/60 flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
@@ -130,7 +131,9 @@ function OverviewDayPanel({
                     {peopleCount} {peopleCount === 1 ? "person" : "people"}
                   </span>
                 </span>
-                <ChevronDown className={`text-base-content/50 size-4 transition-transform ${open ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`text-base-content/50 size-4 transition-transform ${open ? "rotate-180" : ""}`}
+                />
               </button>
               {open ? (
                 <ul className="border-base-content/10 flex flex-col gap-3 border-t px-4 py-3">

@@ -33,11 +33,7 @@ export function RouterErrorComponent({ error, reset }: RouterErrorComponentProps
           <span className="font-display text-error text-2xl font-bold tracking-tight">!</span>
         </span>
       }
-      title={
-        <>
-          Something failed
-        </>
-      }
+      title={<>Something failed</>}
       description="This page hit a snag on our end. Give it another moment, or head back home while we sort things out."
       actions={
         <>
