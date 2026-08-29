@@ -6,11 +6,15 @@ import { ROLE } from "@/lib/better-auth/roles";
 import { formatDate } from "@/utils/date";
 import { Link } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import type { DashboardPersonTo } from "../../../-components/team/person-routes";
 
 type UsersTableProps = {
   data: TeamMember[] | undefined;
   isLoading?: boolean;
+  emptyTitle?: string;
   emptyMessage?: string;
+  memberTo?: DashboardPersonTo;
+  showRole?: boolean;
   sortBy: TeamMemberSortBy;
   sortDirection: SortDirection;
   onSort: (column: TeamMemberSortBy) => void;
@@ -66,20 +70,23 @@ function SortableHeader({
 export function UsersTable({
   data,
   isLoading = false,
+  emptyTitle = "No users yet",
   emptyMessage = "No managers or staff yet. Use the buttons above to create accounts.",
+  memberTo = "/admin/users/$userId",
+  showRole = true,
   sortBy,
   sortDirection,
   onSort,
 }: UsersTableProps) {
   if (isLoading) {
-    return <UsersTableSkeleton />;
+    return <UsersTableSkeleton showRole={showRole} />;
   }
 
   if (!data || data.length === 0) {
     return (
       <Empty data-test="users-empty">
         <EmptyHeader>
-          <EmptyTitle>No users yet</EmptyTitle>
+          <EmptyTitle>{emptyTitle}</EmptyTitle>
           <EmptyDescription>{emptyMessage}</EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -108,13 +115,15 @@ export function UsersTable({
               sortDirection={sortDirection}
               onSort={onSort}
             />
-            <SortableHeader
-              label="Role"
-              column="role"
-              sortBy={sortBy}
-              sortDirection={sortDirection}
-              onSort={onSort}
-            />
+            {showRole ? (
+              <SortableHeader
+                label="Role"
+                column="role"
+                sortBy={sortBy}
+                sortDirection={sortDirection}
+                onSort={onSort}
+              />
+            ) : null}
             <SortableHeader
               label="Joined"
               column="createdAt"
@@ -129,7 +138,7 @@ export function UsersTable({
             <tr key={member.id} className="bg-base-100/70 hover:bg-base-200/40 transition-colors">
               <td className="px-4 py-3 font-medium">
                 <Link
-                  to="/admin/users/$userId"
+                  to={memberTo}
                   params={{ userId: member.id }}
                   className="hover:text-primary transition-colors"
                 >
@@ -137,13 +146,15 @@ export function UsersTable({
                 </Link>
               </td>
               <td className="text-base-content/70 px-4 py-3">{member.email}</td>
-              <td className="px-4 py-3">
-                <span
-                  className={`rounded-md px-2.5 py-1 text-xs font-medium ${roleBadgeClass(member.role)}`}
-                >
-                  {roleLabel(member.role)}
-                </span>
-              </td>
+              {showRole ? (
+                <td className="px-4 py-3">
+                  <span
+                    className={`rounded-md px-2.5 py-1 text-xs font-medium ${roleBadgeClass(member.role)}`}
+                  >
+                    {roleLabel(member.role)}
+                  </span>
+                </td>
+              ) : null}
               <td className="text-base-content/70 px-4 py-3">{formatDate(member.createdAt)}</td>
             </tr>
           ))}
@@ -153,7 +164,7 @@ export function UsersTable({
   );
 }
 
-function UsersTableSkeleton() {
+function UsersTableSkeleton({ showRole }: { showRole: boolean }) {
   return (
     <div className="border-base-content/10 overflow-hidden rounded-2xl border">
       <table className="w-full text-left text-sm">
@@ -161,7 +172,7 @@ function UsersTableSkeleton() {
           <tr>
             <th className="px-4 py-3 font-medium">Name</th>
             <th className="px-4 py-3 font-medium">Email</th>
-            <th className="px-4 py-3 font-medium">Role</th>
+            {showRole ? <th className="px-4 py-3 font-medium">Role</th> : null}
             <th className="px-4 py-3 font-medium">Joined</th>
           </tr>
         </thead>
@@ -174,9 +185,11 @@ function UsersTableSkeleton() {
               <td className="px-4 py-3">
                 <Skeleton className="h-4 w-44" />
               </td>
-              <td className="px-4 py-3">
-                <Skeleton className="h-6 w-16 rounded-md" />
-              </td>
+              {showRole ? (
+                <td className="px-4 py-3">
+                  <Skeleton className="h-6 w-16 rounded-md" />
+                </td>
+              ) : null}
               <td className="px-4 py-3">
                 <Skeleton className="h-4 w-24" />
               </td>

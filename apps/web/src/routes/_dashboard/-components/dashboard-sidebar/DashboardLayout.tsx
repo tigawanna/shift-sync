@@ -16,7 +16,7 @@ import {
 import { QueryActivityNprogress } from "@/components/navigation/nprogress/QueryActivityNprogress";
 import { ImpersonationBanner } from "../ImpersonationBanner";
 import { TSRBreadCrumbs } from "@/lib/tanstack/router/TSRBreadCrumbs";
-import { isAdminUser, useViewer } from "@/data-access-layer/auth/viewer";
+import { useViewer } from "@/data-access-layer/auth/viewer";
 import { getUserAppRole } from "@/lib/better-auth/roles";
 import { AppConfig } from "@/utils/system";
 import { Outlet } from "@tanstack/react-router";
@@ -28,21 +28,16 @@ interface DashboardLayoutProps {
   sidebarLabel: string;
   accountRoutes: SidebarItem[];
   accountLabel: string;
-  adminRoutes: SidebarItem[];
-  adminLabel: string;
 }
 
 export function DashboardLayout({
   sidebarLabel,
   accountRoutes,
   accountLabel,
-  adminRoutes,
-  adminLabel,
 }: DashboardLayoutProps) {
   const { viewer } = useViewer();
   const role = getUserAppRole(viewer.user);
   const sidebarRoutes = getDashboardPrimaryRoutes(role);
-  const visibleAdminRoutes = isAdminUser(viewer.user) ? adminRoutes : [];
 
   return (
     <SidebarProvider defaultOpen={false} className="h-svh overflow-hidden">
@@ -64,14 +59,6 @@ export function DashboardLayout({
                 {accountLabel}
               </SidebarGroupLabel>
               <SidebarLinks links={accountRoutes} />
-            </SidebarGroup>
-          ) : null}
-          {visibleAdminRoutes.length > 0 ? (
-            <SidebarGroup className="bg-base-300">
-              <SidebarGroupLabel className="text-sm font-semibold tracking-wide">
-                {adminLabel}
-              </SidebarGroupLabel>
-              <SidebarLinks links={visibleAdminRoutes} />
             </SidebarGroup>
           ) : null}
         </SidebarContent>

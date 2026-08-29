@@ -23,6 +23,7 @@ type LocationsPage = {
   totalPages: number;
 };
 
+/** Name/address LIKE filter for location lists. */
 function buildSearchFilter(search: string | undefined): SQL | undefined {
   const trimmed = search?.trim();
   if (!trimmed) return undefined;
@@ -69,6 +70,7 @@ function mapLocation(row: LocationWithAssignments): LocationRecord {
   };
 }
 
+/** Nested `with` so each location loads assigned users for manager/staff counts. */
 const locationWithAssignments = {
   userLocations: {
     with: {
@@ -77,6 +79,7 @@ const locationWithAssignments = {
   },
 } as const;
 
+/** One location plus its userLocation → user relations. */
 async function findLocationWithAssignments(locationId: string) {
   const db = await getDb();
   return db.query.location.findFirst({
@@ -85,6 +88,7 @@ async function findLocationWithAssignments(locationId: string) {
   });
 }
 
+/** Admin directory: every restaurant, paginated, with assignment counts. */
 async function listAllLocations(input: ListLocationsInput): Promise<LocationsPage> {
   const page = input.page ?? 1;
   const perPage = ADMIN_LIST_PER_PAGE;
@@ -121,6 +125,7 @@ async function listAllLocations(input: ListLocationsInput): Promise<LocationsPag
   };
 }
 
+/** Manager directory: only restaurants this manager is assigned to. */
 async function listManagerLocations(
   managerId: string,
   input: ListLocationsInput,
@@ -178,6 +183,7 @@ async function listManagerLocations(
   };
 }
 
+/** Lists locations for the signed-in admin (all) or manager (assigned). */
 export const listLocations = createServerFn({ method: "GET" })
   .validator((data: ListLocationsInput) => listLocationsInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -190,6 +196,7 @@ export const listLocations = createServerFn({ method: "GET" })
     return listManagerLocations(session.user.id, data);
   });
 
+/** Admin-only: inserts a restaurant row. */
 export const createLocation = createServerFn({ method: "POST" })
   .validator((data: CreateLocationInput) => createLocationInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -215,6 +222,7 @@ export const createLocation = createServerFn({ method: "POST" })
     return mapLocation({ ...row, userLocations: [] });
   });
 
+/** Admin-only: patches name, timezone, or address. */
 export const updateLocation = createServerFn({ method: "POST" })
   .validator((data: UpdateLocationInput) => updateLocationInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -249,6 +257,7 @@ export const updateLocation = createServerFn({ method: "POST" })
     return mapLocation(withAssignments);
   });
 
+/** Distinct timezones already used by restaurants. */
 export const listLocationTimezones = createServerFn({ method: "GET" }).handler(async () => {
   await requireSessionRoles([ROLE.admin, ROLE.manager]);
 
@@ -261,6 +270,7 @@ export const listLocationTimezones = createServerFn({ method: "GET" }).handler(a
   return rows.map((row) => row.timezone);
 });
 
+/** Admin picker: every location without pagination. */
 export const listAllLocationsForAssignment = createServerFn({ method: "GET" }).handler(async () => {
   await requireSessionRoles([ROLE.admin]);
 
@@ -278,6 +288,7 @@ export const listAllLocationsForAssignment = createServerFn({ method: "GET" }).h
   return rows;
 });
 
+/** Locations the viewer may schedule: all for admin, assigned for manager. */
 export const listAccessibleLocations = createServerFn({ method: "GET" }).handler(async () => {
   const { session, role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
   const db = await getDb();
@@ -302,6 +313,7 @@ export const listAccessibleLocations = createServerFn({ method: "GET" }).handler
     .orderBy(asc(locationTable.name));
 });
 
+/** Counts restaurants (and distinct timezones) in the viewer's scope. */
 export const getLocationSummary = createServerFn({ method: "GET" }).handler(async () => {
   const { session, role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
   const db = await getDb();

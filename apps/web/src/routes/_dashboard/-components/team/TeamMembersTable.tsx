@@ -4,12 +4,13 @@ import { ROLE, getUserAppRole } from "@/lib/better-auth/roles";
 import { formatDate } from "@/utils/date";
 import { Link } from "@tanstack/react-router";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
+import type { DashboardPersonTo } from "./person-routes";
 
 type TeamMembersTableProps = {
   members: TeamMember[];
   emptyMessage: string;
   showImpersonate?: boolean;
-  memberTo?: "/admin/users/$userId" | "/manager/team/$userId";
+  memberTo?: DashboardPersonTo;
 };
 
 function roleBadgeClass(role: TeamMember["role"]) {

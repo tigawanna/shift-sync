@@ -24,6 +24,7 @@ export const DEFAULT_TEAM_MEMBER_SORT_DIRECTION = "desc" satisfies SortDirection
 export const listTeamMembersInputSchema = z.object({
   page: z.number().int().min(1).optional(),
   search: z.string().optional(),
+  role: z.enum(TEAM_MEMBER_ROLES).optional(),
   sortBy: z.enum(TEAM_MEMBER_SORT_KEYS).optional(),
   sortDirection: z.enum(SORT_DIRECTIONS).optional(),
 });
@@ -66,6 +67,7 @@ export type TeamMemberDetail = TeamMember & {
 
 export const getTeamMemberInputSchema = z.object({
   userId: z.string().min(1),
+  role: z.enum(TEAM_MEMBER_ROLES).optional(),
 });
 
 export const updateTeamMemberLocationsInputSchema = z.object({

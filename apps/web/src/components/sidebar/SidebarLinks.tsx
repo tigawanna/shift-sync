@@ -71,14 +71,14 @@ export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
           );
         }
 
-        const isActive = routeMatches(item.href);
+        const isActive = sidebarHrefMatchesPathname(pathname, item.href, false);
 
         return (
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton
               isActive={isActive}
               tooltip={item.title}
-              render={<Link to={item.href} />}
+              render={<Link to={item.href} activeOptions={{ exact: true }} />}
             >
               {item.icon && <item.icon />}
               <span>{item.title}</span>

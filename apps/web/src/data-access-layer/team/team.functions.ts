@@ -30,6 +30,7 @@ import {
   type UpdateTeamMemberLocationsInput,
 } from "./team.types";
 
+/** Maps a Better Auth user row into the team-directory shape. */
 function mapTeamMember(row: typeof userTable.$inferSelect): TeamMember {
   return {
     id: row.id,
@@ -41,6 +42,7 @@ function mapTeamMember(row: typeof userTable.$inferSelect): TeamMember {
   };
 }
 
+/** Drizzle ORDER BY for the team directory columns. */
 function buildOrderBy(sortBy: TeamMemberSortBy, sortDirection: SortDirection) {
   const column = {
     name: userTable.name,
@@ -51,6 +53,7 @@ function buildOrderBy(sortBy: TeamMemberSortBy, sortDirection: SortDirection) {
   return sortDirection === "asc" ? asc(column) : desc(column);
 }
 
+/** Name/email LIKE filter for the team directory. */
 function buildSearchFilter(search: string | undefined): SQL | undefined {
   const trimmed = search?.trim();
   if (!trimmed) return undefined;
@@ -59,6 +62,7 @@ function buildSearchFilter(search: string | undefined): SQL | undefined {
   return or(like(userTable.name, pattern), like(userTable.email, pattern));
 }
 
+/** Pages users the viewer may see: admins by role, managers only staff at their locations. */
 async function listMembersForViewer(
   input: ListTeamMembersInput,
   viewerRole: typeof ROLE.admin | typeof ROLE.manager,
@@ -69,15 +73,18 @@ async function listMembersForViewer(
   const offset = (page - 1) * perPage;
 
   const roleFilter =
-    viewerRole === ROLE.admin
-      ? or(eq(userTable.role, ROLE.manager), eq(userTable.role, ROLE.staff))
-      : eq(userTable.role, ROLE.staff);
+    viewerRole === ROLE.manager
+      ? eq(userTable.role, ROLE.staff)
+      : input.role
+        ? eq(userTable.role, input.role)
+        : or(eq(userTable.role, ROLE.manager), eq(userTable.role, ROLE.staff));
 
   const searchFilter = buildSearchFilter(input.search);
   const db = await getDb();
   const managerLoc = alias(userLocation, "manager_loc");
   const staffLoc = alias(userLocation, "staff_loc");
 
+  // Managers only see staff who share at least one location assignment.
   const locationScope =
     viewerRole === ROLE.admin
       ? undefined
@@ -115,6 +122,7 @@ async function listMembersForViewer(
       .orderBy(buildOrderBy(sortBy, sortDirection))
       .limit(perPage)
       .offset(offset),
+    // Matching count so pagination knows the full result size.
     db.select({ total: count() }).from(userTable).where(where),
   ]);
 
@@ -130,6 +138,7 @@ async function listMembersForViewer(
   } satisfies TeamMembersPage;
 }
 
+/** Lists managers/staff for the signed-in admin or manager. */
 export const listTeamMembers = createServerFn({ method: "GET" })
   .validator((data: ListTeamMembersInput) => listTeamMembersInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -141,6 +150,7 @@ export const listTeamMembers = createServerFn({ method: "GET" })
     );
   });
 
+/** Admin-only: creates a manager or staff account via Better Auth. */
 export const createTeamUser = createServerFn({ method: "POST" })
   .validator((data: CreateTeamUserInput) => createTeamUserInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -178,6 +188,7 @@ export const createTeamUser = createServerFn({ method: "POST" })
     });
   });
 
+/** Loads a manager/staff user and the restaurants they are assigned to. */
 async function getTeamMemberDetail(userId: string): Promise<TeamMemberDetail> {
   const db = await getDb();
 
@@ -192,6 +203,7 @@ async function getTeamMemberDetail(userId: string): Promise<TeamMemberDetail> {
     throw new Error("Only managers and staff can be managed here.");
   }
 
+  // Restaurants this person is assigned to, for the detail panel.
   const locationRows = await db
     .select({
       id: locationTable.id,
@@ -215,11 +227,15 @@ async function getTeamMemberDetail(userId: string): Promise<TeamMemberDetail> {
   };
 }
 
+/** Returns one team member; managers can only open staff at their locations. */
 export const getTeamMember = createServerFn({ method: "GET" })
   .validator((data: GetTeamMemberInput) => getTeamMemberInputSchema.parse(data))
   .handler(async ({ data }) => {
     const { session, role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
     const detail = await getTeamMemberDetail(data.userId);
+    if (data.role && detail.role !== data.role) {
+      throw new Error("User not found.");
+    }
     if (role === ROLE.manager) {
       const db = await getDb();
       const staffLoc = alias(userLocation, "staff_loc");
@@ -230,6 +246,7 @@ export const getTeamMember = createServerFn({ method: "GET" })
         .where(
           and(
             eq(staffLoc.userId, data.userId),
+            // Staff must share a location with the viewing manager.
             exists(
               db
                 .select({ id: managerLoc.id })
@@ -251,6 +268,7 @@ export const getTeamMember = createServerFn({ method: "GET" })
     return detail;
   });
 
+/** Replaces a person's location assignments after blocking-shift preview. */
 export const updateTeamMemberLocations = createServerFn({ method: "POST" })
   .validator((data: UpdateTeamMemberLocationsInput) =>
     updateTeamMemberLocationsInputSchema.parse(data),

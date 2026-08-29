@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { DashboardPageHeader } from "../DashboardPageHeader";
+import type { DashboardPersonTo } from "../team/person-routes";
 import { ScheduleMonthView } from "./ScheduleMonthView";
 
 type ScheduleBirdsEyeProps = {
@@ -9,7 +10,7 @@ type ScheduleBirdsEyeProps = {
   onSelectDate: (date: string) => void;
   title: string;
   description: string;
-  personTo: "/admin/users/$userId" | "/manager/team/$userId";
+  personTo: DashboardPersonTo;
   locationSelect?: ReactNode;
 };
 

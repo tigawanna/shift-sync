@@ -15,6 +15,7 @@ const impersonateUserInputSchema = z.object({
 
 export type ImpersonateUserInput = z.infer<typeof impersonateUserInputSchema>;
 
+/** Starts impersonating a staff (or manager, for admins) account. */
 export const impersonateUser = createServerFn({ method: "POST" })
   .validator((data: ImpersonateUserInput) => impersonateUserInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -60,6 +61,7 @@ export const impersonateUser = createServerFn({ method: "POST" })
     return { userId: data.userId, role: targetRole };
   });
 
+/** Ends the current impersonation session. */
 export const stopImpersonating = createServerFn({ method: "POST" }).handler(async () => {
   const headers = getRequestHeaders();
   const auth = await getAuth();

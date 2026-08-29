@@ -67,6 +67,7 @@ import {
   type WeekSchedule,
 } from "./schedule.types";
 
+/** Managers must be assigned to the location; admins skip this check. */
 async function assertLocationAccess(userId: string, role: string, locationId: string) {
   if (role === ROLE.admin) return;
 
@@ -82,6 +83,7 @@ async function assertLocationAccess(userId: string, role: string, locationId: st
   }
 }
 
+/** Managers may only inspect staff who share a location; admins skip this check. */
 async function assertCanViewUser(viewerId: string, role: string, targetUserId: string) {
   if (role === ROLE.admin) return;
 
@@ -111,6 +113,7 @@ async function assertCanViewUser(viewerId: string, role: string, targetUserId: s
   }
 }
 
+/** Loads a location row or throws. */
 async function getLocationOrThrow(locationId: string) {
   const db = await getDb();
   const [row] = await db
@@ -126,6 +129,7 @@ async function getLocationOrThrow(locationId: string) {
   return row;
 }
 
+/** Converts wall-clock date/time in the location TZ to UTC start/end instants. */
 function resolveShiftRange(input: {
   startDate: string;
   startTime: string;
@@ -150,6 +154,7 @@ function resolveShiftRange(input: {
   return { startsAt, endsAt };
 }
 
+/** Restaurants the viewer may schedule: all for admin, assigned for manager. */
 async function getAccessibleLocations(userId: string, role: string) {
   const db = await getDb();
   if (role === ROLE.admin) {
@@ -175,6 +180,7 @@ async function getAccessibleLocations(userId: string, role: string) {
     .orderBy(locationTable.name);
 }
 
+/** Week board payload: location, published flag, and shifts grouped by day. */
 async function loadWeekSchedule(locationId: string, weekStart: string): Promise<WeekSchedule> {
   const location = await getLocationOrThrow(locationId);
   const publication = await isWeekPublished(locationId, weekStart);
@@ -191,6 +197,7 @@ async function loadWeekSchedule(locationId: string, weekStart: string): Promise<
   };
 }
 
+/** Whether this location-week has a schedule_week publish row. */
 async function isWeekPublished(locationId: string, weekStart: string) {
   const db = await getDb();
   const [row] = await db
@@ -207,6 +214,7 @@ async function isWeekPublished(locationId: string, weekStart: string) {
   return row ?? null;
 }
 
+/** Shift plus location, week start, and published flag for mutation guards. */
 async function getShiftContext(shiftId: string) {
   const db = await getDb();
   const [row] = await db
@@ -231,17 +239,20 @@ async function getShiftContext(shiftId: string) {
   return { ...row, weekStart, published: Boolean(publication) };
 }
 
+/** Blocks edits on published shifts inside the 48-hour cutoff. */
 function assertUnlocked(startsAt: Date, published: boolean, action: string) {
   if (published && isPastEditCutoff(startsAt)) {
     throw new Error(`Cannot ${action}: this published shift is inside the 48-hour cutoff.`);
   }
 }
 
+/** Catalog of skills used on the schedule board. */
 export const listSkills = createServerFn({ method: "GET" }).handler(async () => {
   await requireSessionRoles([ROLE.admin, ROLE.manager, ROLE.staff]);
   return SKILLS;
 });
 
+/** Loads one location-week for the schedule board. */
 export const listWeekSchedule = createServerFn({ method: "GET" })
   .validator((data: unknown) => listWeekScheduleInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -250,6 +261,7 @@ export const listWeekSchedule = createServerFn({ method: "GET" })
     return loadWeekSchedule(data.locationId, data.weekStart);
   });
 
+/** Inserts a shift on a location week the viewer can manage. */
 export const createShift = createServerFn({ method: "POST" })
   .validator((data: CreateShiftInput) => createShiftInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -279,6 +291,7 @@ export const createShift = createServerFn({ method: "POST" })
     return loadWeekSchedule(data.locationId, weekStart);
   });
 
+/** Updates times, skill, headcount, or notes on an unlocked shift. */
 export const updateShift = createServerFn({ method: "POST" })
   .validator((data: UpdateShiftInput) => updateShiftInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -317,6 +330,7 @@ export const updateShift = createServerFn({ method: "POST" })
     return loadWeekSchedule(context.shift.locationId, weekStart);
   });
 
+/** Deletes an unlocked shift and returns the refreshed week. */
 export const deleteShift = createServerFn({ method: "POST" })
   .validator((data: unknown) => shiftIdInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -330,6 +344,7 @@ export const deleteShift = createServerFn({ method: "POST" })
     return loadWeekSchedule(context.shift.locationId, context.weekStart);
   });
 
+/** Certified staff at this location with overlap/rest/hours eligibility flags. */
 async function staffCandidatesForShift(context: Awaited<ReturnType<typeof getShiftContext>>) {
   const startsAt = context.shift.startsAt;
   const endsAt = context.shift.endsAt;
@@ -371,6 +386,7 @@ async function staffCandidatesForShift(context: Awaited<ReturnType<typeof getShi
   });
 }
 
+/** Staff picker for assigning someone to a shift. */
 export const listStaffForShift = createServerFn({ method: "GET" })
   .validator((data: unknown) => shiftIdInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -380,6 +396,7 @@ export const listStaffForShift = createServerFn({ method: "GET" })
     return staffCandidatesForShift(context);
   });
 
+/** Assigns staff if constraints pass; otherwise returns failures and suggestions. */
 async function performAssign(input: {
   actorId: string;
   role: string;
@@ -418,6 +435,7 @@ async function performAssign(input: {
   return { ok: true, warnings: personFlags.warnings };
 }
 
+/** Assigns a person to a shift from the week board. */
 export const assignStaffToShift = createServerFn({ method: "POST" })
   .validator((data: unknown) => assignStaffInputSchema.parse(data))
   .handler(async ({ data }): Promise<AssignStaffResult> => {
@@ -430,6 +448,7 @@ export const assignStaffToShift = createServerFn({ method: "POST" })
     });
   });
 
+/** Ensures the staff member has a user_location row at this restaurant. */
 async function certifyStaffAtLocation(userId: string, locationId: string) {
   const db = await getDb();
   const [existing] = await db
@@ -448,6 +467,7 @@ async function certifyStaffAtLocation(userId: string, locationId: string) {
     .onConflictDoNothing();
 }
 
+/** Shifts overlapping a calendar day in the viewer's locations. */
 export const listDayAssignableShifts = createServerFn({ method: "GET" })
   .validator((data: unknown) => listDayAssignableShiftsInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -462,6 +482,7 @@ export const listDayAssignableShifts = createServerFn({ method: "GET" })
     return queryOverlappingShiftsSql({ bounds });
   });
 
+/** Assigns from a person calendar, certifying them at the shift's location first. */
 export const assignStaffToCalendarShift = createServerFn({ method: "POST" })
   .validator((data: unknown) => assignStaffInputSchema.parse(data))
   .handler(async ({ data }): Promise<AssignStaffResult> => {
@@ -478,6 +499,7 @@ export const assignStaffToCalendarShift = createServerFn({ method: "POST" })
     });
   });
 
+/** Removes a shift assignment. */
 export const unassignStaffFromShift = createServerFn({ method: "POST" })
   .validator((data: unknown) => unassignStaffInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -499,6 +521,7 @@ export const unassignStaffFromShift = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+/** Publishes a location week so staff can see it. */
 export const publishWeek = createServerFn({ method: "POST" })
   .validator((data: unknown) => publishWeekInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -522,6 +545,7 @@ export const publishWeek = createServerFn({ method: "POST" })
     return loadWeekSchedule(data.locationId, data.weekStart);
   });
 
+/** Unpublishes a week unless any shift is inside the 48-hour cutoff. */
 export const unpublishWeek = createServerFn({ method: "POST" })
   .validator((data: unknown) => publishWeekInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -549,6 +573,7 @@ export const unpublishWeek = createServerFn({ method: "POST" })
     return loadWeekSchedule(data.locationId, data.weekStart);
   });
 
+/** Signed-in staff (or admin) month calendar of their own published shifts. */
 export const listMySchedule = createServerFn({ method: "GET" })
   .validator((data: unknown) => listMyScheduleInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -595,6 +620,7 @@ export const listMySchedule = createServerFn({ method: "GET" })
     };
   });
 
+/** Per-day staff counts for the month overview calendar. */
 export const listMonthOverview = createServerFn({ method: "GET" })
   .validator((data: unknown) => listMonthOverviewInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -632,6 +658,7 @@ export const listMonthOverview = createServerFn({ method: "GET" })
     };
   });
 
+/** Who is working where on one date, grouped by location. */
 export const listOverviewDay = createServerFn({ method: "GET" })
   .validator((data: unknown) => listOverviewDayInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -689,6 +716,7 @@ export const listOverviewDay = createServerFn({ method: "GET" })
     };
   });
 
+/** Another person's month calendar for admin/manager detail pages. */
 export const listUserSchedule = createServerFn({ method: "GET" })
   .validator((data: unknown) => listUserScheduleInputSchema.parse(data))
   .handler(async ({ data }) => {
@@ -748,6 +776,7 @@ export const listUserSchedule = createServerFn({ method: "GET" })
     };
   });
 
+/** Checks whether a proposed location-assignment change would leave covering shifts. */
 export const previewLocationMove = createServerFn({ method: "GET" })
   .validator((data: unknown) => previewLocationMoveInputSchema.parse(data))
   .handler(async ({ data }) => {

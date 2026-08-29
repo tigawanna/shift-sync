@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { AppConfig } from "@/utils/system";
 import { createFileRoute } from "@tanstack/react-router";
-import { CalendarDays, MapPin, Users } from "lucide-react";
+import { CalendarDays, MapPin, UserCog, Users } from "lucide-react";
 import { DashboardPageHeader } from "../-components/DashboardPageHeader";
 
 export const Route = createFileRoute("/_dashboard/admin/")({
@@ -41,7 +41,19 @@ function AdminOverviewPage() {
             <h2 className="text-lg font-semibold tracking-tight">Users</h2>
           </div>
           <p className="text-base-content/70 text-sm">
-            Create managers and staff, search the team directory, and manage location assignments.
+            Create staff accounts, search the directory, and manage location assignments.
+          </p>
+        </Link>
+        <Link
+          to="/admin/managers"
+          className="border-base-content/10 bg-base-100/70 hover:border-base-content/20 flex flex-col gap-3 rounded-2xl border p-6 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <UserCog className="text-base-content/70 size-5" />
+            <h2 className="text-lg font-semibold tracking-tight">Managers</h2>
+          </div>
+          <p className="text-base-content/70 text-sm">
+            Create and oversee location managers. They stay in their own dashboard — you stay here.
           </p>
         </Link>
         <Link

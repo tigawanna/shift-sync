@@ -1,43 +1,28 @@
 import type { SidebarItem } from "@/components/sidebar/types";
 import { ROLE, type AppRole } from "@/lib/better-auth/roles";
-import { CalendarDays, LayoutDashboard, Shield } from "lucide-react";
+import { CalendarDays, LayoutDashboard, MapPin, UserCog, Users } from "lucide-react";
 
 export const dashboard_account_routes = [] satisfies SidebarItem[];
 
-export const dashboard_admin_routes = [
-  {
-    title: "Administration",
-    href: "/admin",
-    icon: Shield,
-    sublinks: [
-      { title: "Overview", href: "/admin" },
-      { title: "Schedule", href: "/admin/schedule" },
-      { title: "Users", href: "/admin/users" },
-      { title: "Locations", href: "/admin/locations" },
-    ],
-  },
-] satisfies SidebarItem[];
-
 export function getDashboardPrimaryRoutes(role: AppRole): SidebarItem[] {
-  const routes: SidebarItem[] = [];
-
-  if (role === ROLE.admin || role === ROLE.manager) {
-    routes.push({
-      title: "Manager",
-      href: "/manager",
-      icon: LayoutDashboard,
-      sublinks: [
-        { title: "Overview", href: "/manager" },
-        { title: "Schedule", href: "/manager/schedule" },
-        { title: "Team", href: "/manager/team" },
-        { title: "Locations", href: "/manager/locations" },
-      ],
-    });
+  if (role === ROLE.admin) {
+    return [
+      { title: "Overview", href: "/admin", icon: LayoutDashboard },
+      { title: "Schedule", href: "/admin/schedule", icon: CalendarDays },
+      { title: "Users", href: "/admin/users", icon: Users },
+      { title: "Managers", href: "/admin/managers", icon: UserCog },
+      { title: "Locations", href: "/admin/locations", icon: MapPin },
+    ];
   }
 
-  if (role === ROLE.admin || role === ROLE.staff) {
-    routes.push({ title: "My schedule", href: "/staff", icon: CalendarDays });
+  if (role === ROLE.manager) {
+    return [
+      { title: "Overview", href: "/manager", icon: LayoutDashboard },
+      { title: "Schedule", href: "/manager/schedule", icon: CalendarDays },
+      { title: "Team", href: "/manager/team", icon: Users },
+      { title: "Locations", href: "/manager/locations", icon: MapPin },
+    ];
   }
 
-  return routes;
+  return [{ title: "My schedule", href: "/staff", icon: CalendarDays }];
 }

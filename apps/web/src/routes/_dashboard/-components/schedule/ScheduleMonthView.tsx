@@ -8,6 +8,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Suspense, useState } from "react";
+import type { DashboardPersonTo } from "../team/person-routes";
 import { MonthCalendarGrid } from "./MonthCalendarGrid";
 import { shiftTimeLabel } from "./shift-display";
 
@@ -16,7 +17,7 @@ type ScheduleMonthViewProps = {
   selectedDate?: string;
   onMonthChange: (month: string) => void;
   onSelectDate: (date: string) => void;
-  personTo: "/admin/users/$userId" | "/manager/team/$userId";
+  personTo: DashboardPersonTo;
 };
 
 export function ScheduleMonthView({
@@ -92,7 +93,7 @@ function OverviewDayPanel({
   personTo,
 }: {
   date: string;
-  personTo: "/admin/users/$userId" | "/manager/team/$userId";
+  personTo: DashboardPersonTo;
 }) {
   const dayQuery = useSuspenseQuery(overviewDayQueryOptions({ date }));
   const [openLocationId, setOpenLocationId] = useState<string | null>(null);

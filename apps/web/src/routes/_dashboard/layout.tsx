@@ -6,10 +6,7 @@ import { AppConfig } from "@/utils/system";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { DashboardLayout } from "./-components/dashboard-sidebar/DashboardLayout";
-import {
-  dashboard_account_routes,
-  dashboard_admin_routes,
-} from "./-components/dashboard-sidebar/dashboard_routes";
+import { dashboard_account_routes } from "./-components/dashboard-sidebar/dashboard_routes";
 
 export const Route = createFileRoute("/_dashboard")({
   pendingComponent: RouterPendingComponent,
@@ -40,8 +37,6 @@ function DashboardShell() {
         sidebarLabel="Menu"
         accountRoutes={dashboard_account_routes}
         accountLabel="Account"
-        adminRoutes={dashboard_admin_routes}
-        adminLabel="Administration"
       />
     </Suspense>
   );

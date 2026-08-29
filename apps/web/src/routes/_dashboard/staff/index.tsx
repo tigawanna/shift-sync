@@ -1,10 +1,9 @@
 import { myScheduleQueryOptions } from "@/data-access-layer/schedule/schedule.queries";
-import { ROLE, getHomePathForRole, getUserAppRole } from "@/lib/better-auth/roles";
 import { currentYearMonth } from "@/lib/time/zoned";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { AppConfig } from "@/utils/system";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { DashboardPageHeader } from "../-components/DashboardPageHeader";
@@ -19,12 +18,6 @@ const staffSearchSchema = z.object({
 
 export const Route = createFileRoute("/_dashboard/staff/")({
   validateSearch: (search) => staffSearchSchema.parse(search),
-  beforeLoad: ({ context }) => {
-    const role = getUserAppRole(context.viewer?.user);
-    if (role !== ROLE.staff && role !== ROLE.admin) {
-      throw redirect({ to: getHomePathForRole(role) });
-    }
-  },
   loaderDeps: ({ search }) => ({ month: search.month }),
   loader: async ({ context, deps }) => {
     const month = deps.month ?? currentYearMonth("UTC");

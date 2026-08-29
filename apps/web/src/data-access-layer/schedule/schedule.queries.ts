@@ -18,6 +18,7 @@ import type {
   ShiftIdInput,
 } from "./schedule.types";
 
+/** One location's week board: shifts, assignees, published state. */
 export function weekScheduleQueryOptions(input: ListWeekScheduleInput) {
   return queryOptions({
     queryKey: ["schedule", "week", input.locationId, input.weekStart],
@@ -25,6 +26,7 @@ export function weekScheduleQueryOptions(input: ListWeekScheduleInput) {
   });
 }
 
+/** Staff candidates for a shift, with eligibility flags. */
 export function staffForShiftQueryOptions(input: ShiftIdInput) {
   return queryOptions({
     queryKey: ["schedule", "staff-for-shift", input.shiftId],
@@ -32,6 +34,7 @@ export function staffForShiftQueryOptions(input: ShiftIdInput) {
   });
 }
 
+/** Signed-in staff member's month calendar. */
 export function myScheduleQueryOptions(input: ListMyScheduleInput) {
   return queryOptions({
     queryKey: ["schedule", "mine", input.month],
@@ -39,6 +42,7 @@ export function myScheduleQueryOptions(input: ListMyScheduleInput) {
   });
 }
 
+/** Company/manager month grid: how many people work each day. */
 export function monthOverviewQueryOptions(input: ListMonthOverviewInput) {
   return queryOptions({
     queryKey: ["schedule", "month", input.month],
@@ -46,6 +50,7 @@ export function monthOverviewQueryOptions(input: ListMonthOverviewInput) {
   });
 }
 
+/** People and shifts at each location on one calendar date. */
 export function overviewDayQueryOptions(input: ListOverviewDayInput) {
   return queryOptions({
     queryKey: ["schedule", "day", input.date],
@@ -54,6 +59,7 @@ export function overviewDayQueryOptions(input: ListOverviewDayInput) {
   });
 }
 
+/** A specific person's month calendar (admin/manager). */
 export function userScheduleQueryOptions(input: ListUserScheduleInput) {
   return queryOptions({
     queryKey: ["schedule", "user", input.userId, input.month],
@@ -61,6 +67,7 @@ export function userScheduleQueryOptions(input: ListUserScheduleInput) {
   });
 }
 
+/** Shifts overlapping a date that this person could be assigned to. */
 export function dayAssignableShiftsQueryOptions(input: { date: string; userId: string }) {
   return queryOptions({
     queryKey: ["schedule", "day-assign", input.userId, input.date],
@@ -69,6 +76,7 @@ export function dayAssignableShiftsQueryOptions(input: { date: string; userId: s
   });
 }
 
+/** Preview whether removing locations would leave this person on upcoming shifts. */
 export function locationMovePreviewQueryOptions(input: {
   userId: string;
   weekStart: string;

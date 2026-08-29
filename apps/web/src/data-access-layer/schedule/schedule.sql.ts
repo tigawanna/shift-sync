@@ -28,10 +28,12 @@ export type LocationBound = {
   endMs: number;
 };
 
+/** UTC start/end ms for a Mon–Sun week in a location timezone. */
 export function weekBoundsForLocation(weekStart: string, timezone: string) {
   return rangeBoundsForLocation(weekStart, addDaysYmd(weekStart, 7), timezone);
 }
 
+/** UTC start/end ms for a civil date range in a location timezone. */
 export function rangeBoundsForLocation(
   startYmd: string,
   endExclusiveYmd: string,
@@ -42,6 +44,7 @@ export function rangeBoundsForLocation(
   return { startMs: start.getTime(), endMs: end.getTime() };
 }
 
+/** Location rows plus UTC bounds for one scheduling week. */
 export async function loadLocationBounds(
   locationIds: string[],
   weekStart: string,
@@ -49,6 +52,7 @@ export async function loadLocationBounds(
   return loadLocationRangeBounds(locationIds, weekStart, addDaysYmd(weekStart, 7));
 }
 
+/** Location rows plus UTC bounds for an arbitrary civil date range. */
 export async function loadLocationRangeBounds(
   locationIds: string[],
   startYmd: string,
@@ -71,6 +75,7 @@ export async function loadLocationRangeBounds(
   });
 }
 
+/** UTC bounds for every already-published week at these locations. */
 export async function loadPublishedWeekBounds(locationIds: string[]): Promise<LocationBound[]> {
   if (locationIds.length === 0) return [];
   const db = await getDb();
@@ -91,7 +96,7 @@ export async function loadPublishedWeekBounds(locationIds: string[]): Promise<Lo
   });
 }
 
-/** SQL predicate: shift overlaps the location's civil range (UTC bounds passed as parameters). */
+/** SQL predicate: shift interval overlaps the location's civil range. */
 export function shiftOverlapsLocationRangesSql(
   bounds: LocationBound[],
   table = sql`shift`,
@@ -107,6 +112,7 @@ export function shiftOverlapsLocationRangesSql(
     ),
   );
 }
+/** SQL predicate: shift start falls inside the location's week window. */
 export function shiftInLocationWeeksSql(
   bounds: LocationBound[],
   table = sql`shift`,
@@ -149,6 +155,7 @@ export type PeopleAssignmentSqlRow = ShiftSqlRow & {
   weekly_hours: number;
 };
 
+/** Runs a raw SQL fragment through Drizzle `db.all`. */
 async function sqlAll<T>(query: SQL): Promise<T[]> {
   const db = await getDb();
   return (await db.all(query)) as T[];
@@ -166,6 +173,7 @@ function parseAssignees(raw: string | null): ShiftAssignee[] {
   }
 }
 
+/** Maps a SQL shift row into the week-board Shift type. */
 export function mapShiftSqlRow(row: ShiftSqlRow, nowMs = Date.now()): WeekShift {
   const startsAt = new Date(row.starts_at);
   const endsAt = new Date(row.ends_at);
@@ -204,6 +212,7 @@ export function mapShiftSqlRow(row: ShiftSqlRow, nowMs = Date.now()): WeekShift 
   };
 }
 
+/** Groups week-board shifts into seven civil days. */
 export function bucketShiftsByDay(weekStart: string, shifts: WeekShift[]) {
   return Array.from({ length: 7 }, (_, index) => {
     const date = addDaysYmd(weekStart, index);
@@ -214,6 +223,7 @@ export function bucketShiftsByDay(weekStart: string, shifts: WeekShift[]) {
   });
 }
 
+/** Shifts (with assignees JSON) for one location-week board. */
 export async function queryWeekShiftsSql(input: {
   bounds: LocationBound[];
   weekStart: string;
@@ -279,6 +289,7 @@ export async function queryWeekShiftsSql(input: {
   return rows.map((row) => mapShiftSqlRow(row));
 }
 
+/** Total assigned hours for a person across the given location-week bounds. */
 export async function queryUserWeekHoursSql(userId: string, bounds: LocationBound[]) {
   if (bounds.length === 0) return 0;
   const weekFilter = shiftInLocationWeeksSql(bounds);
@@ -299,6 +310,7 @@ function sqlUnionAll(parts: SQL[]): SQL {
   return sql.join(parts, sql` UNION ALL `);
 }
 
+/** Monday YMD for each week cell in a month grid. */
 export function calendarWeekStarts(month: string) {
   const dates = monthGridDates(month);
   const weekStarts: string[] = [];
@@ -389,6 +401,7 @@ function mapPersonWeekStat(row: WeekStatSqlRow): PersonCalendarWeekStat {
   };
 }
 
+/** Per-week hours, daily max, and rest-gap warnings for a person's month calendar. */
 export async function queryPersonCalendarWeekStatsSql(input: {
   userId: string;
   locationIds: string[];
@@ -582,6 +595,7 @@ export type StaffSqlFlags = {
   availabilityOk: number;
 };
 
+/** Constraint flags for every staff member certified at a location for one shift. */
 export async function queryStaffFlagsForShiftSql(input: {
   locationId: string;
   skillId: string;
@@ -702,6 +716,7 @@ export async function queryStaffFlagsForShiftSql(input: {
   return rows;
 }
 
+/** Turns SQL eligibility flags into user-facing failure/warning messages. */
 export function flagsToConstraintMessages(
   flags: StaffSqlFlags,
   locationName: string,
@@ -768,6 +783,7 @@ export type FutureAssignmentSqlRow = {
   hours: number;
 };
 
+/** Upcoming assignments at locations that would be removed from this person. */
 export async function queryFutureAssignmentsAtLocationsSql(
   userId: string,
   locationIds: string[],
@@ -794,6 +810,7 @@ export async function queryFutureAssignmentsAtLocationsSql(
   `);
 }
 
+/** Assigned hours for a person at given locations in a UTC range. */
 export async function queryHoursAtLocationsInRangeSql(
   userId: string,
   locationIds: string[],
@@ -816,6 +833,7 @@ export async function queryHoursAtLocationsInRangeSql(
   return Number(row?.hours ?? 0);
 }
 
+/** True if a published shift at this location-week starts before the edit cutoff. */
 export async function queryLockedShiftExistsSql(
   locationId: string,
   weekStart: string,
@@ -834,6 +852,7 @@ export async function queryLockedShiftExistsSql(
   return Boolean(row);
 }
 
+/** People assigned to shifts in a week, one row per person-shift. */
 export async function queryPeopleAssignmentsSql(input: {
   bounds: LocationBound[];
   weekStart: string;
@@ -909,6 +928,7 @@ export type AssignmentInstantRow = {
   timezone: string;
 };
 
+/** Assignment start/end instants used to count unique staff per calendar day. */
 export async function queryAssignmentInstantsSql(bounds: LocationBound[]) {
   const rangeFilter = shiftOverlapsLocationRangesSql(bounds);
   if (!rangeFilter) return [];
@@ -928,6 +948,7 @@ export async function queryAssignmentInstantsSql(bounds: LocationBound[]) {
   `);
 }
 
+/** Shifts whose intervals overlap the given location civil ranges. */
 export async function queryOverlappingShiftsSql(input: {
   bounds: LocationBound[];
   assigneeUserId?: string;
@@ -996,6 +1017,7 @@ export async function queryOverlappingShiftsSql(input: {
   return rows.map((row) => mapShiftSqlRow(row));
 }
 
+/** Assigned people + shifts whose intervals overlap the given location ranges. */
 export async function queryOverlappingPeopleSql(
   bounds: LocationBound[],
 ): Promise<PeopleAssignmentSqlRow[]> {

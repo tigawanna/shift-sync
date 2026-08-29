@@ -9,6 +9,7 @@ import {
 } from "./schedule.sql";
 import type { LocationMovePreview } from "./schedule.types";
 
+/** Location IDs the viewer may assign: all restaurants, or only theirs. */
 async function managedLocationIds(viewerId: string, role: string) {
   const db = await getDb();
   if (role === ROLE.admin) {
@@ -23,6 +24,7 @@ async function managedLocationIds(viewerId: string, role: string) {
   return rows.map((row) => row.id);
 }
 
+/** Whether dropping locations would leave this person on future shifts there. */
 export async function computeLocationMovePreview(input: {
   viewerId: string;
   role: string;

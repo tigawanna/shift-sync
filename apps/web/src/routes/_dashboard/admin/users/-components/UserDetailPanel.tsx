@@ -1,6 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { teamMemberQueryOptions } from "@/data-access-layer/team/team.queries";
-import type { TeamMemberLocation } from "@/data-access-layer/team/team.types";
 import { ROLE } from "@/lib/better-auth/roles";
 import { formatDate } from "@/utils/date";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +9,7 @@ import { UserScheduleSection } from "../../../-components/schedule/PersonMonthCa
 
 type UserDetailPanelProps = {
   userId: string;
+  expectedRole?: typeof ROLE.manager | typeof ROLE.staff;
   roleLabel: (role: typeof ROLE.manager | typeof ROLE.staff) => string;
 };
 
@@ -20,8 +20,10 @@ function roleBadgeClass(role: typeof ROLE.manager | typeof ROLE.staff) {
   return "bg-base-content/8 text-base-content/70";
 }
 
-export function UserDetailPanel({ userId, roleLabel }: UserDetailPanelProps) {
-  const { data: member, isPending, isError, error } = useQuery(teamMemberQueryOptions({ userId }));
+export function UserDetailPanel({ userId, expectedRole, roleLabel }: UserDetailPanelProps) {
+  const { data: member, isPending, isError, error } = useQuery(
+    teamMemberQueryOptions({ userId, role: expectedRole }),
+  );
 
   if (isPending) {
     return <UserDetailSkeleton />;

@@ -10,10 +10,16 @@ const knownRoles = new Set<string>(APP_ROLES);
 type ViewerUser = BetterAuthSession["user"];
 
 export function parseAppRole(rawRole: string | null | undefined): AppRole {
-  const primaryRole = rawRole?.split(",")[0]?.trim().toLowerCase();
-  if (primaryRole && knownRoles.has(primaryRole)) {
-    return primaryRole as AppRole;
-  }
+  const assigned = new Set(
+    rawRole
+      ?.split(",")
+      .map((part) => part.trim().toLowerCase())
+      .filter((part) => knownRoles.has(part)),
+  );
+
+  if (assigned.has(ROLE.admin)) return ROLE.admin;
+  if (assigned.has(ROLE.manager)) return ROLE.manager;
+  if (assigned.has(ROLE.staff)) return ROLE.staff;
   return ROLE.staff;
 }
 
@@ -45,14 +51,17 @@ export function getHomePathForRole(role: AppRole): string {
 
 /** Whether a dashboard path is reachable for the given app role. */
 export function isDashboardPathAllowedForRole(path: string, role: AppRole): boolean {
+  if (path.startsWith("/account")) {
+    return true;
+  }
   if (path.startsWith("/admin")) {
     return isAdminRole(role);
   }
   if (path.startsWith("/manager")) {
-    return isAdminRole(role) || isManagerRole(role);
+    return isManagerRole(role);
   }
-  if (path.startsWith("/staff") || path.startsWith("/account")) {
-    return true;
+  if (path.startsWith("/staff")) {
+    return isStaffRole(role);
   }
   return false;
 }
