@@ -93,6 +93,9 @@ export function StaffList() {
                 <TableHead className="text-muted-foreground px-4 py-3 text-xs font-medium tracking-wide uppercase">
                   Joined
                 </TableHead>
+                <TableHead className="text-muted-foreground px-4 py-3 text-xs font-medium tracking-wide uppercase">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

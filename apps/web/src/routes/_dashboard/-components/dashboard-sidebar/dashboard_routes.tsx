@@ -25,5 +25,5 @@ export function getDashboardPrimaryRoutes(role: AppRole): SidebarItem[] {
     ];
   }
 
-  return [];
+  return [{ title: "My calendar", href: "/staff", icon: CalendarDays }];
 }

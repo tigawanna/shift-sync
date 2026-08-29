@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/utils/date";
 import { initials } from "@/utils/strings";
+import { ImpersonateUserButton } from "../../../-components/ImpersonateUserButton";
 import type { StaffListItem as StaffListItemData } from "../../-data-access-layer/staff.fn";
 
 type StaffListItemProps = {
@@ -23,6 +24,9 @@ export function StaffListItem({ staff }: StaffListItemProps) {
       <TableCell className="text-muted-foreground px-4 py-3">{staff.email}</TableCell>
       <TableCell className="text-muted-foreground px-4 py-3">
         {formatDate(staff.createdAt)}
+      </TableCell>
+      <TableCell className="px-4 py-3">
+        <ImpersonateUserButton user={staff} />
       </TableCell>
     </TableRow>
   );

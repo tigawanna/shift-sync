@@ -26,7 +26,7 @@ export function ImpersonationBanner() {
   }
 
   return (
-    <div className="bg-warning/15 border-warning/30 text-warning-content flex items-center justify-between gap-4 border-b px-4 py-2 text-sm">
+    <div className="bg-warning/15 border-warning/30 text-base-content flex items-center justify-between gap-4 border-b px-4 py-2 text-sm">
       <div className="flex items-center gap-2">
         <AlertTriangle className="text-warning size-4 shrink-0" />
         <span>

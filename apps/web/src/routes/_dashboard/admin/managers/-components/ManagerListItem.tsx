@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/utils/date";
 import { initials } from "@/utils/strings";
+import { ImpersonateUserButton } from "../../../-components/ImpersonateUserButton";
 import type { ManagerListItem as ManagerListItemData } from "../../-data-access-layer/managers.fn";
 
 type ManagerListItemProps = {
@@ -23,6 +24,9 @@ export function ManagerListItem({ manager }: ManagerListItemProps) {
       <TableCell className="text-muted-foreground px-4 py-3">{manager.email}</TableCell>
       <TableCell className="text-muted-foreground px-4 py-3">
         {formatDate(manager.createdAt)}
+      </TableCell>
+      <TableCell className="px-4 py-3">
+        <ImpersonateUserButton user={manager} />
       </TableCell>
     </TableRow>
   );

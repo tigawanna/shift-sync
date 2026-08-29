@@ -32,7 +32,7 @@ const ANIMATE_STAR_Y = 58.2;
 
 /**
  * Theme-aware brand mark: inherits `currentColor`.
- * Defaults to base-content (near-black in light, near-white in dark).
+ * Defaults to primary brand color.
  */
 export function SiteIcon({
   className,
@@ -46,7 +46,7 @@ export function SiteIcon({
       version="1.1"
       viewBox="45 35 110 146"
       xmlns="http://www.w3.org/2000/svg"
-      className={cn("text-base-content", className)}
+      className={cn("text-primary", className)}
       width={size}
       height={size}
       aria-hidden={ariaHidden}
