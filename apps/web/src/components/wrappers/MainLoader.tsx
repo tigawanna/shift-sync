@@ -24,7 +24,7 @@ export function MainLoader({
       busy
       className={className}
       eyebrow={eyebrow}
-      visual={children ?? <SiteIcon size={300} animate aria-hidden />}
+      visual={children ?? <SiteIcon size={100} animate aria-hidden />}
       title={
         <>
           Almost <span className="text-brand-teal dark:text-brand-teal-bright">there</span>
