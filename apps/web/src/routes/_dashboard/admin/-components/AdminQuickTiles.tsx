@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, MapPin, UserCog, Users } from "lucide-react";
+import { CalendarDays, MapPin, Shield, UserCog, Users } from "lucide-react";
 
 const tiles = [
   {
@@ -19,6 +19,12 @@ const tiles = [
     title: "Managers",
     description: "Oversee location managers. They stay in their own dashboard — you stay here.",
     icon: UserCog,
+  },
+  {
+    to: "/admin/admins",
+    title: "Admins",
+    description: "See every corporate admin account with access to this dashboard.",
+    icon: Shield,
   },
   {
     to: "/admin/locations",
