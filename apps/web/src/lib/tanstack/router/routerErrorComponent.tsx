@@ -35,7 +35,7 @@ export function RouterErrorComponent({ error, reset }: RouterErrorComponentProps
       }
       title={
         <>
-          Something went <span className="text-error">sideways</span>
+          Something failed
         </>
       }
       description="This page hit a snag on our end. Give it another moment, or head back home while we sort things out."

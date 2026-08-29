@@ -39,6 +39,7 @@ export function ListTeamMembers() {
         members={members}
         emptyMessage="No staff accounts yet. Ask an admin to create staff users."
         showImpersonate
+        memberTo="/manager/team/$userId"
       />
       <TSRListPagination routeID={ROUTE_ID} totalPages={totalPages} />
     </section>

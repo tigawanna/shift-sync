@@ -285,7 +285,7 @@ export const listAccessibleLocations = createServerFn({ method: "GET" }).handler
   if (role === ROLE.admin) {
     return db.query.location.findMany({
       orderBy: (location, { asc }) => [asc(location.name)],
-      columns: { id: true, name: true, timezone: true },
+      columns: { id: true, name: true, timezone: true, address: true },
     });
   }
 
@@ -294,6 +294,7 @@ export const listAccessibleLocations = createServerFn({ method: "GET" }).handler
       id: locationTable.id,
       name: locationTable.name,
       timezone: locationTable.timezone,
+      address: locationTable.address,
     })
     .from(locationTable)
     .innerJoin(userLocation, eq(userLocation.locationId, locationTable.id))

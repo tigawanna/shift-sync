@@ -18,13 +18,12 @@ import {
 } from "../src/lib/drizzle/schema/skills-schema";
 import { addDaysYmd, mondayOfWeekContaining, zonedWallTimeToUtc } from "../src/lib/time/zoned";
 import { createAuthFromEnv } from "../src/server/create-auth";
-import { and, eq } from "drizzle-orm";
+import { and, eq, like } from "drizzle-orm";
 import { SEED_LOCATIONS, SEED_USER_LOCATIONS } from "./seed/locations.data";
 import {
-  buildHarborHouseWeekShifts,
   buildSeedAvailability,
+  buildSeedScheduleWeeks,
   buildSeedUserSkills,
-  harborHouseStaffEmails,
   SEED_SKILLS,
 } from "./seed/schedule.data";
 import { SEED_DEFAULT_PASSWORD, SEED_USERS } from "./seed/users.data";
@@ -206,18 +205,21 @@ async function main() {
     await db.insert(userAvailabilityTable).values(availabilityValues).onConflictDoNothing();
   }
 
-  const harborHouse = SEED_LOCATIONS.find((location) => location.id === "loc-harbor-house");
-  if (harborHouse) {
-    const weekStart = mondayOfWeekContaining(new Date(), harborHouse.timezone);
-    const creatorId = userIds.get("admin@coastaleats.test") ?? [...userIds.values()][0];
-    const assigneeEmails = harborHouseStaffEmails();
-    const shifts = buildHarborHouseWeekShifts(assigneeEmails);
+  await db.delete(shiftTable).where(like(shiftTable.id, "shift-%"));
 
-    for (const spec of shifts) {
-      const startDate = addDaysYmd(weekStart, spec.dayOffset);
+  const adminId = userIds.get("admin@coastaleats.test") ?? [...userIds.values()][0];
+  const anchorMonday = mondayOfWeekContaining(new Date(), SEED_LOCATIONS[0]?.timezone ?? "UTC");
+  const seededWeeks = buildSeedScheduleWeeks(anchorMonday);
+
+  for (const week of seededWeeks) {
+    const creatorId = (week.managerEmail ? userIds.get(week.managerEmail) : undefined) ?? adminId;
+    if (!creatorId) continue;
+
+    for (const spec of week.shifts) {
+      const startDate = addDaysYmd(week.weekStart, spec.dayOffset);
       const endDate = spec.endTime <= spec.startTime ? addDaysYmd(startDate, 1) : startDate;
-      const startsAt = zonedWallTimeToUtc(startDate, spec.startTime, harborHouse.timezone);
-      const endsAt = zonedWallTimeToUtc(endDate, spec.endTime, harborHouse.timezone);
+      const startsAt = zonedWallTimeToUtc(startDate, spec.startTime, week.location.timezone);
+      const endsAt = zonedWallTimeToUtc(endDate, spec.endTime, week.location.timezone);
 
       await db
         .insert(shiftTable)
@@ -239,25 +241,23 @@ async function main() {
             endsAt,
             headcountNeeded: spec.headcountNeeded,
             notes: spec.notes ?? null,
+            createdByUserId: creatorId,
           },
         });
 
-      for (const email of spec.assigneeEmails) {
+      const assignmentValues = spec.assigneeEmails.flatMap((email) => {
         const userId = userIds.get(email);
-        if (!userId) continue;
-        const existing = await db
-          .select({ id: shiftAssignmentTable.id })
-          .from(shiftAssignmentTable)
-          .where(
-            and(eq(shiftAssignmentTable.shiftId, spec.id), eq(shiftAssignmentTable.userId, userId)),
-          )
-          .limit(1);
-        if (existing.length > 0) continue;
-        await db.insert(shiftAssignmentTable).values({
-          id: crypto.randomUUID(),
-          shiftId: spec.id,
-          userId,
-        });
+        if (!userId) return [];
+        return [
+          {
+            id: crypto.randomUUID(),
+            shiftId: spec.id,
+            userId,
+          },
+        ];
+      });
+      if (assignmentValues.length > 0) {
+        await db.insert(shiftAssignmentTable).values(assignmentValues).onConflictDoNothing();
       }
     }
 
@@ -266,24 +266,26 @@ async function main() {
       .from(scheduleWeekTable)
       .where(
         and(
-          eq(scheduleWeekTable.locationId, harborHouse.id),
-          eq(scheduleWeekTable.weekStartDate, weekStart),
+          eq(scheduleWeekTable.locationId, week.location.id),
+          eq(scheduleWeekTable.weekStartDate, week.weekStart),
         ),
       )
       .limit(1);
 
-    if (published.length === 0 && creatorId) {
+    if (published.length === 0) {
       await db.insert(scheduleWeekTable).values({
         id: crypto.randomUUID(),
-        locationId: harborHouse.id,
-        weekStartDate: weekStart,
+        locationId: week.location.id,
+        weekStartDate: week.weekStart,
         publishedAt: new Date(),
         publishedByUserId: creatorId,
       });
     }
-
-    console.log(`Harbor House week ${weekStart} seeded and published.`);
   }
+
+  console.log(
+    `Seeded ${seededWeeks.length} published location-weeks (${seededWeeks.reduce((n, week) => n + week.shifts.length, 0)} shifts).`,
+  );
 
   console.log("");
   console.log("Done. Sign in at /auth with any seeded email.");

@@ -2,12 +2,14 @@ import type { TeamMember } from "@/data-access-layer/team/team.types";
 import { useViewer } from "@/data-access-layer/auth/viewer";
 import { ROLE, getUserAppRole } from "@/lib/better-auth/roles";
 import { formatDate } from "@/utils/date";
+import { Link } from "@tanstack/react-router";
 import { ImpersonateUserButton } from "./ImpersonateUserButton";
 
 type TeamMembersTableProps = {
   members: TeamMember[];
   emptyMessage: string;
   showImpersonate?: boolean;
+  memberTo?: "/admin/users/$userId" | "/manager/team/$userId";
 };
 
 function roleBadgeClass(role: TeamMember["role"]) {
@@ -30,6 +32,7 @@ export function TeamMembersTable({
   members,
   emptyMessage,
   showImpersonate = false,
+  memberTo,
 }: TeamMembersTableProps) {
   const { viewer } = useViewer();
   const viewerRole = getUserAppRole(viewer.user);
@@ -59,7 +62,19 @@ export function TeamMembersTable({
         <tbody className="divide-base-content/10 divide-y">
           {members.map((member) => (
             <tr key={member.id} className="bg-base-100/70">
-              <td className="px-4 py-3 font-medium">{member.name}</td>
+              <td className="px-4 py-3 font-medium">
+                {memberTo ? (
+                  <Link
+                    to={memberTo}
+                    params={{ userId: member.id }}
+                    className="hover:text-primary transition-colors"
+                  >
+                    {member.name}
+                  </Link>
+                ) : (
+                  member.name
+                )}
+              </td>
               <td className="text-base-content/70 px-4 py-3">{member.email}</td>
               <td className="px-4 py-3">
                 <span

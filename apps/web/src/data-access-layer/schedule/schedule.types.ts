@@ -54,8 +54,36 @@ export const publishWeekInputSchema = z.object({
   weekStart: weekStartDateSchema,
 });
 
+export const yearMonthSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}$/, "Month must be YYYY-MM");
+
 export const listMyScheduleInputSchema = z.object({
+  month: yearMonthSchema,
+});
+
+export const listMonthOverviewInputSchema = z.object({
+  month: yearMonthSchema,
+});
+
+export const listOverviewDayInputSchema = z.object({
+  date: weekStartDateSchema,
+});
+
+export const listUserScheduleInputSchema = z.object({
+  userId: z.string().min(1),
+  month: yearMonthSchema,
+});
+
+export const previewLocationMoveInputSchema = z.object({
+  userId: z.string().min(1),
+  locationIdsCsv: z.string(),
   weekStart: weekStartDateSchema,
+});
+
+export const listDayAssignableShiftsInputSchema = z.object({
+  date: weekStartDateSchema,
+  userId: z.string().min(1),
 });
 
 export type ListWeekScheduleInput = z.infer<typeof listWeekScheduleInputSchema>;
@@ -66,6 +94,11 @@ export type AssignStaffInput = z.infer<typeof assignStaffInputSchema>;
 export type UnassignStaffInput = z.infer<typeof unassignStaffInputSchema>;
 export type PublishWeekInput = z.infer<typeof publishWeekInputSchema>;
 export type ListMyScheduleInput = z.infer<typeof listMyScheduleInputSchema>;
+export type ListMonthOverviewInput = z.infer<typeof listMonthOverviewInputSchema>;
+export type ListOverviewDayInput = z.infer<typeof listOverviewDayInputSchema>;
+export type ListUserScheduleInput = z.infer<typeof listUserScheduleInputSchema>;
+export type PreviewLocationMoveInput = z.infer<typeof previewLocationMoveInputSchema>;
+export type ListDayAssignableShiftsInput = z.infer<typeof listDayAssignableShiftsInputSchema>;
 
 export type ScheduleLocationOption = {
   id: string;
@@ -97,6 +130,13 @@ export type WeekShift = {
   notes: string | null;
   assignees: ShiftAssignee[];
   locked: boolean;
+  managers: string[];
+  createdByName: string | null;
+};
+
+export type WeekDayColumn = {
+  date: string;
+  shifts: WeekShift[];
 };
 
 export type WeekSchedule = {
@@ -105,6 +145,64 @@ export type WeekSchedule = {
   published: boolean;
   publishedAt: Date | null;
   shifts: WeekShift[];
+  days: WeekDayColumn[];
+};
+
+export type PersonMonthSchedule = {
+  userId: string;
+  name: string;
+  email: string;
+  month: string;
+  monthlyHours: number;
+  shifts: WeekShift[];
+  weekStats: PersonCalendarWeekStat[];
+};
+
+export type PersonCalendarWeekStat = {
+  weekStart: string;
+  hours: number;
+  maxDailyHours: number;
+  weeklyWarn: boolean;
+  weeklyOvertime: boolean;
+  dailyWarn: boolean;
+  dailyBlock: boolean;
+  restCount: number;
+  warnings: string[];
+};
+
+export type MonthOverview = {
+  month: string;
+  days: Array<{
+    date: string;
+    staffCount: number;
+  }>;
+};
+
+export type OverviewDayLocation = {
+  location: ScheduleLocationOption;
+  people: Array<{
+    userId: string;
+    name: string;
+    email: string;
+    shifts: WeekShift[];
+  }>;
+};
+
+export type OverviewDay = {
+  date: string;
+  locations: OverviewDayLocation[];
+};
+
+export type LocationMovePreview = {
+  canSave: boolean;
+  weeklyHoursAfter: number;
+  blockingShifts: Array<{
+    shiftId: string;
+    locationName: string;
+    startsAt: Date;
+    hours: number;
+  }>;
+  warnings: string[];
 };
 
 export type StaffCandidate = {

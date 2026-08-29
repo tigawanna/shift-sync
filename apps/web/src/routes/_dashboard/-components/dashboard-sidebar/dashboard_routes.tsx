@@ -1,10 +1,8 @@
 import type { SidebarItem } from "@/components/sidebar/types";
 import { ROLE, type AppRole } from "@/lib/better-auth/roles";
-import { CalendarDays, LayoutDashboard, Shield, User } from "lucide-react";
+import { CalendarDays, LayoutDashboard, Shield } from "lucide-react";
 
-export const dashboard_account_routes = [
-  { title: "Account", href: "/account", icon: User },
-] satisfies SidebarItem[];
+export const dashboard_account_routes = [] satisfies SidebarItem[];
 
 export const dashboard_admin_routes = [
   {
@@ -13,6 +11,7 @@ export const dashboard_admin_routes = [
     icon: Shield,
     sublinks: [
       { title: "Overview", href: "/admin" },
+      { title: "Schedule", href: "/admin/schedule" },
       { title: "Users", href: "/admin/users" },
       { title: "Locations", href: "/admin/locations" },
     ],

@@ -1,10 +1,9 @@
 import { SKILLS, type SkillId } from "../../src/lib/schedule/skills";
+import { addDaysYmd } from "../../src/lib/time/zoned";
 import { staffEmail, SEED_STAFF_COUNT } from "./users.data";
-import { SEED_USER_LOCATIONS } from "./locations.data";
+import { SEED_LOCATIONS, SEED_USER_LOCATIONS } from "./locations.data";
 
 export const SEED_SKILLS = SKILLS;
-
-const HARBOR_HOUSE = "loc-harbor-house";
 
 export function skillIdsForStaffIndex(index: number): SkillId[] {
   const primary = SKILLS[(index - 1) % SKILLS.length].id;
@@ -52,10 +51,18 @@ export function emailsWithSkill(emails: string[], skillId: SkillId) {
   return emails.filter((email) => skillIdsForStaffIndex(staffIndexFromEmail(email)).includes(skillId));
 }
 
-export function harborHouseStaffEmails() {
+export function staffEmailsAtLocation(locationId: string) {
   return Object.entries(SEED_USER_LOCATIONS)
-    .filter(([email, locationIds]) => email.startsWith("staff-") && locationIds.includes(HARBOR_HOUSE))
+    .filter(([email, locationIds]) => email.startsWith("staff-") && locationIds.includes(locationId))
     .map(([email]) => email);
+}
+
+export function managerEmailAtLocation(locationId: string) {
+  const emails = Object.entries(SEED_USER_LOCATIONS)
+    .filter(([email, locationIds]) => email.startsWith("manager-") && locationIds.includes(locationId))
+    .map(([email]) => email)
+    .sort();
+  return emails[0] ?? null;
 }
 
 export type SeedShiftSpec = {
@@ -70,69 +77,80 @@ export type SeedShiftSpec = {
   assigneeEmails: string[];
 };
 
-export function buildHarborHouseWeekShifts(assigneeEmails: string[]): SeedShiftSpec[] {
-  const servers = emailsWithSkill(assigneeEmails, "server");
-  const bartenders = emailsWithSkill(assigneeEmails, "bartender");
-  const cooks = emailsWithSkill(assigneeEmails, "line_cook");
-  const hosts = emailsWithSkill(assigneeEmails, "host");
+type ShiftTemplate = {
+  slug: string;
+  skillId: SkillId;
+  dayOffset: number;
+  startTime: string;
+  endTime: string;
+  notes?: string;
+  daytimeOk: boolean;
+};
 
-  const pick = (pool: string[], count: number, offset: number) =>
-    pool.slice(offset, offset + count);
+/**
+ * One published pattern per location-week. Same-skill days sit next to each other
+ * so the person calendar can draw a continuous bar.
+ */
+const WEEK_TEMPLATES: ShiftTemplate[] = [
+  { slug: "mon-dinner", skillId: "server", dayOffset: 0, startTime: "16:00", endTime: "22:00", notes: "Dinner service", daytimeOk: false },
+  { slug: "tue-dinner", skillId: "server", dayOffset: 1, startTime: "16:00", endTime: "22:00", notes: "Dinner service", daytimeOk: false },
+  { slug: "wed-dinner", skillId: "server", dayOffset: 2, startTime: "16:00", endTime: "22:00", notes: "Dinner service", daytimeOk: false },
+  { slug: "sun-brunch", skillId: "server", dayOffset: 6, startTime: "09:00", endTime: "15:00", notes: "Sunday brunch", daytimeOk: true },
+  { slug: "mon-line", skillId: "line_cook", dayOffset: 0, startTime: "11:00", endTime: "19:00", notes: "Prep and lunch", daytimeOk: false },
+  { slug: "thu-line", skillId: "line_cook", dayOffset: 3, startTime: "14:00", endTime: "22:00", notes: "Dinner line", daytimeOk: false },
+  { slug: "sat-cook", skillId: "line_cook", dayOffset: 5, startTime: "15:00", endTime: "23:00", notes: "Saturday line", daytimeOk: false },
+  { slug: "tue-host", skillId: "host", dayOffset: 1, startTime: "16:00", endTime: "22:00", notes: "Dinner door", daytimeOk: false },
+  { slug: "thu-host", skillId: "host", dayOffset: 3, startTime: "11:00", endTime: "16:00", notes: "Lunch door", daytimeOk: true },
+  { slug: "sat-host", skillId: "host", dayOffset: 5, startTime: "16:00", endTime: "22:00", notes: "Saturday door", daytimeOk: false },
+  { slug: "fri-bar", skillId: "bartender", dayOffset: 4, startTime: "17:00", endTime: "23:00", notes: "Friday bar", daytimeOk: false },
+  { slug: "sat-overnight", skillId: "bartender", dayOffset: 5, startTime: "23:00", endTime: "03:00", notes: "Overnight close", daytimeOk: false },
+  { slug: "sun-bar", skillId: "bartender", dayOffset: 6, startTime: "10:00", endTime: "16:00", notes: "Sunday service", daytimeOk: true },
+];
 
-  return [
-    {
-      id: "shift-hh-mon-dinner-server",
-      locationId: HARBOR_HOUSE,
-      skillId: "server",
-      dayOffset: 0,
-      startTime: "16:00",
-      endTime: "22:00",
-      headcountNeeded: 3,
-      notes: "Dinner service",
-      assigneeEmails: pick(servers, 2, 0),
-    },
-    {
-      id: "shift-hh-fri-bar",
-      locationId: HARBOR_HOUSE,
-      skillId: "bartender",
-      dayOffset: 4,
-      startTime: "17:00",
-      endTime: "23:00",
-      headcountNeeded: 2,
-      notes: "Friday bar",
-      assigneeEmails: pick(bartenders, 2, 0),
-    },
-    {
-      id: "shift-hh-sat-cook",
-      locationId: HARBOR_HOUSE,
-      skillId: "line_cook",
-      dayOffset: 5,
-      startTime: "15:00",
-      endTime: "23:00",
-      headcountNeeded: 3,
-      notes: "Saturday line",
-      assigneeEmails: pick(cooks, 2, 0),
-    },
-    {
-      id: "shift-hh-sat-host",
-      locationId: HARBOR_HOUSE,
-      skillId: "host",
-      dayOffset: 5,
-      startTime: "16:00",
-      endTime: "22:00",
-      headcountNeeded: 2,
-      assigneeEmails: pick(hosts, 1, 0),
-    },
-    {
-      id: "shift-hh-sat-overnight",
-      locationId: HARBOR_HOUSE,
-      skillId: "bartender",
-      dayOffset: 5,
-      startTime: "23:00",
-      endTime: "03:00",
-      headcountNeeded: 1,
-      notes: "Overnight close",
-      assigneeEmails: pick(bartenders, 1, 2),
-    },
-  ];
+function canWorkTemplate(email: string, template: ShiftTemplate) {
+  const daytimeOnly = staffIndexFromEmail(email) === 1;
+  if (daytimeOnly && !template.daytimeOk) return false;
+  return true;
+}
+
+export function buildLocationWeekShifts(
+  locationId: string,
+  weekStart: string,
+  staffEmails: string[],
+): SeedShiftSpec[] {
+  return WEEK_TEMPLATES.flatMap((template) => {
+    const assigneeEmails = emailsWithSkill(staffEmails, template.skillId).filter((email) =>
+      canWorkTemplate(email, template),
+    );
+    if (assigneeEmails.length === 0) return [];
+
+    return [
+      {
+        id: `shift-${locationId}-${weekStart}-${template.slug}`,
+        locationId,
+        skillId: template.skillId,
+        dayOffset: template.dayOffset,
+        startTime: template.startTime,
+        endTime: template.endTime,
+        headcountNeeded: Math.min(6, Math.max(2, assigneeEmails.length)),
+        notes: template.notes,
+        assigneeEmails,
+      },
+    ];
+  });
+}
+
+export function buildSeedScheduleWeeks(anchorMonday: string) {
+  const weekStarts = [-7, 0, 7].map((offset) => addDaysYmd(anchorMonday, offset));
+
+  return SEED_LOCATIONS.flatMap((location) => {
+    const staffEmails = staffEmailsAtLocation(location.id);
+    const managerEmail = managerEmailAtLocation(location.id);
+    return weekStarts.map((weekStart) => ({
+      location,
+      weekStart,
+      managerEmail,
+      shifts: buildLocationWeekShifts(location.id, weekStart, staffEmails),
+    }));
+  });
 }

@@ -1,12 +1,12 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { allLocationsForAssignmentQueryOptions } from "@/data-access-layer/location/location.queries";
 import { teamMemberQueryOptions } from "@/data-access-layer/team/team.queries";
 import type { TeamMemberLocation } from "@/data-access-layer/team/team.types";
 import { ROLE } from "@/lib/better-auth/roles";
 import { formatDate } from "@/utils/date";
 import { useQuery } from "@tanstack/react-query";
+import { Suspense } from "react";
 import { DashboardPageHeader } from "../../../-components/DashboardPageHeader";
-import { UserLocationEditor } from "./UserLocationAssignments";
+import { UserScheduleSection } from "../../../-components/schedule/PersonMonthCalendar";
 
 type UserDetailPanelProps = {
   userId: string;
@@ -22,9 +22,6 @@ function roleBadgeClass(role: typeof ROLE.manager | typeof ROLE.staff) {
 
 export function UserDetailPanel({ userId, roleLabel }: UserDetailPanelProps) {
   const { data: member, isPending, isError, error } = useQuery(teamMemberQueryOptions({ userId }));
-  const { data: allLocations, isPending: locationsPending } = useQuery(
-    allLocationsForAssignmentQueryOptions(),
-  );
 
   if (isPending) {
     return <UserDetailSkeleton />;
@@ -54,32 +51,19 @@ export function UserDetailPanel({ userId, roleLabel }: UserDetailPanelProps) {
         }
       />
 
-      <section className="border-base-content/10 bg-base-100/70 grid gap-4 rounded-2xl border p-6 sm:grid-cols-2">
-        <div>
-          <p className="text-base-content/60 text-xs tracking-wide uppercase">Email</p>
-          <p className="mt-1 text-sm font-medium">{member.email}</p>
-        </div>
-        <div>
-          <p className="text-base-content/60 text-xs tracking-wide uppercase">Joined</p>
-          <p className="mt-1 text-sm font-medium">{formatDate(member.createdAt)}</p>
-        </div>
-        <div className="sm:col-span-2">
-          <p className="text-base-content/60 text-xs tracking-wide uppercase">Current locations</p>
-          <p className="mt-1 text-sm">
-            {member.locations.length > 0
-              ? member.locations.map((location: TeamMemberLocation) => location.name).join(", ")
-              : "Not assigned to any location"}
-          </p>
-        </div>
-      </section>
+      <p className="text-base-content/60 -mt-4 text-sm">
+        Joined {formatDate(member.createdAt)}
+        {member.role === ROLE.staff ? (
+          <>
+            {" · "}
+            Right-click a date to assign a location shift
+          </>
+        ) : null}
+      </p>
 
-      <UserLocationEditor
-        key={userId}
-        userId={userId}
-        savedLocationIds={member.locations.map((location) => location.id)}
-        allLocations={allLocations ?? []}
-        locationsPending={locationsPending}
-      />
+      <Suspense fallback={<UserDetailSkeleton />}>
+        <UserScheduleSection userId={userId} />
+      </Suspense>
     </>
   );
 }

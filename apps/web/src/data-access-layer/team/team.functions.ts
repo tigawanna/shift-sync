@@ -7,8 +7,11 @@ import { getDb } from "@/lib/drizzle/client";
 import { location as locationTable, userLocation } from "@/lib/drizzle/schema/locations-schema";
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import { and, asc, count, desc, eq, inArray, like, or, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, exists, inArray, like, or, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
+import { computeLocationMovePreview } from "../schedule/schedule.move-preview";
 import { requireSessionRoles } from "./team.auth";
+import { mondayOfWeekContaining } from "@/lib/time/zoned";
 import {
   createTeamUserInputSchema,
   getTeamMemberInputSchema,
@@ -59,6 +62,7 @@ function buildSearchFilter(search: string | undefined): SQL | undefined {
 async function listMembersForViewer(
   input: ListTeamMembersInput,
   viewerRole: typeof ROLE.admin | typeof ROLE.manager,
+  viewerId: string,
 ) {
   const page = input.page ?? 1;
   const perPage = ADMIN_LIST_PER_PAGE;
@@ -70,11 +74,38 @@ async function listMembersForViewer(
       : eq(userTable.role, ROLE.staff);
 
   const searchFilter = buildSearchFilter(input.search);
-  const where = searchFilter ? and(roleFilter, searchFilter) : roleFilter;
+  const db = await getDb();
+  const managerLoc = alias(userLocation, "manager_loc");
+  const staffLoc = alias(userLocation, "staff_loc");
+
+  const locationScope =
+    viewerRole === ROLE.admin
+      ? undefined
+      : exists(
+          db
+            .select({ id: staffLoc.id })
+            .from(staffLoc)
+            .where(
+              and(
+                eq(staffLoc.userId, userTable.id),
+                exists(
+                  db
+                    .select({ id: managerLoc.id })
+                    .from(managerLoc)
+                    .where(
+                      and(
+                        eq(managerLoc.userId, viewerId),
+                        eq(managerLoc.locationId, staffLoc.locationId),
+                      ),
+                    ),
+                ),
+              ),
+            ),
+        );
+
   const sortBy = input.sortBy ?? DEFAULT_TEAM_MEMBER_SORT_BY;
   const sortDirection = input.sortDirection ?? DEFAULT_TEAM_MEMBER_SORT_DIRECTION;
-
-  const db = await getDb();
+  const where = and(roleFilter, searchFilter, locationScope);
 
   const [rows, totalRow] = await Promise.all([
     db
@@ -102,8 +133,12 @@ async function listMembersForViewer(
 export const listTeamMembers = createServerFn({ method: "GET" })
   .validator((data: ListTeamMembersInput) => listTeamMembersInputSchema.parse(data))
   .handler(async ({ data }) => {
-    const { role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
-    return listMembersForViewer(data, role === ROLE.admin ? ROLE.admin : ROLE.manager);
+    const { session, role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
+    return listMembersForViewer(
+      data,
+      role === ROLE.admin ? ROLE.admin : ROLE.manager,
+      session.user.id,
+    );
   });
 
 export const createTeamUser = createServerFn({ method: "POST" })
@@ -183,8 +218,37 @@ async function getTeamMemberDetail(userId: string): Promise<TeamMemberDetail> {
 export const getTeamMember = createServerFn({ method: "GET" })
   .validator((data: GetTeamMemberInput) => getTeamMemberInputSchema.parse(data))
   .handler(async ({ data }) => {
-    await requireSessionRoles([ROLE.admin]);
-    return getTeamMemberDetail(data.userId);
+    const { session, role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
+    const detail = await getTeamMemberDetail(data.userId);
+    if (role === ROLE.manager) {
+      const db = await getDb();
+      const staffLoc = alias(userLocation, "staff_loc");
+      const managerLoc = alias(userLocation, "manager_loc");
+      const [row] = await db
+        .select({ id: staffLoc.id })
+        .from(staffLoc)
+        .where(
+          and(
+            eq(staffLoc.userId, data.userId),
+            exists(
+              db
+                .select({ id: managerLoc.id })
+                .from(managerLoc)
+                .where(
+                  and(
+                    eq(managerLoc.userId, session.user.id),
+                    eq(managerLoc.locationId, staffLoc.locationId),
+                  ),
+                ),
+            ),
+          ),
+        )
+        .limit(1);
+      if (!row) {
+        throw new Error("You can only view people who work at your locations.");
+      }
+    }
+    return detail;
   });
 
 export const updateTeamMemberLocations = createServerFn({ method: "POST" })
@@ -192,10 +256,28 @@ export const updateTeamMemberLocations = createServerFn({ method: "POST" })
     updateTeamMemberLocationsInputSchema.parse(data),
   )
   .handler(async ({ data }) => {
-    await requireSessionRoles([ROLE.admin]);
+    const { session, role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
 
     const db = await getDb();
     const uniqueLocationIds = [...new Set(data.locationIds)];
+
+    if (role === ROLE.manager) {
+      const managed = await db
+        .select({ locationId: userLocation.locationId })
+        .from(userLocation)
+        .where(eq(userLocation.userId, session.user.id));
+      const managedIds = new Set(managed.map((row) => row.locationId));
+      const current = await db
+        .select({ locationId: userLocation.locationId })
+        .from(userLocation)
+        .where(eq(userLocation.userId, data.userId));
+      const currentIds = new Set(current.map((row) => row.locationId));
+      for (const locationId of uniqueLocationIds) {
+        if (!managedIds.has(locationId) && !currentIds.has(locationId)) {
+          throw new Error("You can only assign staff to locations you manage.");
+        }
+      }
+    }
 
     if (uniqueLocationIds.length > 0) {
       const existingLocations = await db
@@ -209,6 +291,23 @@ export const updateTeamMemberLocations = createServerFn({ method: "POST" })
     }
 
     await getTeamMemberDetail(data.userId);
+
+    const weekStart = mondayOfWeekContaining(new Date(), "UTC");
+    const preview = await computeLocationMovePreview({
+      userId: data.userId,
+      locationIds: uniqueLocationIds,
+      weekStart,
+      role,
+      viewerId: session.user.id,
+    });
+    if (!preview.canSave) {
+      const first = preview.blockingShifts[0];
+      throw new Error(
+        first
+          ? `Cannot remove a location while they still have upcoming shifts (next: ${first.locationName}). Reassign those shifts first.`
+          : "Cannot change locations while upcoming shifts would be left uncovered.",
+      );
+    }
 
     await db.delete(userLocation).where(eq(userLocation.userId, data.userId));
 

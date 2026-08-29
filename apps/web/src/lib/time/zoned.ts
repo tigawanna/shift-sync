@@ -125,3 +125,68 @@ export function formatWeekdayYmd(ymd: string) {
   const weekday = new Date(`${ymd}T00:00:00Z`).getUTCDay();
   return WEEKDAY_LABELS[weekday];
 }
+
+export function yearMonthOf(ymd: string) {
+  return ymd.slice(0, 7);
+}
+
+export function currentYearMonth(timeZone = "UTC") {
+  return yearMonthOf(toYmd(getZonedParts(new Date(), timeZone)));
+}
+
+export function monthStartYmd(yearMonth: string) {
+  return `${yearMonth}-01`;
+}
+
+export function addMonthsYm(yearMonth: string, delta: number) {
+  const [year, month] = yearMonth.split("-").map(Number);
+  const utc = new Date(Date.UTC(year, month - 1 + delta, 1));
+  return `${utc.getUTCFullYear()}-${pad2(utc.getUTCMonth() + 1)}`;
+}
+
+export function lastDateOfMonth(yearMonth: string) {
+  return addDaysYmd(monthStartYmd(addMonthsYm(yearMonth, 1)), -1);
+}
+
+export function formatMonthLabel(yearMonth: string) {
+  const [year, month] = yearMonth.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, 1)).toLocaleString("en-US", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+export function formatDayLabel(ymd: string) {
+  const [year, month, day] = ymd.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day)).toLocaleString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/** Monday–Sunday dates covering the printed month grid. */
+export function monthGridDates(yearMonth: string) {
+  const first = monthStartYmd(yearMonth);
+  const last = lastDateOfMonth(yearMonth);
+  const startPad = (new Date(`${first}T00:00:00Z`).getUTCDay() + 6) % 7;
+  const endPad = (7 - new Date(`${last}T00:00:00Z`).getUTCDay()) % 7;
+  const gridStart = addDaysYmd(first, -startPad);
+  const gridEnd = addDaysYmd(last, endPad);
+  const dates: string[] = [];
+  for (let date = gridStart; date <= gridEnd; date = addDaysYmd(date, 1)) {
+    dates.push(date);
+  }
+  return dates;
+}
+
+export function eachYmdInclusive(start: string, end: string) {
+  if (end < start) return [start];
+  const dates: string[] = [];
+  for (let date = start; date <= end; date = addDaysYmd(date, 1)) {
+    dates.push(date);
+  }
+  return dates;
+}

@@ -3,10 +3,14 @@ import {
   publishWeek,
   unpublishWeek,
 } from "@/data-access-layer/schedule/schedule.functions";
-import { weekScheduleQueryOptions } from "@/data-access-layer/schedule/schedule.queries";
+import {
+  monthOverviewQueryOptions,
+  overviewDayQueryOptions,
+  weekScheduleQueryOptions,
+} from "@/data-access-layer/schedule/schedule.queries";
 import type { WeekShift } from "@/data-access-layer/schedule/schedule.types";
 import { AppConfig } from "@/utils/system";
-import { addDaysYmd, mondayOfWeekContaining } from "@/lib/time/zoned";
+import { addDaysYmd, currentYearMonth, mondayOfWeekContaining, yearMonthOf } from "@/lib/time/zoned";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { formatTimezone } from "@/utils/date";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
@@ -17,9 +21,9 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { DashboardPageHeader } from "../../-components/DashboardPageHeader";
 import { CreateShiftForm } from "../../-components/schedule/CreateShiftForm";
-import { EmptyScheduleLocations } from "../../-components/schedule/WeekScheduleBoard";
+import { EmptyScheduleLocations, WeekScheduleBoard } from "../../-components/schedule/WeekScheduleBoard";
 import { ShiftDetailSheet } from "../../-components/schedule/ShiftDetailSheet";
-import { WeekScheduleBoard } from "../../-components/schedule/WeekScheduleBoard";
+import { ScheduleBirdsEye } from "../../-components/schedule/ScheduleBirdsEye";
 
 const scheduleSearchSchema = z.object({
   locationId: z.string().optional(),
@@ -27,15 +31,36 @@ const scheduleSearchSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 export const Route = createFileRoute("/_dashboard/manager/schedule/")({
   validateSearch: (search) => scheduleSearchSchema.parse(search),
-  loaderDeps: ({ search }) => ({ locationId: search.locationId, week: search.week }),
+  loaderDeps: ({ search }) => ({
+    locationId: search.locationId,
+    week: search.week,
+    month: search.month,
+    date: search.date,
+  }),
   loader: async ({ context, deps }) => {
     const locations = await context.queryClient.ensureQueryData(accessibleLocationsQueryOptions());
     const locationId = deps.locationId ?? locations[0]?.id;
     if (!locationId) return;
+    if (locationId === "all") {
+      const month = deps.month ?? currentYearMonth("UTC");
+      await context.queryClient.ensureQueryData(monthOverviewQueryOptions({ month }));
+      if (deps.date) {
+        await context.queryClient.ensureQueryData(overviewDayQueryOptions({ date: deps.date }));
+      }
+      return;
+    }
     const timezone = locations.find((location) => location.id === locationId)?.timezone ?? "UTC";
     const weekStart = deps.week ?? mondayOfWeekContaining(new Date(), timezone);
     await context.queryClient.ensureQueryData(
@@ -61,7 +86,11 @@ function ManagerScheduleContent() {
   const navigate = useNavigate({ from: Route.fullPath });
   const locationsQuery = useSuspenseQuery(accessibleLocationsQueryOptions());
   const locations = locationsQuery.data;
-  const selectedLocation = locations.find((location) => location.id === search.locationId) ?? locations[0];
+  const isOverview = search.locationId === "all";
+  const selectedLocation = isOverview
+    ? undefined
+    : (locations.find((location) => location.id === search.locationId) ?? locations[0]);
+  const month = search.month ?? currentYearMonth("UTC");
   const weekStart =
     search.week ??
     (selectedLocation
@@ -69,13 +98,31 @@ function ManagerScheduleContent() {
       : mondayOfWeekContaining(new Date(), "UTC"));
 
   useEffect(() => {
+    if (isOverview) {
+      if (search.month) return;
+      void navigate({
+        search: { locationId: "all", month, date: search.date },
+        replace: true,
+      });
+      return;
+    }
     if (!selectedLocation) return;
     if (search.locationId === selectedLocation.id && search.week === weekStart) return;
     void navigate({
       search: { locationId: selectedLocation.id, week: weekStart },
       replace: true,
     });
-  }, [navigate, search.locationId, search.week, selectedLocation, weekStart]);
+  }, [isOverview, month, navigate, search.date, search.locationId, search.month, search.week, selectedLocation, weekStart]);
+
+  if (isOverview) {
+    return (
+      <ManagerOverviewBoard
+        locations={locations}
+        month={month}
+        selectedDate={search.date}
+      />
+    );
+  }
 
   if (!selectedLocation) {
     return (
@@ -94,6 +141,74 @@ function ManagerScheduleContent() {
       locations={locations}
       selectedLocation={selectedLocation}
       weekStart={weekStart}
+    />
+  );
+}
+
+function LocationPicker({
+  locations,
+  value,
+  month,
+  weekStart,
+}: {
+  locations: Array<{ id: string; name: string }>;
+  value: string;
+  month: string;
+  weekStart: string;
+}) {
+  const navigate = useNavigate({ from: Route.fullPath });
+  return (
+    <select
+      className="select-bordered select select-sm min-w-52"
+      value={value}
+      onChange={(event) => {
+        const next = event.target.value;
+        if (next === "all") {
+          void navigate({ search: { locationId: "all", month } });
+          return;
+        }
+        void navigate({
+          search: { locationId: next, week: weekStart },
+        });
+      }}
+    >
+      <option value="all">All locations</option>
+      {locations.map((location) => (
+        <option key={location.id} value={location.id}>
+          {location.name}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function ManagerOverviewBoard({
+  locations,
+  month,
+  selectedDate,
+}: {
+  locations: Array<{ id: string; name: string; timezone: string }>;
+  month: string;
+  selectedDate?: string;
+}) {
+  const navigate = useNavigate({ from: Route.fullPath });
+  const weekStart = mondayOfWeekContaining(new Date(), "UTC");
+  return (
+    <ScheduleBirdsEye
+      month={month}
+      selectedDate={selectedDate}
+      onMonthChange={(nextMonth) =>
+        void navigate({ search: { locationId: "all", month: nextMonth } })
+      }
+      onSelectDate={(date) =>
+        void navigate({ search: { locationId: "all", month: yearMonthOf(date), date } })
+      }
+      title="Schedule"
+      description="How many people are working each day across the restaurants you manage. Open a date, then a location, to see the roster."
+      personTo="/manager/team/$userId"
+      locationSelect={
+        <LocationPicker locations={locations} value="all" month={month} weekStart={weekStart} />
+      }
     />
   );
 }
@@ -188,11 +303,19 @@ function ManagerScheduleBoard({
             className="select-bordered select select-sm min-w-52"
             value={selectedLocation.id}
             onChange={(event) => {
+              const next = event.target.value;
+              if (next === "all") {
+                void navigate({
+                  search: { locationId: "all", month: yearMonthOf(weekStart) },
+                });
+                return;
+              }
               void navigate({
-                search: { locationId: event.target.value, week: weekStart },
+                search: { locationId: next, week: weekStart },
               });
             }}
           >
+            <option value="all">All locations</option>
             {locations.map((location) => (
               <option key={location.id} value={location.id}>
                 {location.name}
@@ -253,7 +376,7 @@ function ManagerScheduleBoard({
       ) : null}
 
       <WeekScheduleBoard
-        schedule={schedule}
+        days={schedule.days}
         onSelectShift={setSelectedShift}
         onAddDay={setCreateDate}
       />
