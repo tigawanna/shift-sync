@@ -15,11 +15,11 @@ import { Route as AuthLayoutRouteImport } from './routes/auth/layout'
 import { Route as IconRouteImport } from './routes/icon'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as TermsRouteImport } from './routes/terms'
-import { Route as DashboardStaffRouteImport } from './routes/_dashboard/staff'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
+import { Route as DashboardStaffIndexRouteImport } from './routes/_dashboard/staff/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -51,11 +51,6 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardStaffRoute = DashboardStaffRouteImport.update({
-  id: '/staff',
-  path: '/staff',
-  getParentRoute: () => DashboardLayoutRoute,
-} as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -76,6 +71,11 @@ const AuthSignupRoute = AuthSignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => AuthLayoutRoute,
 } as any)
+const DashboardStaffIndexRoute = DashboardStaffIndexRouteImport.update({
+  id: '/staff/',
+  path: '/staff/',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -88,24 +88,24 @@ export interface FileRoutesByFullPath {
   '/icon': typeof IconRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
-  '/staff': typeof DashboardStaffRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/staff/': typeof DashboardStaffIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/icon': typeof IconRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
-  '/staff': typeof DashboardStaffRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/staff': typeof DashboardStaffIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,12 +115,12 @@ export interface FileRoutesById {
   '/icon': typeof IconRoute
   '/privacy': typeof PrivacyRoute
   '/terms': typeof TermsRoute
-  '/_dashboard/staff': typeof DashboardStaffRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_dashboard/staff/': typeof DashboardStaffIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -130,24 +130,24 @@ export interface FileRouteTypes {
     | '/icon'
     | '/privacy'
     | '/terms'
-    | '/staff'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/signup'
     | '/auth/'
     | '/api/auth/$'
+    | '/staff/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/icon'
     | '/privacy'
     | '/terms'
-    | '/staff'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/signup'
     | '/auth'
     | '/api/auth/$'
+    | '/staff'
   id:
     | '__root__'
     | '/'
@@ -156,12 +156,12 @@ export interface FileRouteTypes {
     | '/icon'
     | '/privacy'
     | '/terms'
-    | '/_dashboard/staff'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/signup'
     | '/auth/'
     | '/api/auth/$'
+    | '/_dashboard/staff/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -218,13 +218,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_dashboard/staff': {
-      id: '/_dashboard/staff'
-      path: '/staff'
-      fullPath: '/staff'
-      preLoaderRoute: typeof DashboardStaffRouteImport
-      parentRoute: typeof DashboardLayoutRoute
-    }
     '/auth/': {
       id: '/auth/'
       path: '/'
@@ -253,6 +246,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignupRouteImport
       parentRoute: typeof AuthLayoutRoute
     }
+    '/_dashboard/staff/': {
+      id: '/_dashboard/staff/'
+      path: '/staff'
+      fullPath: '/staff/'
+      preLoaderRoute: typeof DashboardStaffIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -264,11 +264,11 @@ declare module '@tanstack/react-router' {
 }
 
 interface DashboardLayoutRouteChildren {
-  DashboardStaffRoute: typeof DashboardStaffRoute
+  DashboardStaffIndexRoute: typeof DashboardStaffIndexRoute
 }
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
-  DashboardStaffRoute: DashboardStaffRoute,
+  DashboardStaffIndexRoute: DashboardStaffIndexRoute,
 }
 
 const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(

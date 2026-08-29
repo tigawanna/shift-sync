@@ -30,10 +30,6 @@ export default defineConfig({
     tailwindcss(),
     tanstackStart({
       importProtection: {
-        behavior: {
-          dev: "mock",
-          build: "mock",
-        },
         client: {
           files: [
             "**/*.server.*",
