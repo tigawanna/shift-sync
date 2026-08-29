@@ -1,6 +1,8 @@
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { SearchIcon, XIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { SearchIcon } from "lucide-react";
+// import { XIcon } from "lucide-react";
 
 type SearchBoxProps = {
   keyword: string;
@@ -28,22 +30,25 @@ export function SearchBox({
         value={keyword}
         onChange={(event) => setKeyword(event.target.value)}
         placeholder={placeholder}
-        className="pr-10 pl-9"
+        className={cn("pl-9", isDebouncing && "pr-10")}
         aria-label={placeholder}
       />
-      <div className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center gap-1">
-        {isDebouncing ? <Spinner size={14} /> : null}
-        {keyword ? (
-          <button
-            type="button"
-            className="btn btn-ghost btn-xs btn-square"
-            aria-label="Clear search"
-            onClick={() => setKeyword("")}
-          >
-            <XIcon className="size-3.5" />
-          </button>
-        ) : null}
-      </div>
+      {isDebouncing ? (
+        <div className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2">
+          <Spinner size={14} />
+        </div>
+      ) : null}
+      {/* preferring the native clear button added to input of type search */}
+      {/* {keyword ? (
+        <button
+          type="button"
+          className="btn btn-ghost btn-xs btn-square"
+          aria-label="Clear search"
+          onClick={() => setKeyword("")}
+        >
+          <XIcon className="size-3.5" />
+        </button>
+      ) : null} */}
     </div>
   );
 }
