@@ -18,7 +18,7 @@ import {
 } from "../src/lib/drizzle/schema/skills-schema";
 import { addDaysYmd, mondayOfWeekContaining, zonedWallTimeToUtc } from "../src/lib/time/zoned";
 import { createAuthFromEnv } from "../src/server/create-auth";
-import { and, eq, like } from "drizzle-orm";
+import { and, eq, like, or } from "drizzle-orm";
 import { SEED_LOCATIONS, SEED_USER_LOCATIONS } from "./seed/locations.data";
 import {
   buildSeedAvailability,
@@ -26,7 +26,7 @@ import {
   buildSeedUserSkills,
   SEED_SKILLS,
 } from "./seed/schedule.data";
-import { SEED_DEFAULT_PASSWORD, SEED_USERS } from "./seed/users.data";
+import { SEED_DEFAULT_PASSWORD, SEED_MANAGER_COUNT, SEED_STAFF_COUNT, SEED_USERS } from "./seed/users.data";
 
 async function ensureSeedUser(
   auth: Awaited<ReturnType<typeof createAuthFromEnv>>,
@@ -73,6 +73,25 @@ async function ensureSeedUser(
 
   console.log(`created: ${seed.email} (${seed.role})`);
   return created?.id;
+}
+
+async function pruneExtraSeedUsers(db: Awaited<ReturnType<typeof getDb>>) {
+  const keep = new Set(SEED_USERS.map((user) => user.email));
+  const extras = await db
+    .select({ id: userTable.id, email: userTable.email })
+    .from(userTable)
+    .where(
+      or(
+        like(userTable.email, "staff-%@costal-eats.com"),
+        like(userTable.email, "manager-%@costal-eats.com"),
+      ),
+    );
+
+  for (const row of extras) {
+    if (keep.has(row.email)) continue;
+    await db.delete(userTable).where(eq(userTable.id, row.id));
+    console.log(`removed extra seed user: ${row.email}`);
+  }
 }
 
 async function ensureSeedLocation(
@@ -129,9 +148,11 @@ async function main() {
   const db = await getDb();
   const auth = createAuthFromEnv(env, db);
 
-  console.log(`Seeding ${SEED_USERS.length} Coastal Eats accounts…`);
+  console.log(`Seeding ${SEED_USERS.length} Coastal Eats accounts (${SEED_MANAGER_COUNT} managers, ${SEED_STAFF_COUNT} staff)…`);
   console.log(`Default password: ${SEED_DEFAULT_PASSWORD}`);
   console.log("");
+
+  await pruneExtraSeedUsers(db);
 
   const userIds = new Map<string, string>();
 

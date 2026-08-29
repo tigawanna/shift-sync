@@ -3,8 +3,9 @@ import type { AppRole } from "../../src/lib/better-auth/permissions";
 
 export const SEED_DEFAULT_PASSWORD = "CoastalEats!seed";
 
+/** 1 admin + managers + staff = 50 demo accounts. */
 export const SEED_MANAGER_COUNT = 8;
-export const SEED_STAFF_COUNT = 200;
+export const SEED_STAFF_COUNT = 41;
 
 export type SeedUser = {
   name: string;

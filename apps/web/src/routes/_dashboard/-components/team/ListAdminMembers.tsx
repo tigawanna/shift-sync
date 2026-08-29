@@ -97,6 +97,7 @@ export function ListAdminMembers({
     onSort,
     memberTo,
     showRole: false,
+    showImpersonate: true,
     emptyTitle,
     emptyMessage,
   };

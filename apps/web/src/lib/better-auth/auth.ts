@@ -5,6 +5,7 @@ import { ac, ROLE, roles } from "@/lib/better-auth/permissions";
 import { betterAuth, type BetterAuthPlugin } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin } from "better-auth/plugins/admin";
+import { multiSession } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 
 export type CreateAuthOptions = {
@@ -52,7 +53,9 @@ export function createAuth(options: CreateAuthOptions) {
         ac,
         roles,
         defaultRole: ROLE.staff,
+        impersonationSessionDuration: 60 * 60 * 8,
       }),
+      multiSession({ maximumSessions: 10 }),
       ...plugins,
     ],
   });

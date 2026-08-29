@@ -1,10 +1,12 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { useViewer } from "@/data-access-layer/auth/viewer";
 import { teamMemberQueryOptions } from "@/data-access-layer/team/team.queries";
-import { ROLE } from "@/lib/better-auth/roles";
+import { ROLE, getUserAppRole } from "@/lib/better-auth/roles";
 import { formatDate } from "@/utils/date";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { DashboardPageHeader } from "../../../-components/DashboardPageHeader";
+import { ImpersonateUserButton } from "../../../-components/team/ImpersonateUserButton";
 import { UserScheduleSection } from "../../../-components/schedule/PersonMonthCalendar";
 
 type UserDetailPanelProps = {
@@ -21,6 +23,8 @@ function roleBadgeClass(role: typeof ROLE.manager | typeof ROLE.staff) {
 }
 
 export function UserDetailPanel({ userId, expectedRole, roleLabel }: UserDetailPanelProps) {
+  const { viewer } = useViewer();
+  const viewerRole = getUserAppRole(viewer.user);
   const { data: member, isPending, isError, error } = useQuery(
     teamMemberQueryOptions({ userId, role: expectedRole }),
   );
@@ -45,11 +49,19 @@ export function UserDetailPanel({ userId, expectedRole, roleLabel }: UserDetailP
         title={member.name}
         description={member.email}
         actions={
-          <span
-            className={`rounded-md px-2.5 py-1 text-xs font-medium ${roleBadgeClass(member.role as typeof ROLE.manager | typeof ROLE.staff)}`}
-          >
-            {roleLabel(member.role as typeof ROLE.manager | typeof ROLE.staff)}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className={`rounded-md px-2.5 py-1 text-xs font-medium ${roleBadgeClass(member.role as typeof ROLE.manager | typeof ROLE.staff)}`}
+            >
+              {roleLabel(member.role as typeof ROLE.manager | typeof ROLE.staff)}
+            </span>
+            {viewerRole === ROLE.admin || viewerRole === ROLE.manager ? (
+              <ImpersonateUserButton
+                member={member}
+                viewerRole={viewerRole}
+              />
+            ) : null}
+          </div>
         }
       />
 
