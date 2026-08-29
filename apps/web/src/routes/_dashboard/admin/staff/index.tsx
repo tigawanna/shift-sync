@@ -1,36 +1,47 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { z } from 'zod';
-import { listStaffQueryOptions } from '../-data-access-layer/staff.query-options';
+import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
+import { AppConfig } from "@/utils/system";
+import { createFileRoute } from "@tanstack/react-router";
+import { Suspense } from "react";
+import { z } from "zod";
+import { listStaffQueryOptions } from "../-data-access-layer/staff.query-options";
+import { DashboardPageHeader } from "../../-components/DashboardPageHeader";
+import { StaffList } from "./-components/StaffList";
 
-
-const serachStaffSchema = z.object({
-  page: z.number().optional().default(1),
-  perPage: z.number().optional().default(50),
-  sq: z.string().optional().default(''),
+const staffSearchSchema = z.object({
+  page: z.coerce.number().int().min(1).optional(),
+  q: z.string().optional(),
 });
 
-export const Route = createFileRoute('/_dashboard/admin/staff/')({
-  component: RouteComponent,
-  validateSearch: serachStaffSchema,
-  loaderDeps(opts) {
-    return {
-      page: opts.search.page,
-      perPage: opts.search.perPage,
-      sq: opts.search.sq,
-    };
+export const Route = createFileRoute("/_dashboard/admin/staff/")({
+  validateSearch: (search) => staffSearchSchema.parse(search),
+  loaderDeps: ({ search }) => ({
+    page: search.page,
+    q: search.q,
+  }),
+  loader: async ({ context, deps }) => {
+    await context.queryClient.ensureQueryData(
+      listStaffQueryOptions({
+        page: deps.page,
+        q: deps.q,
+      }),
+    );
   },
-  loader: async ({ deps }) => {
-    const { page, perPage, sq } = deps;
-    return listStaffQueryOptions(page, perPage,sq);
-  },
-})
+  component: AdminStaffPage,
+  head: () => ({
+    meta: [{ title: `${AppConfig.name} | Staff` }],
+  }),
+});
 
-function RouteComponent() {
-  return <div className='w-full min-h-screen flex flex-col items-center justify-center'>
-    <div className='w-full max-w-7xl'>
-      <div className='flex items-center justify-between'>
-        <h1 className='text-2xl font-bold'>Staff</h1>
-      </div>
+function AdminStaffPage() {
+  return (
+    <div className="flex flex-col gap-8">
+      <DashboardPageHeader
+        title="Staff"
+        description="People who can be scheduled across locations."
+      />
+      <Suspense fallback={<RouterPendingComponent />}>
+        <StaffList />
+      </Suspense>
     </div>
-  </div>
+  );
 }
