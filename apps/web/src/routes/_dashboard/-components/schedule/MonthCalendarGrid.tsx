@@ -33,7 +33,7 @@ export function MonthCalendarGrid({
           </p>
         ))}
       </div>
-      <div className="grid min-h-[28rem] flex-1 grid-cols-7 grid-rows-6 gap-1 sm:min-h-[34rem] sm:gap-2">
+      <div className="grid min-h-112 flex-1 grid-cols-7 grid-rows-6 gap-1 sm:min-h-136 sm:gap-2">
         {dates.map((date) => {
           const inMonth = yearMonthOf(date) === month;
           const selected = date === selectedDate;

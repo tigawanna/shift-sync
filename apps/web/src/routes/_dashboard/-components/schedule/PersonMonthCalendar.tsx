@@ -157,7 +157,7 @@ function WeekStatRail({ stat }: { stat: PersonCalendarWeekStat }) {
       : "text-base-content/70";
 
   return (
-    <div className="border-base-content/10 flex w-[4.75rem] shrink-0 flex-col items-end justify-center gap-1 border-l px-2">
+    <div className="border-base-content/10 flex w-19 shrink-0 flex-col items-end justify-center gap-1 border-l px-2">
       <button
         type="button"
         className={`text-right text-[11px] leading-tight font-medium tabular-nums ${hoursClass} ${hasWarnings ? "hover:underline" : ""}`}
@@ -260,7 +260,7 @@ function PersonMonthGrid({
             </p>
           ))}
         </div>
-        <p className="text-base-content/50 w-[4.75rem] shrink-0 px-2 text-right text-[11px] font-medium tracking-wide uppercase">
+        <p className="text-base-content/50 w-19 shrink-0 px-2 text-right text-[11px] font-medium tracking-wide uppercase">
           Week
         </p>
       </div>
@@ -334,7 +334,7 @@ function PersonMonthGrid({
                   })}
                 </div>
               </div>
-              {stat ? <WeekStatRail stat={stat} /> : <div className="w-[4.75rem] shrink-0" />}
+              {stat ? <WeekStatRail stat={stat} /> : <div className="w-19 shrink-0" />}
             </div>
           );
         })}
