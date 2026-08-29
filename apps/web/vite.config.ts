@@ -31,7 +31,18 @@ export default defineConfig({
     tanstackStart({
       importProtection: {
         behavior: {
+          dev: "mock",
           build: "mock",
+        },
+        client: {
+          files: [
+            "**/*.server.*",
+            "**/src/lib/auth.ts",
+            "**/src/env.ts",
+            "**/src/lib/drizzle/client.ts",
+            "**/src/lib/drizzle/local-client.ts",
+            "**/src/lib/drizzle/http-client.ts",
+          ],
         },
       },
       router: {

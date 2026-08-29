@@ -1,3 +1,4 @@
+import "@tanstack/react-start/server-only";
 import { DEFAULT_DATABASE_URL } from "@/lib/drizzle/turso";
 import { z } from "zod";
 

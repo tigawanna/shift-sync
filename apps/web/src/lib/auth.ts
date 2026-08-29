@@ -1,3 +1,4 @@
+import "@tanstack/react-start/server-only";
 import { getEnv } from "@/env";
 import type { Auth } from "@/lib/better-auth/auth";
 import { getDb } from "@/lib/drizzle/client";

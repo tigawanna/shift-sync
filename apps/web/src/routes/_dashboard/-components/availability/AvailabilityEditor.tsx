@@ -131,14 +131,8 @@ export function AvailabilityEditor({ weeklyWindows, exceptions }: AvailabilityEd
   return (
     <div className="flex flex-col gap-8" data-test="staff-availability-editor">
       <section className="border-base-content/10 bg-base-100/70 flex flex-col gap-4 rounded-2xl border p-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-medium">Recurring weekly</h2>
-            <p className="text-base-content/60 mt-1 text-sm">
-              Same hours every week. Leave a day empty if you cannot work that day. Times are
-              wall-clock and checked in the restaurant&apos;s timezone.
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-sm font-medium">Weekly hours</h2>
           <button
             type="button"
             className="btn btn-primary btn-sm"

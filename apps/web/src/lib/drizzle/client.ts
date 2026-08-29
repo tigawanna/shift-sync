@@ -1,20 +1,30 @@
+import "@tanstack/react-start/server-only";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createRemoteDb } from "@/lib/drizzle/http-client";
 import { createLocalDb } from "@/lib/drizzle/local-client";
-import {
-  APP_ROOT,
-  DEFAULT_DATABASE_URL,
-  isTursoRemote,
-  resolveDatabaseUrl,
-} from "@/lib/drizzle/turso";
+import { DEFAULT_DATABASE_URL, isTursoRemote } from "@/lib/drizzle/turso";
 
 type AppDatabase = ReturnType<typeof createLocalDb> | ReturnType<typeof createRemoteDb>;
 
 export type { AppDatabase };
 
+/** apps/web — anchored to this file, not `process.cwd()`. */
+const APP_ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const MIGRATIONS_DIR = path.join(APP_ROOT, "drizzle");
+
+/** `file:./data/shift-sync.db` → absolute `file:` under the app root. */
+function resolveDatabaseUrl(url: string) {
+  if (!url.startsWith("file:")) {
+    return url;
+  }
+
+  const raw = url.slice("file:".length);
+  const absolute = path.isAbsolute(raw) ? raw : path.join(APP_ROOT, raw);
+  return `file:${absolute}`;
+}
 
 let db: AppDatabase | null = null;
 let initPromise: Promise<AppDatabase> | null = null;

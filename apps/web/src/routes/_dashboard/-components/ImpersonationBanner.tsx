@@ -35,7 +35,7 @@ export function ImpersonationBanner() {
       </div>
       <button
         type="button"
-        className="btn btn-warning btn-xs"
+        className="btn btn-xs border-none bg-warning font-medium text-neutral-950 hover:bg-warning/90"
         disabled={stopMutation.isPending}
         onClick={() => stopMutation.mutate()}
       >

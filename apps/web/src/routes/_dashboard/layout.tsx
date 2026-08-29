@@ -1,4 +1,4 @@
-import { viewerMiddleware } from "@/data-access-layer/auth/viewer";
+import { viewerMiddleware } from "@/data-access-layer/auth/viewer.middleware";
 import { RouterNotFoundComponent } from "@/lib/tanstack/router/RouterNotFoundComponent";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { RouterErrorComponent } from "@/lib/tanstack/router/routerErrorComponent";
