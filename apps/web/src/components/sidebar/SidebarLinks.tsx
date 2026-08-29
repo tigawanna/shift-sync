@@ -4,9 +4,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
-  useSidebar,
 } from "@/components/ui/sidebar";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { ChevronRight } from "lucide-react";
 import { SidebarItem } from "./types";
@@ -31,11 +29,9 @@ function sidebarHrefMatchesPathname(pathname: string, href: string, fuzzy: boole
 }
 
 export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
-  const { state } = useSidebar();
   const pathname = useRouterState({
     select: (s) => s.location.pathname,
   });
-  const showTooltips = state === "collapsed";
 
   const routeMatches = (href: string): boolean => sidebarHrefMatchesPathname(pathname, href, true);
 
@@ -54,35 +50,19 @@ export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
           return (
             <Collapsible
               key={item.title}
-              asChild
               defaultOpen={sectionOpenDefault}
               className="group/collapsible"
             >
               <SidebarMenuItem>
-                {showTooltips ? (
-                  <TooltipProvider>
-                    <Tooltip delayDuration={200}>
-                      <CollapsibleTrigger asChild>
-                        <TooltipTrigger asChild>
-                          <SidebarMenuButton isActive={sectionOpenDefault}>
-                            {item.icon && <item.icon />}
-                            <span>{item.title}</span>
-                            <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                          </SidebarMenuButton>
-                        </TooltipTrigger>
-                      </CollapsibleTrigger>
-                      <TooltipContent side="right">{item.title}</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : (
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={sectionOpenDefault}>
-                      {item.icon && <item.icon />}
-                      <span>{item.title}</span>
-                      <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                )}
+                <CollapsibleTrigger
+                  render={
+                    <SidebarMenuButton isActive={sectionOpenDefault} tooltip={item.title} />
+                  }
+                >
+                  {item.icon && <item.icon />}
+                  <span>{item.title}</span>
+                  <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                </CollapsibleTrigger>
                 <CollapsibleContent>
                   <SidebarLinks links={item.sublinks} isNested={true} />
                 </CollapsibleContent>
@@ -95,28 +75,14 @@ export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
 
         return (
           <SidebarMenuItem key={item.title}>
-            {showTooltips ? (
-              <TooltipProvider>
-                <Tooltip delayDuration={200}>
-                  <TooltipTrigger asChild>
-                    <SidebarMenuButton asChild isActive={isActive}>
-                      <Link to={item.href}>
-                        {item.icon && <item.icon />}
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{item.title}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              <SidebarMenuButton asChild isActive={isActive}>
-                <Link to={item.href}>
-                  {item.icon && <item.icon />}
-                  <span>{item.title}</span>
-                </Link>
-              </SidebarMenuButton>
-            )}
+            <SidebarMenuButton
+              isActive={isActive}
+              tooltip={item.title}
+              render={<Link to={item.href} />}
+            >
+              {item.icon && <item.icon />}
+              <span>{item.title}</span>
+            </SidebarMenuButton>
           </SidebarMenuItem>
         );
       })}

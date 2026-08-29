@@ -35,7 +35,7 @@ export function SearchBox({
       />
       {isDebouncing ? (
         <div className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2">
-          <Spinner size={14} />
+          <Spinner className="size-3.5" />
         </div>
       ) : null}
       {/* preferring the native clear button added to input of type search */}

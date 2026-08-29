@@ -196,8 +196,7 @@ function WeekStatRail({ stat }: { stat: PersonCalendarWeekStat }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Week of {stat.weekStart}</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="flex flex-col gap-2 text-sm">
+            <AlertDialogDescription render={<div className="flex flex-col gap-2 text-sm" />}>
                 <p>
                   If they work every assigned shift this week:{" "}
                   <span className="font-medium tabular-nums">{stat.hours.toFixed(1)} hours</span>
@@ -217,7 +216,6 @@ function WeekStatRail({ stat }: { stat: PersonCalendarWeekStat }) {
                     <li key={warning}>{warning}</li>
                   ))}
                 </ul>
-              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

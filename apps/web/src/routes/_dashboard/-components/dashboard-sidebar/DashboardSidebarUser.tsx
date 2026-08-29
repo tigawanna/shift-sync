@@ -31,11 +31,14 @@ export function DashboardSidebarUser() {
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
+          <DropdownMenuTrigger
+            render={
+              <SidebarMenuButton
+                size="lg"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              />
+            }
+          >
               <Avatar className="size-6 shrink-0 rounded-lg">
                 <AvatarImage src={viewer.user.image ?? undefined} alt={viewer.user.name} />
                 <AvatarFallback className="rounded-lg">
@@ -51,7 +54,6 @@ export function DashboardSidebarUser() {
                   <ChevronsUpDown className="ml-auto size-4 shrink-0" />
                 </>
               ) : null}
-            </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="border-base-content/10 bg-base-100 text-base-content min-w-56 rounded-lg border shadow-lg"
@@ -74,12 +76,8 @@ export function DashboardSidebarUser() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/privacy">Privacy</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/terms">Terms</Link>
-            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link to="/privacy" />}>Privacy</DropdownMenuItem>
+            <DropdownMenuItem render={<Link to="/terms" />}>Terms</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"

@@ -13,8 +13,11 @@ export function DashboardSidebarHeader() {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <SidebarMenuButton size="lg" asChild onClick={() => setOpenMobile(false)}>
-          <Link to="/" className="hover:bg-primary/10 flex w-full justify-center">
+        <SidebarMenuButton
+          size="lg"
+          render={<Link to="/" className="hover:bg-primary/10 flex w-full justify-center" />}
+          onClick={() => setOpenMobile(false)}
+        >
             {/*
               SidebarMenuButton forces [&>svg]:size-4 on direct SVG children.
               Wrap like the shadcn Avatar/team-switcher pattern so size sticks.
@@ -28,7 +31,6 @@ export function DashboardSidebarHeader() {
                 <span className="text-primary">.</span>
               </span>
             ) : null}
-          </Link>
         </SidebarMenuButton>
       </SidebarMenuItem>
     </SidebarMenu>

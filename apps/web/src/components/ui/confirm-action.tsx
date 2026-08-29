@@ -1,7 +1,7 @@
 "use client";
 
 import type { VariantProps } from "class-variance-authority";
-import type { ReactNode } from "react";
+import { isValidElement, type ReactNode } from "react";
 
 import {
   AlertDialog,
@@ -44,7 +44,9 @@ export function ConfirmAction({
 }: ConfirmActionProps) {
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild>{children}</AlertDialogTrigger>
+      <AlertDialogTrigger
+        render={isValidElement(children) ? children : <button type="button">{children}</button>}
+      />
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>

@@ -17,6 +17,7 @@ import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanst
 import { createMiddleware } from "@tanstack/react-start";
 import { evlogErrorHandler } from "evlog/nitro/v3";
 import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import appCss from "../styles.css?url";
 
 const evlogMiddleware = createMiddleware().server(evlogErrorHandler);
@@ -64,13 +65,15 @@ function RootDocument() {
       <body>
         <ThemeProvider storageKey={AppConfig.themeStorageKey}>
           <TanstackQueryProvider queryClient={queryClient}>
-            <Outlet />
-            <Toaster position="bottom-left" />
-            {import.meta.env.DEV ? (
-              <Suspense fallback={null}>
-                <TanstackDevtools />
-              </Suspense>
-            ) : null}
+            <TooltipProvider>
+              <Outlet />
+              <Toaster position="bottom-left" />
+              {import.meta.env.DEV ? (
+                <Suspense fallback={null}>
+                  <TanstackDevtools />
+                </Suspense>
+              ) : null}
+            </TooltipProvider>
           </TanstackQueryProvider>
         </ThemeProvider>
         <Scripts />
