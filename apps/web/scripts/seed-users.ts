@@ -2,7 +2,10 @@ import { getEnv } from "../src/env";
 import { ROLE } from "../src/lib/better-auth/roles";
 import { getDb } from "../src/lib/drizzle/client";
 import { user as userTable } from "../src/lib/drizzle/schema/auth-schema";
-import { location as locationTable, userLocation } from "../src/lib/drizzle/schema/locations-schema";
+import {
+  location as locationTable,
+  userLocation,
+} from "../src/lib/drizzle/schema/locations-schema";
 import { createAuthFromEnv } from "../src/server/create-auth";
 import { eq } from "drizzle-orm";
 import { SEED_LOCATIONS, SEED_USER_LOCATIONS } from "./seed/locations.data";
@@ -11,7 +14,11 @@ import { SEED_DEFAULT_PASSWORD, SEED_USERS } from "./seed/users.data";
 async function ensureSeedUser(
   auth: Awaited<ReturnType<typeof createAuthFromEnv>>,
   db: Awaited<ReturnType<typeof getDb>>,
-  seed: { name: string; email: string; role: typeof ROLE.admin | typeof ROLE.manager | typeof ROLE.staff },
+  seed: {
+    name: string;
+    email: string;
+    role: typeof ROLE.admin | typeof ROLE.manager | typeof ROLE.staff;
+  },
 ) {
   const existing = await db
     .select({ id: userTable.id, role: userTable.role })

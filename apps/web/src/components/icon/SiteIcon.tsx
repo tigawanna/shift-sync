@@ -34,7 +34,12 @@ const ANIMATE_STAR_Y = 58.2;
  * Theme-aware brand mark: inherits `currentColor`.
  * Defaults to base-content (near-black in light, near-white in dark).
  */
-export function SiteIcon({ className, size, animate = false, "aria-hidden": ariaHidden }: SiteIconProps) {
+export function SiteIcon({
+  className,
+  size,
+  animate = false,
+  "aria-hidden": ariaHidden,
+}: SiteIconProps) {
   return (
     <svg
       id="svg1"
@@ -44,7 +49,8 @@ export function SiteIcon({ className, size, animate = false, "aria-hidden": aria
       className={cn("text-base-content", className)}
       width={size}
       height={size}
-      aria-hidden={ariaHidden}>
+      aria-hidden={ariaHidden}
+    >
       <defs id="defs1">
         {animate ? (
           <style>{`
@@ -92,7 +98,8 @@ export function SiteIcon({ className, size, animate = false, "aria-hidden": aria
         />
         <g
           id="SVGRepo_iconCarrier"
-          transform="matrix(0.26458333,0,0,0.26458333,32.279167,39.952084)">
+          transform="matrix(0.26458333,0,0,0.26458333,32.279167,39.952084)"
+        >
           <g id="g6">
             <path
               id="path1"
@@ -135,8 +142,11 @@ export function SiteIcon({ className, size, animate = false, "aria-hidden": aria
             <g
               key={star.id}
               className={animate ? "site-icon-star" : undefined}
-              style={animate ? { animationDelay: star.delay } : undefined}>
-              <g transform={`matrix(0.06913471,0,0,0.0968259,${STAR_X},${animate ? ANIMATE_STAR_Y : star.y})`}>
+              style={animate ? { animationDelay: star.delay } : undefined}
+            >
+              <g
+                transform={`matrix(0.06913471,0,0,0.0968259,${STAR_X},${animate ? ANIMATE_STAR_Y : star.y})`}
+              >
                 <path d={STAR_PATH} fill="currentColor" fillOpacity={star.opacity} stroke="none" />
               </g>
             </g>

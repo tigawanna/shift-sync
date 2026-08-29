@@ -163,11 +163,7 @@ async function listManagerLocations(
       .select({ total: count() })
       .from(locationTable)
       .innerJoin(userLocation, eq(userLocation.locationId, locationTable.id))
-      .where(
-        searchFilter
-          ? and(managerAssignmentFilter, searchFilter)
-          : managerAssignmentFilter,
-      ),
+      .where(searchFilter ? and(managerAssignmentFilter, searchFilter) : managerAssignmentFilter),
   ]);
 
   const total = totalRow[0]?.total ?? 0;
@@ -279,7 +275,7 @@ export const listAllLocationsForAssignment = createServerFn({ method: "GET" }).h
     },
   });
 
-  return rows
+  return rows;
 });
 
 export const getLocationSummary = createServerFn({ method: "GET" }).handler(async () => {

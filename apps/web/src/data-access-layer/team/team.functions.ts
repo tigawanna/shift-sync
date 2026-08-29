@@ -56,7 +56,10 @@ function buildSearchFilter(search: string | undefined): SQL | undefined {
   return or(like(userTable.name, pattern), like(userTable.email, pattern));
 }
 
-async function listMembersForViewer(input: ListTeamMembersInput, viewerRole: typeof ROLE.admin | typeof ROLE.manager) {
+async function listMembersForViewer(
+  input: ListTeamMembersInput,
+  viewerRole: typeof ROLE.admin | typeof ROLE.manager,
+) {
   const page = input.page ?? 1;
   const perPage = ADMIN_LIST_PER_PAGE;
   const offset = (page - 1) * perPage;
@@ -143,11 +146,7 @@ export const createTeamUser = createServerFn({ method: "POST" })
 async function getTeamMemberDetail(userId: string): Promise<TeamMemberDetail> {
   const db = await getDb();
 
-  const [userRow] = await db
-    .select()
-    .from(userTable)
-    .where(eq(userTable.id, userId))
-    .limit(1);
+  const [userRow] = await db.select().from(userTable).where(eq(userTable.id, userId)).limit(1);
 
   if (!userRow) {
     throw new Error("User not found.");

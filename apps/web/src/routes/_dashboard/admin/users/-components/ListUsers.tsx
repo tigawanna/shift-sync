@@ -1,7 +1,13 @@
 import { TSRListPagination } from "@/components/pagination/TSRListPagination";
 import { SearchBox } from "@/components/search/SearchBox";
 import { usePageSearchQuery } from "@/components/search/use-page-search-query";
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import { teamMembersQueryOptions } from "@/data-access-layer/team/team.queries";
 import {
   DEFAULT_TEAM_MEMBER_SORT_BY,
@@ -107,9 +113,7 @@ export function ListUsers() {
   return (
     <section className="flex h-full w-full flex-col gap-4" data-test="admin-users-list">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <p className="text-base-content/60 font-mono text-xs">
-          {isPending ? "…" : total} people
-        </p>
+        <p className="text-base-content/60 font-mono text-xs">{isPending ? "…" : total} people</p>
         <SearchBox
           keyword={inputValue}
           setKeyword={(value) => onSearchChange(value)}

@@ -89,7 +89,11 @@ export function CreateLocationForm({ onCancel, onCreated }: CreateLocationFormPr
       </label>
 
       <div className="flex flex-wrap gap-2">
-        <button type="submit" className="btn btn-primary btn-sm" disabled={createMutation.isPending}>
+        <button
+          type="submit"
+          className="btn btn-primary btn-sm"
+          disabled={createMutation.isPending}
+        >
           {createMutation.isPending ? "Creating…" : "Create location"}
         </button>
         <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>

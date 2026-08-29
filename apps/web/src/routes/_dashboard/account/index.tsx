@@ -49,9 +49,7 @@ function AccountPage() {
     <section className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Account</h1>
-        <p className="text-base-content/70 mt-2 max-w-2xl">
-          Your profile and account settings.
-        </p>
+        <p className="text-base-content/70 mt-2 max-w-2xl">Your profile and account settings.</p>
       </div>
 
       <div className="border-base-content/10 bg-base-100/70 rounded-2xl border p-6">

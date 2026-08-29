@@ -6,7 +6,6 @@ type LocationsTableProps = {
   emptyMessage: string;
 };
 
-
 export function LocationsTable({ locations, emptyMessage }: LocationsTableProps) {
   if (locations.length === 0) {
     return (

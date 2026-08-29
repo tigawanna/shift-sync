@@ -1,9 +1,4 @@
-import {
-  managerEmail,
-  SEED_MANAGER_COUNT,
-  SEED_STAFF_COUNT,
-  staffEmail,
-} from "./users.data";
+import { managerEmail, SEED_MANAGER_COUNT, SEED_STAFF_COUNT, staffEmail } from "./users.data";
 
 export type SeedLocation = {
   id: string;

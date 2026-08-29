@@ -98,7 +98,11 @@ export function SigninComponent() {
 
         <p className="text-base-content/70 text-center text-sm">
           No account?{" "}
-          <Link to="/auth/signup" search={{ returnTo: returnTo ?? "" }} className="link link-primary">
+          <Link
+            to="/auth/signup"
+            search={{ returnTo: returnTo ?? "" }}
+            className="link link-primary"
+          >
             Sign up
           </Link>
         </p>

@@ -1,9 +1,5 @@
 import { getAuth } from "@/lib/auth";
-import {
-  getUserAppRole,
-  hasAppRole,
-  type AppRole,
-} from "@/lib/better-auth/roles";
+import { getUserAppRole, hasAppRole, type AppRole } from "@/lib/better-auth/roles";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 
 export async function requireSessionRoles(allowed: readonly AppRole[]) {

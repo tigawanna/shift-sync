@@ -1,15 +1,12 @@
+import { Skeleton } from "@/components/ui/skeleton";
 import { allLocationsForAssignmentQueryOptions } from "@/data-access-layer/location/location.queries";
-import { updateTeamMemberLocations } from "@/data-access-layer/team/team.functions";
 import { teamMemberQueryOptions } from "@/data-access-layer/team/team.queries";
 import type { TeamMemberLocation } from "@/data-access-layer/team/team.types";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ROLE } from "@/lib/better-auth/roles";
 import { formatDate } from "@/utils/date";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { DashboardPageHeader } from "../../../-components/DashboardPageHeader";
-import { UserLocationAssignments } from "./UserLocationAssignments";
+import { UserLocationEditor } from "./UserLocationAssignments";
 
 type UserDetailPanelProps = {
   userId: string;
@@ -59,15 +56,15 @@ export function UserDetailPanel({ userId, roleLabel }: UserDetailPanelProps) {
 
       <section className="border-base-content/10 bg-base-100/70 grid gap-4 rounded-2xl border p-6 sm:grid-cols-2">
         <div>
-          <p className="text-base-content/60 text-xs uppercase tracking-wide">Email</p>
+          <p className="text-base-content/60 text-xs tracking-wide uppercase">Email</p>
           <p className="mt-1 text-sm font-medium">{member.email}</p>
         </div>
         <div>
-          <p className="text-base-content/60 text-xs uppercase tracking-wide">Joined</p>
+          <p className="text-base-content/60 text-xs tracking-wide uppercase">Joined</p>
           <p className="mt-1 text-sm font-medium">{formatDate(member.createdAt)}</p>
         </div>
         <div className="sm:col-span-2">
-          <p className="text-base-content/60 text-xs uppercase tracking-wide">Current locations</p>
+          <p className="text-base-content/60 text-xs tracking-wide uppercase">Current locations</p>
           <p className="mt-1 text-sm">
             {member.locations.length > 0
               ? member.locations.map((location: TeamMemberLocation) => location.name).join(", ")
@@ -84,61 +81,6 @@ export function UserDetailPanel({ userId, roleLabel }: UserDetailPanelProps) {
         locationsPending={locationsPending}
       />
     </>
-  );
-}
-
-type UserLocationEditorProps = {
-  userId: string;
-  savedLocationIds: string[];
-  allLocations: TeamMemberLocation[];
-  locationsPending: boolean;
-};
-
-function UserLocationEditor({
-  userId,
-  savedLocationIds,
-  allLocations,
-  locationsPending,
-}: UserLocationEditorProps) {
-  const qc = useQueryClient();
-  const [selectedLocationIds, setSelectedLocationIds] = useState(savedLocationIds);
-
-  const saveMutation = useMutation({
-    mutationFn: async (locationIds: string[]) => {
-      return updateTeamMemberLocations({ data: { userId, locationIds } });
-    },
-    onSuccess: async (updated) => {
-      qc.setQueryData(teamMemberQueryOptions({ userId }).queryKey, updated);
-      await qc.invalidateQueries({ queryKey: ["locations"] });
-      toast.success("Location assignments updated.");
-    },
-    onError: (saveError) => {
-      toast.error(saveError instanceof Error ? saveError.message : "Could not save assignments.");
-    },
-  });
-
-  const hasChanges =
-    selectedLocationIds.length !== savedLocationIds.length ||
-    selectedLocationIds.some((id) => !savedLocationIds.includes(id));
-
-  function toggleLocation(locationId: string) {
-    setSelectedLocationIds((current) =>
-      current.includes(locationId)
-        ? current.filter((id) => id !== locationId)
-        : [...current, locationId],
-    );
-  }
-
-  return (
-    <UserLocationAssignments
-      allLocations={allLocations}
-      selectedLocationIds={selectedLocationIds}
-      isLoading={locationsPending}
-      isSaving={saveMutation.isPending}
-      hasChanges={hasChanges}
-      onToggle={toggleLocation}
-      onSave={() => saveMutation.mutate(selectedLocationIds)}
-    />
   );
 }
 

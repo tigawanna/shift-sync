@@ -7,7 +7,10 @@ import { z } from "zod";
 /** Roles admins can assign when creating team accounts (excludes corporate admin). */
 export type TeamMemberRole = Exclude<AppRole, typeof ROLE.admin>;
 
-export const TEAM_MEMBER_ROLES = [ROLE.manager, ROLE.staff] as const satisfies readonly TeamMemberRole[];
+export const TEAM_MEMBER_ROLES = [
+  ROLE.manager,
+  ROLE.staff,
+] as const satisfies readonly TeamMemberRole[];
 
 export const TEAM_MEMBER_SORT_KEYS = ["name", "email", "role", "createdAt"] as const;
 export type TeamMemberSortBy = (typeof TEAM_MEMBER_SORT_KEYS)[number];
