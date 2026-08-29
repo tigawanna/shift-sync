@@ -1,5 +1,9 @@
 import { queryOptions } from "@tanstack/react-query";
-import { listAllLocationsForAssignment, listLocations } from "./location.functions";
+import {
+  listAccessibleLocations,
+  listAllLocationsForAssignment,
+  listLocations,
+} from "./location.functions";
 import type { ListLocationsInput } from "./location.types";
 
 export function locationsQueryOptions(input: ListLocationsInput = {}) {
@@ -13,5 +17,12 @@ export function allLocationsForAssignmentQueryOptions() {
   return queryOptions({
     queryKey: ["locations", "all-for-assignment"],
     queryFn: () => listAllLocationsForAssignment(),
+  });
+}
+
+export function accessibleLocationsQueryOptions() {
+  return queryOptions({
+    queryKey: ["locations", "accessible"],
+    queryFn: () => listAccessibleLocations(),
   });
 }

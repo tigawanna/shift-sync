@@ -1,6 +1,6 @@
 import type { SidebarItem } from "@/components/sidebar/types";
 import { ROLE, type AppRole } from "@/lib/better-auth/roles";
-import { LayoutDashboard, Shield, User, Users } from "lucide-react";
+import { CalendarDays, LayoutDashboard, Shield, User } from "lucide-react";
 
 export const dashboard_account_routes = [
   { title: "Account", href: "/account", icon: User },
@@ -29,6 +29,7 @@ export function getDashboardPrimaryRoutes(role: AppRole): SidebarItem[] {
       icon: LayoutDashboard,
       sublinks: [
         { title: "Overview", href: "/manager" },
+        { title: "Schedule", href: "/manager/schedule" },
         { title: "Team", href: "/manager/team" },
         { title: "Locations", href: "/manager/locations" },
       ],
@@ -36,7 +37,7 @@ export function getDashboardPrimaryRoutes(role: AppRole): SidebarItem[] {
   }
 
   if (role === ROLE.admin || role === ROLE.staff) {
-    routes.push({ title: "Staff", href: "/staff", icon: Users });
+    routes.push({ title: "My schedule", href: "/staff", icon: CalendarDays });
   }
 
   return routes;

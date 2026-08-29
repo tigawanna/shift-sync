@@ -3,7 +3,7 @@ import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
 import { location as locationTable, userLocation } from "@/lib/drizzle/schema/locations-schema";
 import { createServerFn } from "@tanstack/react-start";
-import { and, count, eq, exists, like, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, eq, exists, like, or, sql, type SQL } from "drizzle-orm";
 import { requireSessionRoles } from "../team/team.auth";
 import {
   createLocationInputSchema,
@@ -276,6 +276,29 @@ export const listAllLocationsForAssignment = createServerFn({ method: "GET" }).h
   });
 
   return rows;
+});
+
+export const listAccessibleLocations = createServerFn({ method: "GET" }).handler(async () => {
+  const { session, role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
+  const db = await getDb();
+
+  if (role === ROLE.admin) {
+    return db.query.location.findMany({
+      orderBy: (location, { asc }) => [asc(location.name)],
+      columns: { id: true, name: true, timezone: true },
+    });
+  }
+
+  return db
+    .select({
+      id: locationTable.id,
+      name: locationTable.name,
+      timezone: locationTable.timezone,
+    })
+    .from(locationTable)
+    .innerJoin(userLocation, eq(userLocation.locationId, locationTable.id))
+    .where(eq(userLocation.userId, session.user.id))
+    .orderBy(asc(locationTable.name));
 });
 
 export const getLocationSummary = createServerFn({ method: "GET" }).handler(async () => {

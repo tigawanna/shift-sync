@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { AppConfig } from "@/utils/system";
 import { createFileRoute } from "@tanstack/react-router";
-import { MapPin, Users } from "lucide-react";
+import { CalendarDays, MapPin, Users } from "lucide-react";
 import { DashboardPageHeader } from "../-components/DashboardPageHeader";
 
 export const Route = createFileRoute("/_dashboard/manager/")({
@@ -20,6 +20,18 @@ function ManagerOverviewPage() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2">
+        <Link
+          to="/manager/schedule"
+          className="border-base-content/10 bg-base-100/70 hover:border-base-content/20 flex flex-col gap-3 rounded-2xl border p-6 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <CalendarDays className="text-base-content/70 size-5" />
+            <h2 className="text-lg font-semibold tracking-tight">Schedule</h2>
+          </div>
+          <p className="text-base-content/70 text-sm">
+            Build the week, assign coverage, and publish so staff can see their shifts.
+          </p>
+        </Link>
         <Link
           to="/manager/team"
           className="border-base-content/10 bg-base-100/70 hover:border-base-content/20 flex flex-col gap-3 rounded-2xl border p-6 transition-colors"
