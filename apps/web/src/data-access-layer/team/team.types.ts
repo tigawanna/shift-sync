@@ -3,6 +3,11 @@ import type { AppRole } from "@/lib/better-auth/permissions";
 import { ROLE } from "@/lib/better-auth/permissions";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
 import { z } from "zod";
+import type {
+  StaffAvailabilityException,
+  StaffSkill,
+  StaffWeeklyWindow,
+} from "../staff-profile/staff-profile.types";
 
 /** Roles admins can assign when creating team accounts (excludes corporate admin). */
 export type TeamMemberRole = Exclude<AppRole, typeof ROLE.admin>;
@@ -63,6 +68,9 @@ export type TeamMemberLocation = {
 
 export type TeamMemberDetail = TeamMember & {
   locations: TeamMemberLocation[];
+  skills: StaffSkill[];
+  weeklyWindows: StaffWeeklyWindow[];
+  exceptions: StaffAvailabilityException[];
 };
 
 export const getTeamMemberInputSchema = z.object({

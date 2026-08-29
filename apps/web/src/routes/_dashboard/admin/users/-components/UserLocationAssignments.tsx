@@ -42,6 +42,7 @@ export function UserLocationEditor({
     },
     onSuccess: async (updated) => {
       qc.setQueryData(teamMemberQueryOptions({ userId }).queryKey, updated);
+      await qc.invalidateQueries({ queryKey: ["team-member"] });
       await qc.invalidateQueries({ queryKey: ["locations"] });
       await qc.invalidateQueries({ queryKey: ["schedule"] });
       toast.success("Location assignments updated.");
@@ -55,17 +56,10 @@ export function UserLocationEditor({
     selectedLocationIds.length !== savedLocationIds.length ||
     selectedLocationIds.some((id) => !savedLocationIds.includes(id));
 
-  function toggleLocation(locationId: string) {
-    setSelectedLocationIds((current) =>
-      current.includes(locationId)
-        ? current.filter((id) => id !== locationId)
-        : [...current, locationId],
-    );
-  }
+  const isSaving = saveMutation.isPending;
   function onSave() {
     saveMutation.mutate(selectedLocationIds);
   }
-  const isSaving = saveMutation.isPending;
   if (isLoading) {
     return (
       <UserLocationEditorScafold summary={savedLocationNames.join(", ")}>
@@ -93,13 +87,21 @@ export function UserLocationEditor({
 
           return (
             <li key={location.id}>
-              <label
+              <div
                 className={`border-base-content/10 hover:border-base-content/20 flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${checked ? "bg-base-300/40" : "bg-base-100/50"}`}
               >
                 <Checkbox
                   className="mt-0.5 ring-primary"
                   checked={checked}
-                  onCheckedChange={() => toggleLocation(location.id)}
+                  onCheckedChange={(value) => {
+                    const nextChecked = value === true;
+                    setSelectedLocationIds((current) => {
+                      const has = current.includes(location.id);
+                      if (nextChecked && !has) return [...current, location.id];
+                      if (!nextChecked && has) return current.filter((id) => id !== location.id);
+                      return current;
+                    });
+                  }}
                 />
                 <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="inline-flex items-center gap-1.5 font-medium">
@@ -111,7 +113,7 @@ export function UserLocationEditor({
                     <span className="text-base-content/50 text-xs">{location.address}</span>
                   ) : null}
                 </span>
-              </label>
+              </div>
             </li>
           );
         })}
@@ -187,7 +189,8 @@ function UserLocationEditorScafold({ children, summary }: UserLocationEditorScaf
       </summary>
       <div className="flex flex-col gap-4 px-5 pb-5">
         <p className="text-base-content/70 text-sm">
-          Choose which Coastal Eats locations this person can work at or manage.
+          Staff can be certified at more than one restaurant. Choose which locations this person
+          can work at or manage.
         </p>
         {children}
       </div>

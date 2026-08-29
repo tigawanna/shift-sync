@@ -270,22 +270,34 @@ export const listLocationTimezones = createServerFn({ method: "GET" }).handler(a
   return rows.map((row) => row.timezone);
 });
 
-/** Admin picker: every location without pagination. */
+/** Location picker for assigning people: all restaurants for admin, assigned ones for manager. */
 export const listAllLocationsForAssignment = createServerFn({ method: "GET" }).handler(async () => {
-  await requireSessionRoles([ROLE.admin]);
-
+  const { session, role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
   const db = await getDb();
-  const rows = await db.query.location.findMany({
-    orderBy: (location, { asc }) => [asc(location.name)],
-    columns: {
-      id: true,
-      name: true,
-      timezone: true,
-      address: true,
-    },
-  });
 
-  return rows;
+  if (role === ROLE.admin) {
+    return db.query.location.findMany({
+      orderBy: (location, { asc }) => [asc(location.name)],
+      columns: {
+        id: true,
+        name: true,
+        timezone: true,
+        address: true,
+      },
+    });
+  }
+
+  return db
+    .select({
+      id: locationTable.id,
+      name: locationTable.name,
+      timezone: locationTable.timezone,
+      address: locationTable.address,
+    })
+    .from(locationTable)
+    .innerJoin(userLocation, eq(userLocation.locationId, locationTable.id))
+    .where(eq(userLocation.userId, session.user.id))
+    .orderBy(asc(locationTable.name));
 });
 
 /** Locations the viewer may schedule: all for admin, assigned for manager. */

@@ -1,4 +1,9 @@
 import {
+  isAvailableAt,
+  type AvailabilityException,
+  type AvailabilityWindow,
+} from "@/lib/schedule/availability";
+import {
   addDaysYmd,
   formatDateInZone,
   minutesFromMidnight,
@@ -30,11 +35,7 @@ export type ShiftInterval = {
   locationName?: string;
 };
 
-export type AvailabilityWindow = {
-  weekday: number;
-  startMinute: number;
-  endMinute: number;
-};
+export type { AvailabilityWindow, AvailabilityException };
 
 export type ConstraintFailure = {
   rule: ConstraintRule;
@@ -72,6 +73,7 @@ export function evaluateAssignmentConstraints(input: {
   locationName: string;
   otherShifts: ShiftInterval[];
   availability: AvailabilityWindow[];
+  exceptions?: AvailabilityException[];
 }): { failures: ConstraintFailure[]; warnings: ConstraintWarning[] } {
   const failures: ConstraintFailure[] = [];
   const warnings: ConstraintWarning[] = [];
@@ -140,7 +142,7 @@ export function evaluateAssignmentConstraints(input: {
     }
   }
 
-  if (input.availability.length > 0) {
+  if (input.availability.length > 0 || (input.exceptions?.length ?? 0) > 0) {
     if (!isFullyCoveredByAvailability(input)) {
       failures.push({
         rule: "availability",
@@ -191,24 +193,27 @@ function isFullyCoveredByAvailability(input: {
   candidateEndsAt: Date;
   locationTimezone: string;
   availability: AvailabilityWindow[];
+  exceptions?: AvailabilityException[];
 }) {
+  const exceptions = input.exceptions ?? [];
   let cursor = input.candidateStartsAt;
   while (cursor.getTime() < input.candidateEndsAt.getTime()) {
     const weekday = weekdayInZone(cursor, input.locationTimezone);
     const minute = minutesFromMidnight(cursor, input.locationTimezone);
-    const windows = input.availability.filter((window) => window.weekday === weekday);
-    const covering = windows.find(
-      (window) => minute >= window.startMinute && minute < window.endMinute,
-    );
-    if (!covering) return false;
-
     const ymd = formatDateInZone(cursor, input.locationTimezone);
-    const windowEnd = zonedWallTimeToUtc(
-      ymd,
-      `${String(Math.floor(covering.endMinute / 60)).padStart(2, "0")}:${String(covering.endMinute % 60).padStart(2, "0")}`,
-      input.locationTimezone,
-    );
-    const next = Math.min(windowEnd.getTime(), input.candidateEndsAt.getTime());
+    if (
+      !isAvailableAt({
+        weekday,
+        ymd,
+        minute,
+        weekly: input.availability,
+        exceptions,
+      })
+    ) {
+      return false;
+    }
+
+    const next = Math.min(cursor.getTime() + 60_000, input.candidateEndsAt.getTime());
     cursor = new Date(next <= cursor.getTime() ? cursor.getTime() + 60_000 : next);
   }
   return true;

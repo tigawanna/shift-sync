@@ -1,13 +1,17 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useViewer } from "@/data-access-layer/auth/viewer";
+import { allLocationsForAssignmentQueryOptions } from "@/data-access-layer/location/location.queries";
 import { teamMemberQueryOptions } from "@/data-access-layer/team/team.queries";
 import { ROLE, getUserAppRole } from "@/lib/better-auth/roles";
 import { formatDate } from "@/utils/date";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { DashboardPageHeader } from "../../../-components/DashboardPageHeader";
+import { AvailabilityReadout } from "../../../-components/availability/AvailabilityReadout";
 import { ImpersonateUserButton } from "../../../-components/team/ImpersonateUserButton";
 import { UserScheduleSection } from "../../../-components/schedule/PersonMonthCalendar";
+import { UserLocationEditor } from "./UserLocationAssignments";
+import { UserSkillsEditor } from "./UserSkillsEditor";
 
 type UserDetailPanelProps = {
   userId: string;
@@ -28,6 +32,7 @@ export function UserDetailPanel({ userId, expectedRole, roleLabel }: UserDetailP
   const { data: member, isPending, isError, error } = useQuery(
     teamMemberQueryOptions({ userId, role: expectedRole }),
   );
+  const locationsQuery = useQuery(allLocationsForAssignmentQueryOptions());
 
   if (isPending) {
     return <UserDetailSkeleton />;
@@ -75,11 +80,46 @@ export function UserDetailPanel({ userId, expectedRole, roleLabel }: UserDetailP
         ) : null}
       </p>
 
+      <UserLocationEditor
+        key={`${userId}-locations`}
+        userId={userId}
+        savedLocationIds={member.locations.map((location) => location.id)}
+        savedLocationNames={member.locations.map((location) => location.name)}
+        allLocations={mergeLocations(locationsQuery.data ?? [], member.locations)}
+        locationsPending={locationsQuery.isPending}
+      />
+
+      {member.role === ROLE.staff ? (
+        <>
+          <UserSkillsEditor
+            key={`${userId}-skills`}
+            userId={userId}
+            savedSkillIds={member.skills.map((skill) => skill.id)}
+          />
+          <AvailabilityReadout
+            weeklyWindows={member.weeklyWindows}
+            exceptions={member.exceptions}
+          />
+        </>
+      ) : null}
+
       <Suspense fallback={<UserDetailSkeleton />}>
         <UserScheduleSection userId={userId} />
       </Suspense>
     </>
   );
+}
+
+function mergeLocations<T extends { id: string }>(primary: T[], extra: T[]) {
+  const byId = new Map<string, T>();
+  for (const location of [...primary, ...extra]) {
+    byId.set(location.id, location);
+  }
+  return [...byId.values()].sort((a, b) => {
+    const left = "name" in a ? String((a as { name: string }).name) : a.id;
+    const right = "name" in b ? String((b as { name: string }).name) : b.id;
+    return left.localeCompare(right);
+  });
 }
 
 function UserDetailSkeleton() {

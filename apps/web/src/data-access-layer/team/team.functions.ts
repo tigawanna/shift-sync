@@ -29,6 +29,11 @@ import {
   type TeamMembersPage,
   type UpdateTeamMemberLocationsInput,
 } from "./team.types";
+import { loadStaffProfile, replaceUserSkills } from "../staff-profile/staff-profile.functions";
+import {
+  updateTeamMemberSkillsInputSchema,
+  type UpdateTeamMemberSkillsInput,
+} from "../staff-profile/staff-profile.types";
 
 /** Maps a Better Auth user row into the team-directory shape. */
 function mapTeamMember(row: typeof userTable.$inferSelect): TeamMember {
@@ -203,28 +208,44 @@ async function getTeamMemberDetail(userId: string): Promise<TeamMemberDetail> {
     throw new Error("Only managers and staff can be managed here.");
   }
 
-  // Restaurants this person is assigned to, for the detail panel.
-  const locationRows = await db
-    .select({
-      id: locationTable.id,
-      name: locationTable.name,
-      timezone: locationTable.timezone,
-      address: locationTable.address,
-    })
-    .from(userLocation)
-    .innerJoin(locationTable, eq(userLocation.locationId, locationTable.id))
-    .where(eq(userLocation.userId, userId))
-    .orderBy(asc(locationTable.name));
+  const profile = await loadStaffProfile(userId);
 
   return {
     ...mapTeamMember(userRow),
-    locations: locationRows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      timezone: row.timezone,
-      address: row.address ?? null,
-    })),
+    locations: profile.locations,
+    skills: profile.skills,
+    weeklyWindows: profile.weeklyWindows,
+    exceptions: profile.exceptions,
   };
+}
+
+async function assertManagerCanViewStaff(managerId: string, staffUserId: string) {
+  const db = await getDb();
+  const staffLoc = alias(userLocation, "staff_loc");
+  const managerLoc = alias(userLocation, "manager_loc");
+  const [row] = await db
+    .select({ id: staffLoc.id })
+    .from(staffLoc)
+    .where(
+      and(
+        eq(staffLoc.userId, staffUserId),
+        exists(
+          db
+            .select({ id: managerLoc.id })
+            .from(managerLoc)
+            .where(
+              and(
+                eq(managerLoc.userId, managerId),
+                eq(managerLoc.locationId, staffLoc.locationId),
+              ),
+            ),
+        ),
+      ),
+    )
+    .limit(1);
+  if (!row) {
+    throw new Error("You can only view people who work at your locations.");
+  }
 }
 
 /** Returns one team member; managers can only open staff at their locations. */
@@ -237,33 +258,7 @@ export const getTeamMember = createServerFn({ method: "GET" })
       throw new Error("User not found.");
     }
     if (role === ROLE.manager) {
-      const db = await getDb();
-      const staffLoc = alias(userLocation, "staff_loc");
-      const managerLoc = alias(userLocation, "manager_loc");
-      const [row] = await db
-        .select({ id: staffLoc.id })
-        .from(staffLoc)
-        .where(
-          and(
-            eq(staffLoc.userId, data.userId),
-            // Staff must share a location with the viewing manager.
-            exists(
-              db
-                .select({ id: managerLoc.id })
-                .from(managerLoc)
-                .where(
-                  and(
-                    eq(managerLoc.userId, session.user.id),
-                    eq(managerLoc.locationId, staffLoc.locationId),
-                  ),
-                ),
-            ),
-          ),
-        )
-        .limit(1);
-      if (!row) {
-        throw new Error("You can only view people who work at your locations.");
-      }
+      await assertManagerCanViewStaff(session.user.id, data.userId);
     }
     return detail;
   });
@@ -339,5 +334,21 @@ export const updateTeamMemberLocations = createServerFn({ method: "POST" })
       );
     }
 
+    return getTeamMemberDetail(data.userId);
+  });
+
+/** Replaces a staff member's skills after the same access checks as location edits. */
+export const updateTeamMemberSkills = createServerFn({ method: "POST" })
+  .validator((data: UpdateTeamMemberSkillsInput) => updateTeamMemberSkillsInputSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { session, role } = await requireSessionRoles([ROLE.admin, ROLE.manager]);
+    const detail = await getTeamMemberDetail(data.userId);
+    if (detail.role !== ROLE.staff) {
+      throw new Error("Skills can only be assigned to staff.");
+    }
+    if (role === ROLE.manager) {
+      await assertManagerCanViewStaff(session.user.id, data.userId);
+    }
+    await replaceUserSkills(data.userId, data.skillIds);
     return getTeamMemberDetail(data.userId);
   });

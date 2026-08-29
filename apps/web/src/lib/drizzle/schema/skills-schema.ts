@@ -50,6 +50,34 @@ export const userAvailability = sqliteTable(
   ],
 );
 
+/** One-off overrides of weekly availability. Dates are civil YYYY-MM-DD, checked in the shift location clock. */
+export const userAvailabilityException = sqliteTable(
+  "user_availability_exception",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    date: text("date").notNull(),
+    kind: text("kind").notNull(),
+    startMinute: integer("start_minute").notNull(),
+    endMinute: integer("end_minute").notNull(),
+    note: text("note"),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+      .notNull(),
+  },
+  (table) => [
+    index("user_availability_exception_userId_idx").on(table.userId),
+    uniqueIndex("user_availability_exception_user_date_kind_start_idx").on(
+      table.userId,
+      table.date,
+      table.kind,
+      table.startMinute,
+    ),
+  ],
+);
+
 export const skillRelations = relations(skill, ({ many }) => ({
   userSkills: many(userSkill),
 }));
@@ -71,3 +99,13 @@ export const userAvailabilityRelations = relations(userAvailability, ({ one }) =
     references: [user.id],
   }),
 }));
+
+export const userAvailabilityExceptionRelations = relations(
+  userAvailabilityException,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [userAvailabilityException.userId],
+      references: [user.id],
+    }),
+  }),
+);

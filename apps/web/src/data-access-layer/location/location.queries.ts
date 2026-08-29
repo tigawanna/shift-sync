@@ -14,7 +14,7 @@ export function locationsQueryOptions(input: ListLocationsInput = {}) {
   });
 }
 
-/** Full location list for assigning people to restaurants (admin). */
+/** Full location list for assigning people to restaurants. */
 export function allLocationsForAssignmentQueryOptions() {
   return queryOptions({
     queryKey: ["locations", "all-for-assignment"],

@@ -1,6 +1,6 @@
 import type { SidebarItem } from "@/components/sidebar/types";
 import { ROLE, type AppRole } from "@/lib/better-auth/roles";
-import { CalendarDays, LayoutDashboard, MapPin, UserCog, Users } from "lucide-react";
+import { CalendarDays, Clock, LayoutDashboard, MapPin, UserCog, Users } from "lucide-react";
 
 export const dashboard_account_routes = [] satisfies SidebarItem[];
 
@@ -24,5 +24,8 @@ export function getDashboardPrimaryRoutes(role: AppRole): SidebarItem[] {
     ];
   }
 
-  return [{ title: "My schedule", href: "/staff", icon: CalendarDays }];
+  return [
+    { title: "My schedule", href: "/staff", icon: CalendarDays },
+    { title: "Availability", href: "/staff/availability", icon: Clock },
+  ];
 }

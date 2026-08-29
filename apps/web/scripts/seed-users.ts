@@ -14,6 +14,7 @@ import {
 import {
   skill as skillTable,
   userAvailability as userAvailabilityTable,
+  userAvailabilityException as userAvailabilityExceptionTable,
   userSkill as userSkillTable,
 } from "../src/lib/drizzle/schema/skills-schema";
 import { addDaysYmd, mondayOfWeekContaining, zonedWallTimeToUtc } from "../src/lib/time/zoned";
@@ -22,6 +23,7 @@ import { and, eq, like, or } from "drizzle-orm";
 import { SEED_LOCATIONS, SEED_USER_LOCATIONS } from "./seed/locations.data";
 import {
   buildSeedAvailability,
+  buildSeedAvailabilityExceptions,
   buildSeedScheduleWeeks,
   buildSeedUserSkills,
   SEED_SKILLS,
@@ -226,10 +228,30 @@ async function main() {
     await db.insert(userAvailabilityTable).values(availabilityValues).onConflictDoNothing();
   }
 
-  await db.delete(shiftTable).where(like(shiftTable.id, "shift-%"));
-
   const adminId = userIds.get("admin@coastaleats.test") ?? [...userIds.values()][0];
   const anchorMonday = mondayOfWeekContaining(new Date(), SEED_LOCATIONS[0]?.timezone ?? "UTC");
+
+  const exceptionValues = buildSeedAvailabilityExceptions(anchorMonday).flatMap((row) => {
+    const userId = userIds.get(row.email);
+    if (!userId) return [];
+    return [
+      {
+        id: crypto.randomUUID(),
+        userId,
+        date: row.date,
+        kind: row.kind,
+        startMinute: row.startMinute,
+        endMinute: row.endMinute,
+        note: row.note,
+      },
+    ];
+  });
+  if (exceptionValues.length > 0) {
+    await db.insert(userAvailabilityExceptionTable).values(exceptionValues).onConflictDoNothing();
+  }
+
+  await db.delete(shiftTable).where(like(shiftTable.id, "shift-%"));
+
   const seededWeeks = buildSeedScheduleWeeks(anchorMonday);
 
   for (const week of seededWeeks) {

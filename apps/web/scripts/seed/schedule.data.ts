@@ -42,6 +42,28 @@ export function buildSeedAvailability(staffCount: number = SEED_STAFF_COUNT) {
   });
 }
 
+/** One-off blocked / extra windows relative to the seeded schedule's Monday. */
+export function buildSeedAvailabilityExceptions(weekStart: string) {
+  return [
+    {
+      email: staffEmail(1),
+      date: addDaysYmd(weekStart, 8),
+      kind: "blocked" as const,
+      startMinute: 0,
+      endMinute: 24 * 60,
+      note: "Personal day",
+    },
+    {
+      email: staffEmail(2),
+      date: addDaysYmd(weekStart, 5),
+      kind: "extra" as const,
+      startMinute: 16 * 60,
+      endMinute: 22 * 60,
+      note: "Can cover dinner",
+    },
+  ];
+}
+
 function staffIndexFromEmail(email: string) {
   const match = email.match(/staff-(\d+)/);
   return match ? Number(match[1]) : 0;

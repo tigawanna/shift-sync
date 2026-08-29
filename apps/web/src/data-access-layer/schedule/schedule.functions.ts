@@ -370,6 +370,8 @@ async function staffCandidatesForShift(context: Awaited<ReturnType<typeof getShi
     startMinute: minutesFromMidnight(startsAt, tz),
     weekdayEnd: weekdayInZone(new Date(endsAt.getTime() - 60_000), tz),
     endMinute: minutesFromMidnight(new Date(endsAt.getTime() - 60_000), tz),
+    startYmd: localStart,
+    endYmd: formatDateInZone(new Date(endsAt.getTime() - 60_000), tz),
     candidateHours,
   });
 

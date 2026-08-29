@@ -610,8 +610,12 @@ export async function queryStaffFlagsForShiftSql(input: {
   startMinute: number;
   weekdayEnd: number;
   endMinute: number;
+  startYmd: string;
+  endYmd: string;
   candidateHours: number;
 }): Promise<StaffSqlFlags[]> {
+  const lastStartMinute = input.startMinute;
+  const lastEndMinute = input.endMinute;
   const rows = await sqlAll<StaffSqlFlags>(sql`
     SELECT
       staff.id AS userId,
@@ -624,23 +628,59 @@ export async function queryStaffFlagsForShiftSql(input: {
       COALESCE(day_hours.hours, 0) + ${input.candidateHours} AS dailyHours,
       COALESCE(week_hours.hours, 0) + ${input.candidateHours} AS weeklyHours,
       CASE
+        WHEN EXISTS (
+          SELECT 1 FROM user_availability_exception blocked_start
+          WHERE blocked_start.user_id = staff.id
+            AND blocked_start.kind = 'blocked'
+            AND blocked_start.date = ${input.startYmd}
+            AND ${lastStartMinute} >= blocked_start.start_minute
+            AND ${lastStartMinute} < blocked_start.end_minute
+        )
+        OR EXISTS (
+          SELECT 1 FROM user_availability_exception blocked_end
+          WHERE blocked_end.user_id = staff.id
+            AND blocked_end.kind = 'blocked'
+            AND blocked_end.date = ${input.endYmd}
+            AND ${lastEndMinute} >= blocked_end.start_minute
+            AND ${lastEndMinute} < blocked_end.end_minute
+        ) THEN 0
         WHEN (
           SELECT COUNT(*) FROM user_availability
           WHERE user_availability.user_id = staff.id
         ) = 0 THEN 1
-        WHEN EXISTS (
-          SELECT 1 FROM user_availability start_window
-          WHERE start_window.user_id = staff.id
-            AND start_window.weekday = ${input.weekdayStart}
-            AND ${input.startMinute} >= start_window.start_minute
-            AND ${input.startMinute} < start_window.end_minute
+        WHEN (
+          EXISTS (
+            SELECT 1 FROM user_availability start_window
+            WHERE start_window.user_id = staff.id
+              AND start_window.weekday = ${input.weekdayStart}
+              AND ${input.startMinute} >= start_window.start_minute
+              AND ${input.startMinute} < start_window.end_minute
+          )
+          OR EXISTS (
+            SELECT 1 FROM user_availability_exception extra_start
+            WHERE extra_start.user_id = staff.id
+              AND extra_start.kind = 'extra'
+              AND extra_start.date = ${input.startYmd}
+              AND ${input.startMinute} >= extra_start.start_minute
+              AND ${input.startMinute} < extra_start.end_minute
+          )
         )
-        AND EXISTS (
-          SELECT 1 FROM user_availability end_window
-          WHERE end_window.user_id = staff.id
-            AND end_window.weekday = ${input.weekdayEnd}
-            AND ${Math.max(input.endMinute - 1, 0)} >= end_window.start_minute
-            AND ${Math.max(input.endMinute - 1, 0)} < end_window.end_minute
+        AND (
+          EXISTS (
+            SELECT 1 FROM user_availability end_window
+            WHERE end_window.user_id = staff.id
+              AND end_window.weekday = ${input.weekdayEnd}
+              AND ${lastEndMinute} >= end_window.start_minute
+              AND ${lastEndMinute} < end_window.end_minute
+          )
+          OR EXISTS (
+            SELECT 1 FROM user_availability_exception extra_end
+            WHERE extra_end.user_id = staff.id
+              AND extra_end.kind = 'extra'
+              AND extra_end.date = ${input.endYmd}
+              AND ${lastEndMinute} >= extra_end.start_minute
+              AND ${lastEndMinute} < extra_end.end_minute
+          )
         ) THEN 1
         ELSE 0
       END AS availabilityOk

@@ -33,6 +33,7 @@ import { Route as DashboardAdminUsersIndexRouteImport } from './routes/_dashboar
 import { Route as DashboardManagerLocationsIndexRouteImport } from './routes/_dashboard/manager/locations/index'
 import { Route as DashboardManagerScheduleIndexRouteImport } from './routes/_dashboard/manager/schedule/index'
 import { Route as DashboardManagerTeamIndexRouteImport } from './routes/_dashboard/manager/team/index'
+import { Route as DashboardStaffAvailabilityIndexRouteImport } from './routes/_dashboard/staff/availability/index'
 import { Route as DashboardAdminManagersUserIdIndexRouteImport } from './routes/_dashboard/admin/managers/$userId/index'
 import { Route as DashboardAdminUsersUserIdIndexRouteImport } from './routes/_dashboard/admin/users/$userId/index'
 import { Route as DashboardManagerTeamUserIdIndexRouteImport } from './routes/_dashboard/manager/team/$userId/index'
@@ -163,6 +164,12 @@ const DashboardManagerTeamIndexRoute =
     path: '/team/',
     getParentRoute: () => DashboardManagerRoute,
   } as any)
+const DashboardStaffAvailabilityIndexRoute =
+  DashboardStaffAvailabilityIndexRouteImport.update({
+    id: '/availability/',
+    path: '/availability/',
+    getParentRoute: () => DashboardStaffRoute,
+  } as any)
 const DashboardAdminManagersUserIdIndexRoute =
   DashboardAdminManagersUserIdIndexRouteImport.update({
     id: '/managers/$userId/',
@@ -206,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/manager/locations/': typeof DashboardManagerLocationsIndexRoute
   '/manager/schedule/': typeof DashboardManagerScheduleIndexRoute
   '/manager/team/': typeof DashboardManagerTeamIndexRoute
+  '/staff/availability/': typeof DashboardStaffAvailabilityIndexRoute
   '/admin/managers/$userId/': typeof DashboardAdminManagersUserIdIndexRoute
   '/admin/users/$userId/': typeof DashboardAdminUsersUserIdIndexRoute
   '/manager/team/$userId/': typeof DashboardManagerTeamUserIdIndexRoute
@@ -230,6 +238,7 @@ export interface FileRoutesByTo {
   '/manager/locations': typeof DashboardManagerLocationsIndexRoute
   '/manager/schedule': typeof DashboardManagerScheduleIndexRoute
   '/manager/team': typeof DashboardManagerTeamIndexRoute
+  '/staff/availability': typeof DashboardStaffAvailabilityIndexRoute
   '/admin/managers/$userId': typeof DashboardAdminManagersUserIdIndexRoute
   '/admin/users/$userId': typeof DashboardAdminUsersUserIdIndexRoute
   '/manager/team/$userId': typeof DashboardManagerTeamUserIdIndexRoute
@@ -260,6 +269,7 @@ export interface FileRoutesById {
   '/_dashboard/manager/locations/': typeof DashboardManagerLocationsIndexRoute
   '/_dashboard/manager/schedule/': typeof DashboardManagerScheduleIndexRoute
   '/_dashboard/manager/team/': typeof DashboardManagerTeamIndexRoute
+  '/_dashboard/staff/availability/': typeof DashboardStaffAvailabilityIndexRoute
   '/_dashboard/admin/managers/$userId/': typeof DashboardAdminManagersUserIdIndexRoute
   '/_dashboard/admin/users/$userId/': typeof DashboardAdminUsersUserIdIndexRoute
   '/_dashboard/manager/team/$userId/': typeof DashboardManagerTeamUserIdIndexRoute
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/manager/locations/'
     | '/manager/schedule/'
     | '/manager/team/'
+    | '/staff/availability/'
     | '/admin/managers/$userId/'
     | '/admin/users/$userId/'
     | '/manager/team/$userId/'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/manager/locations'
     | '/manager/schedule'
     | '/manager/team'
+    | '/staff/availability'
     | '/admin/managers/$userId'
     | '/admin/users/$userId'
     | '/manager/team/$userId'
@@ -343,6 +355,7 @@ export interface FileRouteTypes {
     | '/_dashboard/manager/locations/'
     | '/_dashboard/manager/schedule/'
     | '/_dashboard/manager/team/'
+    | '/_dashboard/staff/availability/'
     | '/_dashboard/admin/managers/$userId/'
     | '/_dashboard/admin/users/$userId/'
     | '/_dashboard/manager/team/$userId/'
@@ -528,6 +541,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardManagerTeamIndexRouteImport
       parentRoute: typeof DashboardManagerRoute
     }
+    '/_dashboard/staff/availability/': {
+      id: '/_dashboard/staff/availability/'
+      path: '/availability'
+      fullPath: '/staff/availability/'
+      preLoaderRoute: typeof DashboardStaffAvailabilityIndexRouteImport
+      parentRoute: typeof DashboardStaffRoute
+    }
     '/_dashboard/admin/managers/$userId/': {
       id: '/_dashboard/admin/managers/$userId/'
       path: '/managers/$userId'
@@ -598,10 +618,12 @@ const DashboardManagerRouteWithChildren =
 
 interface DashboardStaffRouteChildren {
   DashboardStaffIndexRoute: typeof DashboardStaffIndexRoute
+  DashboardStaffAvailabilityIndexRoute: typeof DashboardStaffAvailabilityIndexRoute
 }
 
 const DashboardStaffRouteChildren: DashboardStaffRouteChildren = {
   DashboardStaffIndexRoute: DashboardStaffIndexRoute,
+  DashboardStaffAvailabilityIndexRoute: DashboardStaffAvailabilityIndexRoute,
 }
 
 const DashboardStaffRouteWithChildren = DashboardStaffRoute._addFileChildren(

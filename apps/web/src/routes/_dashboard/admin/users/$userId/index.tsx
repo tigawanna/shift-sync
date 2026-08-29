@@ -1,5 +1,6 @@
 import { userScheduleQueryOptions } from "@/data-access-layer/schedule/schedule.queries";
 import { teamMemberQueryOptions } from "@/data-access-layer/team/team.queries";
+import { allLocationsForAssignmentQueryOptions } from "@/data-access-layer/location/location.queries";
 import { ROLE } from "@/lib/better-auth/roles";
 import { currentYearMonth } from "@/lib/time/zoned";
 import { AppConfig } from "@/utils/system";
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/_dashboard/admin/users/$userId/")({
       context.queryClient.ensureQueryData(
         userScheduleQueryOptions({ userId: params.userId, month }),
       ),
+      context.queryClient.ensureQueryData(allLocationsForAssignmentQueryOptions()),
     ]);
   },
   component: AdminUserDetailPage,
