@@ -11,13 +11,13 @@ import {
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
-import { listStaffQueryOptions } from "../../-data-access-layer/staff.query-options";
-import { StaffListItem } from "./StaffListItem";
+import { listLocationsQueryOptions } from "../../-data-access-layer/locations.query-options";
+import { LocationListItem } from "./LocationListItem";
 
-const ROUTE_ID = "/_dashboard/admin/staff/";
+const ROUTE_ID = "/_dashboard/admin/locations/";
 const routeApi = getRouteApi(ROUTE_ID);
 
-function StaffListEmpty({
+function LocationListEmpty({
   hasSearch,
   query,
   onClearSearch,
@@ -28,10 +28,13 @@ function StaffListEmpty({
 }) {
   if (hasSearch) {
     return (
-      <Empty data-test="staff-search-empty" className="w-full h-full flex flex-col items-center justify-center min-h-[70dvh]">
+      <Empty
+        data-test="locations-search-empty"
+        className="flex h-full min-h-[70dvh] w-full flex-col items-center justify-center"
+      >
         <EmptyHeader>
           <EmptyTitle>No results for “{query}”</EmptyTitle>
-          <EmptyDescription>Try a different name or email address.</EmptyDescription>
+          <EmptyDescription>Try a different name or address.</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <button type="button" className="btn btn-ghost btn-sm" onClick={onClearSearch}>
@@ -43,61 +46,64 @@ function StaffListEmpty({
   }
 
   return (
-    <Empty data-test="staff-empty" className="w-full h-full flex flex-col items-center justify-center min-h-[70dvh]">
+    <Empty
+      data-test="locations-empty"
+      className="flex h-full min-h-[70dvh] w-full flex-col items-center justify-center"
+    >
       <EmptyHeader>
-        <EmptyTitle>No staff yet</EmptyTitle>
-        <EmptyDescription>Staff accounts will show up here once they are created.</EmptyDescription>
+        <EmptyTitle>No locations yet</EmptyTitle>
+        <EmptyDescription>Restaurants will show up here once they are added.</EmptyDescription>
       </EmptyHeader>
     </Empty>
   );
 }
 
-export function StaffList() {
+export function LocationList() {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
   const search = routeApi.useSearch();
-  const page = search.page;
+  const page = search.page ?? 1;
   const perPage = search.perPage;
-  const sq = search.sq.trim();
+  const sq = (search.sq ?? "").trim();
   const hasSearch = sq.length > 0;
 
-  const { data } = useSuspenseQuery(listStaffQueryOptions({ page, perPage, sq }));
+  const { data } = useSuspenseQuery(listLocationsQueryOptions({ page, perPage, sq }));
   const { items, total, totalPages } = data;
 
   return (
-    <section className="flex h-full w-full flex-col gap-4" data-test="admin-staff-list">
+    <section className="flex h-full w-full flex-col gap-4" data-test="admin-locations-list">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <p className="text-muted-foreground font-mono text-xs">
-          {total} {total === 1 ? "person" : "people"}
+          {total} {total === 1 ? "location" : "locations"}
         </p>
         <SearchBox
           keyword={inputValue}
           setKeyword={(value) => onSearchChange(value)}
           isDebouncing={isDebouncing}
-          placeholder="Search by name or email"
+          placeholder="Search by name or address"
         />
       </div>
 
       {items.length === 0 ? (
-        <StaffListEmpty hasSearch={hasSearch} query={sq} onClearSearch={clearSearch} />
+        <LocationListEmpty hasSearch={hasSearch} query={sq} onClearSearch={clearSearch} />
       ) : (
-        <div className="overflow-hidden rounded-xl border" data-test="staff-table">
+        <div className="overflow-hidden rounded-xl border" data-test="locations-table">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
                 <TableHead className="text-muted-foreground px-4 py-3 text-xs font-medium tracking-wide uppercase">
-                  Name
+                  Location
                 </TableHead>
                 <TableHead className="text-muted-foreground px-4 py-3 text-xs font-medium tracking-wide uppercase">
-                  Email
+                  Timezone
                 </TableHead>
                 <TableHead className="text-muted-foreground px-4 py-3 text-xs font-medium tracking-wide uppercase">
-                  Joined
+                  Added
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((staff) => (
-                <StaffListItem key={staff.id} staff={staff} />
+              {items.map((location) => (
+                <LocationListItem key={location.id} location={location} />
               ))}
             </TableBody>
           </Table>

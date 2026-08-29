@@ -6,23 +6,27 @@ import { z } from "zod";
 import { listStaffQueryOptions } from "../-data-access-layer/staff.query-options";
 import { DashboardPageHeader } from "../../-components/DashboardPageHeader";
 import { StaffList } from "./-components/StaffList";
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
 
 const staffSearchSchema = z.object({
-  page: z.coerce.number().int().min(1).optional(),
-  q: z.string().optional(),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  perPage: z.coerce.number().int().min(1).max(100).optional().default(ADMIN_LIST_PER_PAGE),
+  sq: z.string().optional().default(''),
 });
 
 export const Route = createFileRoute("/_dashboard/admin/staff/")({
   validateSearch: (search) => staffSearchSchema.parse(search),
   loaderDeps: ({ search }) => ({
     page: search.page,
-    q: search.q,
+    perPage: search.perPage,
+    sq: search.sq,
   }),
   loader: async ({ context, deps }) => {
     await context.queryClient.ensureQueryData(
       listStaffQueryOptions({
         page: deps.page,
-        q: deps.q,
+        perPage: deps.perPage,
+        sq: deps.sq,
       }),
     );
   },

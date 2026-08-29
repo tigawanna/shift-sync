@@ -11,13 +11,13 @@ import {
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
-import { listStaffQueryOptions } from "../../-data-access-layer/staff.query-options";
-import { StaffListItem } from "./StaffListItem";
+import { listManagersQueryOptions } from "../../-data-access-layer/managers.query-options";
+import { ManagerListItem } from "./ManagerListItem";
 
-const ROUTE_ID = "/_dashboard/admin/staff/";
+const ROUTE_ID = "/_dashboard/admin/managers/";
 const routeApi = getRouteApi(ROUTE_ID);
 
-function StaffListEmpty({
+function ManagerListEmpty({
   hasSearch,
   query,
   onClearSearch,
@@ -28,7 +28,10 @@ function StaffListEmpty({
 }) {
   if (hasSearch) {
     return (
-      <Empty data-test="staff-search-empty" className="w-full h-full flex flex-col items-center justify-center min-h-[70dvh]">
+      <Empty
+        data-test="managers-search-empty"
+        className="flex h-full min-h-[70dvh] w-full flex-col items-center justify-center"
+      >
         <EmptyHeader>
           <EmptyTitle>No results for “{query}”</EmptyTitle>
           <EmptyDescription>Try a different name or email address.</EmptyDescription>
@@ -43,28 +46,33 @@ function StaffListEmpty({
   }
 
   return (
-    <Empty data-test="staff-empty" className="w-full h-full flex flex-col items-center justify-center min-h-[70dvh]">
+    <Empty
+      data-test="managers-empty"
+      className="flex h-full min-h-[70dvh] w-full flex-col items-center justify-center"
+    >
       <EmptyHeader>
-        <EmptyTitle>No staff yet</EmptyTitle>
-        <EmptyDescription>Staff accounts will show up here once they are created.</EmptyDescription>
+        <EmptyTitle>No managers yet</EmptyTitle>
+        <EmptyDescription>
+          Manager accounts will show up here once they are created.
+        </EmptyDescription>
       </EmptyHeader>
     </Empty>
   );
 }
 
-export function StaffList() {
+export function ManagerList() {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
   const search = routeApi.useSearch();
-  const page = search.page;
+  const page = search.page ?? 1;
   const perPage = search.perPage;
-  const sq = search.sq.trim();
+  const sq = (search.sq ?? "").trim();
   const hasSearch = sq.length > 0;
 
-  const { data } = useSuspenseQuery(listStaffQueryOptions({ page, perPage, sq }));
+  const { data } = useSuspenseQuery(listManagersQueryOptions({ page, perPage, sq }));
   const { items, total, totalPages } = data;
 
   return (
-    <section className="flex h-full w-full flex-col gap-4" data-test="admin-staff-list">
+    <section className="flex h-full w-full flex-col gap-4" data-test="admin-managers-list">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <p className="text-muted-foreground font-mono text-xs">
           {total} {total === 1 ? "person" : "people"}
@@ -78,9 +86,9 @@ export function StaffList() {
       </div>
 
       {items.length === 0 ? (
-        <StaffListEmpty hasSearch={hasSearch} query={sq} onClearSearch={clearSearch} />
+        <ManagerListEmpty hasSearch={hasSearch} query={sq} onClearSearch={clearSearch} />
       ) : (
-        <div className="overflow-hidden rounded-xl border" data-test="staff-table">
+        <div className="overflow-hidden rounded-xl border" data-test="managers-table">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
@@ -96,8 +104,8 @@ export function StaffList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {items.map((staff) => (
-                <StaffListItem key={staff.id} staff={staff} />
+              {items.map((manager) => (
+                <ManagerListItem key={manager.id} manager={manager} />
               ))}
             </TableBody>
           </Table>

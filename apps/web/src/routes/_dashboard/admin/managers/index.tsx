@@ -1,9 +1,51 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
+import { AppConfig } from "@/utils/system";
+import { createFileRoute } from "@tanstack/react-router";
+import { Suspense } from "react";
+import { z } from "zod";
+import { listManagersQueryOptions } from "../-data-access-layer/managers.query-options";
+import { DashboardPageHeader } from "../../-components/DashboardPageHeader";
+import { ManagerList } from "./-components/ManagerList";
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
 
-export const Route = createFileRoute('/_dashboard/admin/managers/')({
-  component: RouteComponent,
-})
+const managersSearchSchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  perPage: z.coerce.number().int().min(1).max(100).optional().default(ADMIN_LIST_PER_PAGE),
+  sq: z.string().optional(),
+});
 
-function RouteComponent() {
-  return <div>Hello "/_dashboard/admin/managers/"!</div>
+export const Route = createFileRoute("/_dashboard/admin/managers/")({
+  validateSearch: (search) => managersSearchSchema.parse(search),
+  loaderDeps: ({ search }) => ({
+    page: search.page,
+    perPage: search.perPage,
+    sq: search.sq,
+  }),
+  loader: async ({ context, deps }) => {
+    await context.queryClient.ensureQueryData(
+      listManagersQueryOptions({
+        page: deps.page,
+        perPage: deps.perPage,
+        sq: deps.sq,
+      }),
+    );
+  },
+  component: AdminManagersPage,
+  head: () => ({
+    meta: [{ title: `${AppConfig.name} | Managers` }],
+  }),
+});
+
+function AdminManagersPage() {
+  return (
+    <div className="flex flex-col gap-8">
+      <DashboardPageHeader
+        title="Managers"
+        description="Location managers who stay in their own dashboard."
+      />
+      <Suspense fallback={<RouterPendingComponent />}>
+        <ManagerList />
+      </Suspense>
+    </div>
+  );
 }

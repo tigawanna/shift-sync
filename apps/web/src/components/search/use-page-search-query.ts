@@ -5,16 +5,17 @@ import { useEffect, useState } from "react";
 const SEARCH_DEBOUNCE_MS = 400;
 
 type SearchWithQPage = {
-  q?: string;
+  sq?: string;
   page?: number;
+  perPage?: number;
 };
 
 type ListRouteId = RouteIds<RegisteredRouter["routeTree"]>;
 
 /**
- * Debounced URL `q` search for a TanStack Router route id.
+ * Debounced URL `sq` search for a TanStack Router route id.
  *
- * Keeps a local input value in sync with the committed `q` search param and
+ * Keeps a local input value in sync with the committed `sq` search param and
  * resets `page` whenever the query commits or clears.
  *
  * @param routeID - File route id (e.g. `"/_dashboard/admin/users/"`).
@@ -23,7 +24,7 @@ export function usePageSearchQuery(routeID: ListRouteId, debounceMs = SEARCH_DEB
   const routeApi = getRouteApi(routeID);
   const routeSearch = routeApi.useSearch() as SearchWithQPage;
   const navigate = routeApi.useNavigate();
-  const searchQuery = routeSearch.q ?? "";
+  const searchQuery = routeSearch.sq ?? "";
   const [inputValue, setInputValue] = useState(searchQuery);
 
   useEffect(() => {
@@ -36,7 +37,7 @@ export function usePageSearchQuery(routeID: ListRouteId, debounceMs = SEARCH_DEB
       void navigate({
         search: (prev: SearchWithQPage) => ({
           ...prev,
-          q: trimmed.length > 0 ? trimmed : undefined,
+          sq: trimmed.length > 0 ? trimmed : undefined,
           page: undefined,
         }),
         replace: true,
@@ -50,13 +51,13 @@ export function usePageSearchQuery(routeID: ListRouteId, debounceMs = SEARCH_DEB
     commitSearch(value);
   }
 
-  /** Clears the search input and URL `q` immediately (no debounce). */
+  /** Clears the search input and URL `sq` immediately (no debounce). */
   function clearSearch() {
     setInputValue("");
     void navigate({
       search: (prev: SearchWithQPage) => ({
         ...prev,
-        q: undefined,
+        sq: undefined,
         page: undefined,
       }),
       replace: true,
