@@ -7,7 +7,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { requireSessionRoles } from "../team/team.auth";
+import { requireSessionRoles } from "./roles";
 
 const impersonateUserInputSchema = z.object({
   userId: z.string().min(1),

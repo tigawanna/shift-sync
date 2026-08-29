@@ -1,13 +1,12 @@
 import { getSession } from "@/data-access-layer/auth/auth.functions";
 import { authClient, type BetterAuthSession } from "@/lib/better-auth/client";
 import {
-  ROLE,
-  type AppRole,
   getUserAppRole,
   hasAppRole,
   isAdminRole,
   isManagerRole,
   isStaffRole,
+  type AppRole
 } from "@/lib/better-auth/roles";
 import { queryOptions, useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { redirect, useRouter } from "@tanstack/react-router";
@@ -22,7 +21,7 @@ export type TViewer = {
 
 export type TViewerLoginPayload = { email: string; password: string };
 
-export { ROLE, type AppRole, getUserAppRole } from "@/lib/better-auth/roles";
+export { getUserAppRole, ROLE, type AppRole } from "@/lib/better-auth/roles";
 
 export function isAdminUser(user: ViewerUser | undefined): boolean {
   return isAdminRole(getUserAppRole(user));

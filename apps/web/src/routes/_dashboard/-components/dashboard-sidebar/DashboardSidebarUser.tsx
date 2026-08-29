@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -94,40 +95,44 @@ export function DashboardSidebarUser() {
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={viewer.user.image ?? undefined} alt={viewer.user.name} />
-                  <AvatarFallback className="rounded-lg">
-                    {viewer.user.name?.slice(0, 2) ?? "KT"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{viewer.user.name}</span>
-                  <span className="text-base-content/60 truncate text-xs">{viewer.user.email}</span>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="p-0 font-normal">
+                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                  <Avatar className="h-8 w-8 rounded-lg">
+                    <AvatarImage src={viewer.user.image ?? undefined} alt={viewer.user.name} />
+                    <AvatarFallback className="rounded-lg">
+                      {viewer.user.name?.slice(0, 2) ?? "KT"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">{viewer.user.name}</span>
+                    <span className="text-base-content/60 truncate text-xs">{viewer.user.email}</span>
+                  </div>
+                  <Check className="text-base-content/50 size-4 shrink-0" />
                 </div>
-                <Check className="text-base-content/50 size-4 shrink-0" />
-              </div>
-            </DropdownMenuLabel>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             {otherSessions.length > 0 ? (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="text-base-content/50 flex items-center gap-1.5 text-xs font-normal">
-                  <Users className="size-3.5" />
-                  Switch account
-                </DropdownMenuLabel>
-                {otherSessions.map((entry) => (
-                  <DropdownMenuItem
-                    key={entry.session.token}
-                    disabled={switchSession.isPending}
-                    onClick={() => switchSession.mutate(entry.session.token)}
-                  >
-                    <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                      <span className="truncate">{entry.user.name}</span>
-                      <span className="text-base-content/60 truncate text-xs">{entry.user.email}</span>
-                    </div>
-                  </DropdownMenuItem>
-                ))}
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="text-base-content/50 flex items-center gap-1.5 text-xs font-normal">
+                    <Users className="size-3.5" />
+                    Switch account
+                  </DropdownMenuLabel>
+                  {otherSessions.map((entry) => (
+                    <DropdownMenuItem
+                      key={entry.session.token}
+                      disabled={switchSession.isPending}
+                      onClick={() => switchSession.mutate(entry.session.token)}
+                    >
+                      <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                        <span className="truncate">{entry.user.name}</span>
+                        <span className="text-base-content/60 truncate text-xs">{entry.user.email}</span>
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuGroup>
               </>
             ) : null}
             <DropdownMenuSeparator />
