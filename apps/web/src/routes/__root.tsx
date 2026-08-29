@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 
 const TanstackDevtools = lazy(() =>
   import("@/lib/tanstack/devtools/devtools").then((module) => ({
@@ -51,31 +51,38 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
-  component: RootDocument,
+  shellComponent: RootDocument,
+  component: RootApp,
 });
 
-function RootDocument() {
+function RootApp() {
   const { queryClient } = getTanstackQueryContext();
 
+  return (
+    <ThemeProvider storageKey={AppConfig.themeStorageKey}>
+      <TanstackQueryProvider queryClient={queryClient}>
+        <TooltipProvider>
+          <Outlet />
+          <Toaster position="bottom-left" />
+          {import.meta.env.DEV ? (
+            <Suspense fallback={null}>
+              <TanstackDevtools />
+            </Suspense>
+          ) : null}
+        </TooltipProvider>
+      </TanstackQueryProvider>
+    </ThemeProvider>
+  );
+}
+
+function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body>
-        <ThemeProvider storageKey={AppConfig.themeStorageKey}>
-          <TanstackQueryProvider queryClient={queryClient}>
-            <TooltipProvider>
-              <Outlet />
-              <Toaster position="bottom-left" />
-              {import.meta.env.DEV ? (
-                <Suspense fallback={null}>
-                  <TanstackDevtools />
-                </Suspense>
-              ) : null}
-            </TooltipProvider>
-          </TanstackQueryProvider>
-        </ThemeProvider>
+        {children}
         <Scripts />
       </body>
     </html>
