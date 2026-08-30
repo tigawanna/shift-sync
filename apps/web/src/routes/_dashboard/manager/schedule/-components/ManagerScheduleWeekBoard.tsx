@@ -8,12 +8,14 @@ export function ManagerScheduleWeekBoard({
   days,
   timezone,
   editing,
+  overtimeUserIds,
   onSelectShift,
   onAddDay,
 }: {
   days: ManagerWeekSchedule["days"];
   timezone: string;
   editing: boolean;
+  overtimeUserIds: Set<string>;
   onSelectShift: (shiftId: string) => void;
   onAddDay: (date: string) => void;
 }) {
@@ -84,6 +86,7 @@ export function ManagerScheduleWeekBoard({
                     span={span}
                     side="bottom"
                     editing={editing}
+                    overtime={span.shift.assignees.some((person) => overtimeUserIds.has(person.id))}
                     onSelect={onSelectShift}
                   />
                 </div>

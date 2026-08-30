@@ -5,7 +5,10 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { DashboardPageHeader } from "../../../-components/DashboardPageHeader";
 import { myManagerLocationsQueryOptions } from "../../-data-access-layer/manager-locations.query-options";
-import { managerWeekScheduleQueryOptions } from "../../-data-access-layer/manager-schedule.query-options";
+import {
+  managerLaborReportQueryOptions,
+  managerWeekScheduleQueryOptions,
+} from "../../-data-access-layer/manager-schedule.query-options";
 import { ManagerSchedule } from "../-components/ManagerSchedule";
 
 const weekStartParams = z.object({
@@ -22,6 +25,12 @@ export const Route = createFileRoute("/_dashboard/manager/schedule/$locationId/$
       context.queryClient.ensureQueryData(myManagerLocationsQueryOptions()),
       context.queryClient.ensureQueryData(
         managerWeekScheduleQueryOptions({
+          locationId: params.locationId,
+          weekStart: params.weekStart,
+        }),
+      ),
+      context.queryClient.ensureQueryData(
+        managerLaborReportQueryOptions({
           locationId: params.locationId,
           weekStart: params.weekStart,
         }),

@@ -54,6 +54,23 @@ export function hoursByLocalDate(startsAt: Date, endsAt: Date, timeZone: string)
   return hours;
 }
 
+/** Hours of the given intervals that fall inside the Mon–Sun week of `weekStart` in `timeZone`. */
+export function clipWeeklyHours(
+  intervals: Array<{ startsAt: Date; endsAt: Date }>,
+  weekStart: string,
+  timeZone: string,
+) {
+  const rangeStart = zonedWallTimeToUtc(weekStart, "00:00", timeZone).getTime();
+  const rangeEnd = zonedWallTimeToUtc(addDaysYmd(weekStart, 7), "00:00", timeZone).getTime();
+  let weeklyHours = 0;
+  for (const interval of intervals) {
+    const overlapStart = Math.max(interval.startsAt.getTime(), rangeStart);
+    const overlapEnd = Math.min(interval.endsAt.getTime(), rangeEnd);
+    if (overlapEnd > overlapStart) weeklyHours += (overlapEnd - overlapStart) / 3_600_000;
+  }
+  return weeklyHours;
+}
+
 function mergeHours(into: Map<string, number>, add: Map<string, number>) {
   for (const [ymd, hours] of add) {
     into.set(ymd, (into.get(ymd) ?? 0) + hours);
@@ -139,7 +156,12 @@ export function evaluateAssignmentConstraints(input: {
   otherShifts: ShiftInterval[];
   weekly: AvailabilityWindow[];
   exceptions: AvailabilityException[];
-}): { failures: ConstraintIssue[]; warnings: ConstraintIssue[]; requiresOverride: boolean } {
+}): {
+  failures: ConstraintIssue[];
+  warnings: ConstraintIssue[];
+  requiresOverride: boolean;
+  weeklyHours: number;
+} {
   const failures: ConstraintIssue[] = [];
   const warnings: ConstraintIssue[] = [];
 
@@ -233,17 +255,11 @@ export function evaluateAssignmentConstraints(input: {
   }
 
   const weekStart = mondayOfWeekContaining(input.candidateStartsAt, input.locationTimezone);
-  const weekEnd = addDaysYmd(weekStart, 7);
-  const rangeStart = zonedWallTimeToUtc(weekStart, "00:00", input.locationTimezone);
-  const rangeEnd = zonedWallTimeToUtc(weekEnd, "00:00", input.locationTimezone);
-  let weeklyHours = 0;
-  const addClippedHours = (startsAt: Date, endsAt: Date) => {
-    const overlapStart = Math.max(startsAt.getTime(), rangeStart.getTime());
-    const overlapEnd = Math.min(endsAt.getTime(), rangeEnd.getTime());
-    if (overlapEnd > overlapStart) weeklyHours += (overlapEnd - overlapStart) / 3_600_000;
-  };
-  addClippedHours(input.candidateStartsAt, input.candidateEndsAt);
-  for (const other of input.otherShifts) addClippedHours(other.startsAt, other.endsAt);
+  const weeklyHours = clipWeeklyHours(
+    [{ startsAt: input.candidateStartsAt, endsAt: input.candidateEndsAt }, ...input.otherShifts],
+    weekStart,
+    input.locationTimezone,
+  );
 
   if (weeklyHours >= WEEKLY_HOURS_LIMIT) {
     warnings.push({
@@ -279,7 +295,7 @@ export function evaluateAssignmentConstraints(input: {
     });
   }
 
-  return { failures, warnings, requiresOverride };
+  return { failures, warnings, requiresOverride, weeklyHours };
 }
 
 export function formatAssignFailure(failures: ConstraintIssue[], alternativeNames: string[]) {

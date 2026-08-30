@@ -16,6 +16,7 @@ import {
   userSkill,
 } from "@/lib/drizzle/schema/skills-schema";
 import {
+  clipWeeklyHours,
   evaluateAssignmentConstraints,
   formatAssignFailure,
   type ShiftInterval,
@@ -340,11 +341,18 @@ export const listStaffForManagerShift = createServerFn({ method: "GET" })
         .where(candidateWhere),
     ]);
 
+    const constraintUserIds = [
+      ...new Set([...assignedRows.map((row) => row.id), ...candidateRows.map((row) => row.id)]),
+    ];
     const { shiftsByUser, weeklyByUser, exceptionsByUser } = await loadConstraintInputs(
-      candidateRows.map((row) => row.id),
+      constraintUserIds,
       context.shift.id,
       context.shift.startsAt,
       context.shift.endsAt,
+      context.shift.location.timezone,
+    );
+    const weekStart = mondayOfWeekContaining(
+      context.shift.startsAt,
       context.shift.location.timezone,
     );
 
@@ -366,6 +374,7 @@ export const listStaffForManagerShift = createServerFn({ method: "GET" })
           .map((issue) => issue.message),
         warnings: result.warnings.map((issue) => issue.message),
         requiresOverride: result.requiresOverride,
+        weeklyHoursAfter: result.weeklyHours,
       };
     });
 
@@ -376,6 +385,14 @@ export const listStaffForManagerShift = createServerFn({ method: "GET" })
         blockers: [] as string[],
         warnings: [] as string[],
         requiresOverride: false,
+        weeklyHoursAfter: clipWeeklyHours(
+          [
+            ...(shiftsByUser.get(person.id) ?? []),
+            { startsAt: context.shift.startsAt, endsAt: context.shift.endsAt },
+          ],
+          weekStart,
+          context.shift.location.timezone,
+        ),
       })),
       candidates,
       totalCandidates: totalRow[0]?.total ?? 0,

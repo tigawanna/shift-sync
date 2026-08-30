@@ -2,6 +2,7 @@ import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
 import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
+import { isPremiumStart } from "@/lib/schedule/labor";
 import {
   scheduleWeek as scheduleWeekTable,
   shift as shiftTable,
@@ -173,6 +174,7 @@ function toBoardShift(
       .map((assignment) => assignment.user)
       .sort((left, right) => left.name.localeCompare(right.name)),
     locked: row.startsAt.getTime() < cutoff.getTime(),
+    premium: isPremiumStart(row.startsAt, timezone),
   };
 }
 

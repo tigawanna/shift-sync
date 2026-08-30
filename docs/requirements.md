@@ -212,6 +212,10 @@ The following are **deliberately unspecified**. Part of the evaluation is how yo
 
 **Desired hours are a weekly target, not a filter on availability.** Availability is when someone can be assigned. Desired hours is how many hours they want in that Monday–Sunday week. An unset week has no target. Fairness later compares scheduled hours to this number; it does not change assign eligibility.
 
+**Overtime cost is projected at $22/h × 1.5 for hours over 40.** Weekly hours for OT include assignments at every location (the multi-site trap). The location-week report roster is people assigned at that location that week.
+
+**Premium is Friday or Saturday, location-local start at 16:00 or later.** Fairness is 100 when premium counts are even (or nobody has any) and drops when a few people hold most of them.
+
 ---
 
 ## Time Limit

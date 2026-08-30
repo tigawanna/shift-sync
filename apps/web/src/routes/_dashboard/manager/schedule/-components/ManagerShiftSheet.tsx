@@ -1,3 +1,4 @@
+import { WEEKLY_HOURS_LIMIT } from "@/lib/schedule/assign-constraints";
 import { SearchBox } from "@/components/search/SearchBox";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import { Input } from "@/components/ui/input";
@@ -107,6 +108,7 @@ function ShiftSheetBody({ panel, onClose }: { panel: ManagerShiftPanel; onClose:
       queryClient.invalidateQueries({ queryKey: ["manager-schedules"] }),
       queryClient.invalidateQueries({ queryKey: ["manager-shift-staff"] }),
       queryClient.invalidateQueries({ queryKey: ["staff-schedule"] }),
+      queryClient.invalidateQueries({ queryKey: ["manager-labor"] }),
     ]);
   };
 
@@ -329,6 +331,7 @@ type ShiftStaffPerson = {
   blockers: string[];
   warnings: string[];
   requiresOverride: boolean;
+  weeklyHoursAfter: number;
 };
 
 function assignStaffSummary(input: {
@@ -506,6 +509,12 @@ function AssignStaffRow({
         <div>
           <p className="text-sm">{person.name}</p>
           <p className="text-muted-foreground text-xs">{person.email}</p>
+          <p className="text-muted-foreground text-xs tabular-nums">
+            {person.assigned
+              ? `${person.weeklyHoursAfter.toFixed(1)}h this week`
+              : `Would be ${person.weeklyHoursAfter.toFixed(1)}h this week`}
+            {person.weeklyHoursAfter > WEEKLY_HOURS_LIMIT ? " · overtime" : ""}
+          </p>
         </div>
         <AssignStaffAction
           person={person}

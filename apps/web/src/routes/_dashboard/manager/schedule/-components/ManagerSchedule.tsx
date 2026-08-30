@@ -12,7 +12,11 @@ import {
   publishManagerWeek,
   unpublishManagerWeek,
 } from "../../-data-access-layer/manager-schedule.fn";
-import { managerWeekScheduleQueryOptions } from "../../-data-access-layer/manager-schedule.query-options";
+import {
+  managerLaborReportQueryOptions,
+  managerWeekScheduleQueryOptions,
+} from "../../-data-access-layer/manager-schedule.query-options";
+import { ManagerLaborReport } from "./ManagerLaborReport";
 import { ManagerScheduleWeekBoard } from "./ManagerScheduleWeekBoard";
 import { ManagerShiftSheet, type ManagerShiftPanel } from "./ManagerShiftSheet";
 
@@ -31,6 +35,12 @@ export function ManagerSchedule() {
 
   const scheduleQuery = useQuery(managerWeekScheduleQueryOptions({ locationId, weekStart }));
   const schedule = scheduleQuery.data;
+  const laborQuery = useQuery(managerLaborReportQueryOptions({ locationId, weekStart }));
+  const overtimeUserIds = new Set(
+    (laborQuery.data?.people ?? [])
+      .filter((person) => person.pushingOvertime)
+      .map((person) => person.userId),
+  );
 
   const goTo = (next: { locationId: string; weekStart: string }) => {
     void navigate({
@@ -44,6 +54,7 @@ export function ManagerSchedule() {
       queryClient.invalidateQueries({ queryKey: ["manager-schedule"] }),
       queryClient.invalidateQueries({ queryKey: ["manager-schedules"] }),
       queryClient.invalidateQueries({ queryKey: ["staff-schedule"] }),
+      queryClient.invalidateQueries({ queryKey: ["manager-labor"] }),
     ]);
   };
 
@@ -261,6 +272,7 @@ export function ManagerSchedule() {
           days={schedule.days}
           timezone={schedule.location.timezone}
           editing={editing}
+          overtimeUserIds={overtimeUserIds}
           onSelectShift={(shiftId) => {
             const shift = schedule.days
               .flatMap((day) => day.shifts)
@@ -284,6 +296,7 @@ export function ManagerSchedule() {
       ) : null}
 
       <ManagerShiftSheet panel={panel} onClose={() => setPanel(null)} />
+      <ManagerLaborReport locationId={selectedLocation.id} weekStart={weekStart} />
     </div>
   );
 }

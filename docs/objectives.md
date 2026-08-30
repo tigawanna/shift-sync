@@ -97,13 +97,13 @@ What a manager must be able to accomplish for the locations they run. Do this bl
 
 ### Overtime and fairness
 
-- [ ] See projected overtime cost for the week
-- [ ] See which assignments are pushing someone into overtime
-- [ ] See what-if hours **before** confirming an assignment
-- [ ] Hours-distribution report for a selected period
-- [ ] Tag Friday/Saturday evening shifts as premium
-- [ ] See a fairness score for premium-shift distribution
-- [ ] See who is under/over their stated desired hours
+- [x] See projected overtime cost for the week
+- [x] See which assignments are pushing someone into overtime
+- [x] See what-if hours **before** confirming an assignment
+- [x] Hours-distribution report for a selected period
+- [x] Tag Friday/Saturday evening shifts as premium
+- [x] See a fairness score for premium-shift distribution
+- [x] See who is under/over their stated desired hours
 
 ### Live ops, comms, audit
 

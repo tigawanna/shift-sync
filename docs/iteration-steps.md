@@ -34,7 +34,7 @@ Manager inbox: approve or reject. Approve is the only write that moves the assig
 - Tick Staff “stay on original until approve”
 - Tick Manager coverage approvals
 
-## 5. Overtime, what-if, fairness
+## 5. Overtime, what-if, fairness — done
 
 Projected OT cost for a location-week. Highlight assignments that push someone over 40h. What-if hours on the assign sheet. Hours-distribution report. Fri/Sat evening = premium. Fairness score on premium counts. Under/over vs desired hours.
 

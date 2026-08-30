@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { getManagerLaborReport } from "./manager-labor.fn";
 import { listManagerSkills, listStaffForManagerShift } from "./manager-shifts.fn";
 import {
   getManagerWeekSchedule,
@@ -6,6 +7,13 @@ import {
   type ListManagerSchedulesInput,
   type ManagerWeekInput,
 } from "./manager-schedule.fn";
+
+export function managerLaborReportQueryOptions(input: { locationId: string; weekStart: string }) {
+  return queryOptions({
+    queryKey: ["manager-labor", input.locationId, input.weekStart],
+    queryFn: () => getManagerLaborReport({ data: input }),
+  });
+}
 
 export function managerWeekScheduleQueryOptions(input: ManagerWeekInput) {
   return queryOptions({

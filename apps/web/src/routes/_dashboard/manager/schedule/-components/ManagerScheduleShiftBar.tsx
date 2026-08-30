@@ -6,11 +6,13 @@ export function ManagerScheduleShiftBar({
   span,
   side,
   editing,
+  overtime,
   onSelect,
 }: {
   span: ManagerWeekSpan;
   side: "top" | "bottom";
   editing: boolean;
+  overtime: boolean;
   onSelect?: (shiftId: string) => void;
 }) {
   const { shift } = span;
@@ -31,11 +33,15 @@ export function ManagerScheduleShiftBar({
         }
       >
         {shift.skillName} · {shiftTimeLabel(shift)} · {filled}
+        {shift.premium ? " · Premium" : ""}
+        {overtime ? " · OT" : ""}
       </HoverCardTrigger>
       <HoverCardContent side={side} align="start" className="w-72 p-3">
         <p className="font-medium">{shift.skillName}</p>
         <p className="text-muted-foreground mt-0.5 text-xs tabular-nums">
           {shiftTimeLabel(shift)} · {shift.hours.toFixed(1)}h
+          {shift.premium ? " · Fri/Sat evening premium" : ""}
+          {overtime ? " · assignee over 40h this week" : ""}
         </p>
         <p className="mt-2 text-xs">
           {shift.assignees.length > 0
