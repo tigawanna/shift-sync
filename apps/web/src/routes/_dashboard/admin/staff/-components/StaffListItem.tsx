@@ -3,6 +3,7 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/utils/date";
 import { initials } from "@/utils/strings";
 import { AdminListRowMenu } from "../../-components/AdminListRowMenu";
+import { AdminStaffNameLink } from "../../-components/AdminStaffNameLink";
 import type { StaffListItem as StaffListItemData } from "../../-data-access-layer/staff.fn";
 
 type StaffListItemProps = {
@@ -19,7 +20,7 @@ export function StaffListItem({ staff, onEditDirectory }: StaffListItemProps) {
             {staff.image ? <AvatarImage src={staff.image} alt="" /> : null}
             <AvatarFallback>{initials(staff.name)}</AvatarFallback>
           </Avatar>
-          <span className="font-medium">{staff.name}</span>
+          <AdminStaffNameLink staffId={staff.id} name={staff.name} />
         </div>
       </TableCell>
       <TableCell className="text-muted-foreground px-4 py-3">{staff.email}</TableCell>

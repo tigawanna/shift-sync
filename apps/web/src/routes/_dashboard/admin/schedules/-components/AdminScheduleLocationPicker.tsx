@@ -10,7 +10,7 @@ export function AdminScheduleLocationPicker() {
   return (
     <LocationFilterSheet
       locationId={locationId}
-      description="Search restaurants. Schedules tabs use the location you pick here."
+      description="Search restaurants. Leave on All locations to see every restaurant, or pick one to filter."
       searchTestId="admin-schedule-location-search"
       dataTest="admin-schedule-location"
       onSelect={(nextId) => {

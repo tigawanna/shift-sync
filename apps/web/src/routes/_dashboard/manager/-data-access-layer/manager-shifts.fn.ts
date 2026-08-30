@@ -424,22 +424,24 @@ export const createManagerShift = createServerFn({ method: "POST" })
     assertCanMutate(startsAt, Boolean(publication), "create a shift");
 
     const shiftId = crypto.randomUUID();
-    await db.insert(shiftTable).values({
-      id: shiftId,
-      locationId: location.id,
-      skillId: data.skillId,
-      startsAt,
-      endsAt,
-      headcountNeeded: data.headcountNeeded,
-      notes: data.notes?.trim() || null,
-      createdByUserId: session.user.id,
-    });
-    await recordScheduleAudit(db, {
-      locationId: location.id,
-      shiftId,
-      actorUserId: session.user.id,
-      action: "create",
-      after: await snapshotShift(db, shiftId),
+    await db.transaction(async (tx) => {
+      await tx.insert(shiftTable).values({
+        id: shiftId,
+        locationId: location.id,
+        skillId: data.skillId,
+        startsAt,
+        endsAt,
+        headcountNeeded: data.headcountNeeded,
+        notes: data.notes?.trim() || null,
+        createdByUserId: session.user.id,
+      });
+      await recordScheduleAudit(tx, {
+        locationId: location.id,
+        shiftId,
+        actorUserId: session.user.id,
+        action: "create",
+        after: await snapshotShift(tx, shiftId),
+      });
     });
 
     return { weekStart };
@@ -462,31 +464,33 @@ export const updateManagerShift = createServerFn({ method: "POST" })
     assertCanMutate(startsAt, context.published, "move this shift");
 
     const db = await getDb();
-    const before = await snapshotShift(db, data.shiftId);
-    await db
-      .update(shiftTable)
-      .set({
-        skillId: data.skillId,
-        startsAt,
-        endsAt,
-        headcountNeeded: data.headcountNeeded,
-        notes: data.notes?.trim() || null,
-      })
-      .where(eq(shiftTable.id, data.shiftId));
-    await cancelActiveCoverageForShift(db, data.shiftId, session.user.id);
-    const after = await snapshotShift(db, data.shiftId);
-    await recordScheduleAudit(db, {
-      locationId: context.shift.locationId,
-      shiftId: data.shiftId,
-      actorUserId: session.user.id,
-      action: "update",
-      before,
-      after,
-    });
-    await notifyUsers(db, after?.assignees.map((person) => person.userId) ?? [], {
-      kind: "shift_changed",
-      title: "A shift you are on changed",
-      body: `${context.shift.location.name}: a manager edited date, time, skill, or notes.`,
+    await db.transaction(async (tx) => {
+      const before = await snapshotShift(tx, data.shiftId);
+      await tx
+        .update(shiftTable)
+        .set({
+          skillId: data.skillId,
+          startsAt,
+          endsAt,
+          headcountNeeded: data.headcountNeeded,
+          notes: data.notes?.trim() || null,
+        })
+        .where(eq(shiftTable.id, data.shiftId));
+      await cancelActiveCoverageForShift(tx, data.shiftId, session.user.id);
+      const after = await snapshotShift(tx, data.shiftId);
+      await recordScheduleAudit(tx, {
+        locationId: context.shift.locationId,
+        shiftId: data.shiftId,
+        actorUserId: session.user.id,
+        action: "update",
+        before,
+        after,
+      });
+      await notifyUsers(tx, after?.assignees.map((person) => person.userId) ?? [], {
+        kind: "shift_changed",
+        title: "A shift you are on changed",
+        body: `${context.shift.location.name}: a manager edited date, time, skill, or notes.`,
+      });
     });
 
     return { weekStart: mondayOfWeekContaining(startsAt, context.shift.location.timezone) };
@@ -501,15 +505,17 @@ export const deleteManagerShift = createServerFn({ method: "POST" })
     assertCanMutate(context.shift.startsAt, context.published, "delete this shift");
 
     const db = await getDb();
-    const before = await snapshotShift(db, data.shiftId);
-    await cancelActiveCoverageForShift(db, data.shiftId, session.user.id);
-    await db.delete(shiftTable).where(eq(shiftTable.id, data.shiftId));
-    await recordScheduleAudit(db, {
-      locationId: context.shift.locationId,
-      shiftId: data.shiftId,
-      actorUserId: session.user.id,
-      action: "delete",
-      before,
+    await db.transaction(async (tx) => {
+      const before = await snapshotShift(tx, data.shiftId);
+      await cancelActiveCoverageForShift(tx, data.shiftId, session.user.id);
+      await tx.delete(shiftTable).where(eq(shiftTable.id, data.shiftId));
+      await recordScheduleAudit(tx, {
+        locationId: context.shift.locationId,
+        shiftId: data.shiftId,
+        actorUserId: session.user.id,
+        action: "delete",
+        before,
+      });
     });
     return { weekStart: context.weekStart };
   });
@@ -670,39 +676,39 @@ export const assignManagerShift = createServerFn({ method: "POST" })
         userId: data.userId,
         overrideReason: data.overrideReason ?? null,
       });
-    });
-    await recordScheduleAudit(db, {
-      locationId: context.shift.locationId,
-      shiftId: data.shiftId,
-      actorUserId: session.user.id,
-      action: "assign",
-      after: await snapshotShift(db, data.shiftId),
-    });
-    await notifyUsers(db, [data.userId], {
-      kind: "shift_assigned",
-      title: "You were assigned a shift",
-      body: `${context.shift.location.name} · a manager assigned you.`,
-    });
-    const weekStart = mondayOfWeekContaining(
-      context.shift.startsAt,
-      context.shift.location.timezone,
-    );
-    const weekHours = clipWeeklyHours(
-      [
-        ...(shiftsByUser.get(data.userId) ?? []),
-        { startsAt: context.shift.startsAt, endsAt: context.shift.endsAt },
-      ],
-      weekStart,
-      context.shift.location.timezone,
-    );
-    if (weekHours >= WEEKLY_HOURS_LIMIT) {
-      const managers = await loadLocationManagerIds(db, context.shift.locationId);
-      await notifyUsers(db, managers, {
-        kind: "overtime",
-        title: "Overtime warning",
-        body: `An assignment at ${context.shift.location.name} puts someone over ${WEEKLY_HOURS_LIMIT}h this week.`,
+      await recordScheduleAudit(tx, {
+        locationId: context.shift.locationId,
+        shiftId: data.shiftId,
+        actorUserId: session.user.id,
+        action: "assign",
+        after: await snapshotShift(tx, data.shiftId),
       });
-    }
+      await notifyUsers(tx, [data.userId], {
+        kind: "shift_assigned",
+        title: "You were assigned a shift",
+        body: `${context.shift.location.name} · a manager assigned you.`,
+      });
+      const weekStart = mondayOfWeekContaining(
+        context.shift.startsAt,
+        context.shift.location.timezone,
+      );
+      const weekHours = clipWeeklyHours(
+        [
+          ...(shiftsByUser.get(data.userId) ?? []),
+          { startsAt: context.shift.startsAt, endsAt: context.shift.endsAt },
+        ],
+        weekStart,
+        context.shift.location.timezone,
+      );
+      if (weekHours >= WEEKLY_HOURS_LIMIT) {
+        const managers = await loadLocationManagerIds(tx, context.shift.locationId);
+        await notifyUsers(tx, managers, {
+          kind: "overtime",
+          title: "Overtime warning",
+          body: `An assignment at ${context.shift.location.name} puts someone over ${WEEKLY_HOURS_LIMIT}h this week.`,
+        });
+      }
+    });
 
     return { ok: true as const };
   });
@@ -721,22 +727,24 @@ export const unassignManagerShift = createServerFn({ method: "POST" })
     assertCanMutate(context.shift.startsAt, context.published, "change assignments");
 
     const db = await getDb();
-    const before = await snapshotShift(db, data.shiftId);
-    await db
-      .delete(shiftAssignmentTable)
-      .where(
-        and(
-          eq(shiftAssignmentTable.shiftId, data.shiftId),
-          eq(shiftAssignmentTable.userId, data.userId),
-        ),
-      );
-    await recordScheduleAudit(db, {
-      locationId: context.shift.locationId,
-      shiftId: data.shiftId,
-      actorUserId: session.user.id,
-      action: "unassign",
-      before,
-      after: await snapshotShift(db, data.shiftId),
+    await db.transaction(async (tx) => {
+      const before = await snapshotShift(tx, data.shiftId);
+      await tx
+        .delete(shiftAssignmentTable)
+        .where(
+          and(
+            eq(shiftAssignmentTable.shiftId, data.shiftId),
+            eq(shiftAssignmentTable.userId, data.userId),
+          ),
+        );
+      await recordScheduleAudit(tx, {
+        locationId: context.shift.locationId,
+        shiftId: data.shiftId,
+        actorUserId: session.user.id,
+        action: "unassign",
+        before,
+        after: await snapshotShift(tx, data.shiftId),
+      });
     });
 
     return { ok: true as const };

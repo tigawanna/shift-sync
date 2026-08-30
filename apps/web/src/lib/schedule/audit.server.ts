@@ -1,4 +1,4 @@
-import type { AppDatabase } from "@/lib/drizzle/client";
+import type { DbSession } from "@/lib/drizzle/client";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
 import { scheduleAuditLog } from "@/lib/drizzle/schema/audit-schema";
 import {
@@ -7,7 +7,7 @@ import {
 } from "@/lib/drizzle/schema/schedule-schema";
 import { eq } from "drizzle-orm";
 
-export async function snapshotShift(db: AppDatabase, shiftId: string) {
+export async function snapshotShift(db: DbSession, shiftId: string) {
   const [shift] = await db
     .select({
       id: shiftTable.id,
@@ -46,7 +46,7 @@ export async function snapshotShift(db: AppDatabase, shiftId: string) {
 }
 
 export async function recordScheduleAudit(
-  db: Pick<AppDatabase, "insert">,
+  db: Pick<DbSession, "insert">,
   input: {
     locationId: string;
     shiftId?: string | null;

@@ -94,7 +94,12 @@ async function selectMyPublishedWeeks(db: Awaited<ReturnType<typeof getDb>>, use
     );
 }
 
-async function loadMyStaffSchedule(month: string, userId: string) {
+export async function loadStaffScheduleForUser(
+  month: string,
+  userId: string,
+  options: { publishedOnly?: boolean } = {},
+) {
+  const publishedOnly = options.publishedOnly ?? true;
   const db = await getDb();
   const { rangeStart, rangeEnd } = monthUtcOverlapRange(month);
 
@@ -143,16 +148,15 @@ async function loadMyStaffSchedule(month: string, userId: string) {
     };
   });
 
-  // Staff only see published weeks.
-  const publishedShifts = mapped.filter((shift) => shift.published);
+  const visibleShifts = publishedOnly ? mapped.filter((shift) => shift.published) : mapped;
   const hoursByDate: Record<string, number> = {};
-  for (const shift of publishedShifts) {
+  for (const shift of visibleShifts) {
     for (const [ymd, hours] of hoursByLocalDate(shift.startsAt, shift.endsAt, shift.timezone)) {
       hoursByDate[ymd] = (hoursByDate[ymd] ?? 0) + hours;
     }
   }
   // SQL used a padded UTC window; keep only shifts whose local start is in this month.
-  const monthShifts = publishedShifts.filter((shift) => yearMonthOf(shift.startDate) === month);
+  const monthShifts = visibleShifts.filter((shift) => yearMonthOf(shift.startDate) === month);
   // One group per local start date for the list UI.
   const days = [...new Set(monthShifts.map((shift) => shift.startDate))].sort().map((date) => ({
     date,
@@ -170,7 +174,7 @@ async function loadMyStaffSchedule(month: string, userId: string) {
       locationCount: certifiedLocationCount,
       publishedWeekCount: publishedWeeks.length,
       dbRowCount: assignmentRows.length,
-      publishedShiftCount: publishedShifts.length,
+      publishedShiftCount: mapped.filter((shift) => shift.published).length,
       monthShiftCount: monthShifts.length,
       utcQueryStart: rangeStart.toISOString(),
       utcQueryEnd: rangeEnd.toISOString(),
@@ -178,7 +182,7 @@ async function loadMyStaffSchedule(month: string, userId: string) {
   };
 }
 
-export type StaffScheduleResult = Awaited<ReturnType<typeof loadMyStaffSchedule>>;
+export type StaffScheduleResult = Awaited<ReturnType<typeof loadStaffScheduleForUser>>;
 export type StaffScheduleShift = StaffScheduleResult["days"][number]["shifts"][number];
 export type StaffScheduleQueryMeta = StaffScheduleResult["meta"];
 
@@ -186,5 +190,5 @@ export const listMyStaffSchedule = createServerFn({ method: "GET" })
   .validator((data: ListMyStaffScheduleInput) => listMyStaffScheduleInputSchema.parse(data))
   .handler(async ({ data }) => {
     const { session } = await requireSessionRoles([ROLE.staff]);
-    return loadMyStaffSchedule(data.month, session.user.id);
+    return loadStaffScheduleForUser(data.month, session.user.id);
   });

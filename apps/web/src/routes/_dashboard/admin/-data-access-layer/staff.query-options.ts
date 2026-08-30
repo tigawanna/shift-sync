@@ -1,5 +1,11 @@
 import { queryOptions } from "@tanstack/react-query";
-import { getStaffDirectory, listSkillOptions, listStaff, type ListStaffInput } from "./staff.fn";
+import {
+  getAdminStaff,
+  getStaffDirectory,
+  listSkillOptions,
+  listStaff,
+  type ListStaffInput,
+} from "./staff.fn";
 
 export function listStaffQueryOptions(input: ListStaffInput) {
   const page = input.page;
@@ -24,5 +30,12 @@ export function staffDirectoryQueryOptions(userId: string) {
   return queryOptions({
     queryKey: ["admin-staff-directory", userId],
     queryFn: () => getStaffDirectory({ data: { userId } }),
+  });
+}
+
+export function adminStaffQueryOptions(userId: string) {
+  return queryOptions({
+    queryKey: ["admin-staff-profile", userId],
+    queryFn: () => getAdminStaff({ data: { userId } }),
   });
 }

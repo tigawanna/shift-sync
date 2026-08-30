@@ -23,7 +23,6 @@ export const Route = createFileRoute("/_dashboard/admin/schedules/")({
     locationId: search.locationId,
   }),
   loader: async ({ context, deps }) => {
-    if (!deps.locationId) return;
     await context.queryClient.ensureQueryData(
       adminLaborReportQueryOptions({
         locationId: deps.locationId,

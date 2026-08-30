@@ -8,6 +8,7 @@ import { isPremiumStart } from "@/lib/schedule/labor";
 import {
   scheduleWeek as scheduleWeekTable,
   shift as shiftTable,
+  shiftAssignment as shiftAssignmentTable,
 } from "@/lib/drizzle/schema/schedule-schema";
 import {
   addDaysYmd,
@@ -338,29 +339,43 @@ export const publishManagerWeek = createServerFn({ method: "POST" })
     const existing = await loadPublication(db, location.id, weekStart);
 
     if (!existing) {
-      await db.insert(scheduleWeekTable).values({
-        id: crypto.randomUUID(),
-        locationId: location.id,
-        weekStartDate: weekStart,
-        publishedAt: new Date(),
-        publishedByUserId: session.user.id,
+      const { rangeStart, rangeEnd } = weekStartUtcRange(weekStart, location.timezone);
+      await db.transaction(async (tx) => {
+        await tx.insert(scheduleWeekTable).values({
+          id: crypto.randomUUID(),
+          locationId: location.id,
+          weekStartDate: weekStart,
+          publishedAt: new Date(),
+          publishedByUserId: session.user.id,
+        });
+        await recordScheduleAudit(tx, {
+          locationId: location.id,
+          actorUserId: session.user.id,
+          action: "publish",
+          after: { weekStart },
+        });
+        const assigned = await tx
+          .select({ userId: shiftAssignmentTable.userId })
+          .from(shiftAssignmentTable)
+          .innerJoin(shiftTable, eq(shiftTable.id, shiftAssignmentTable.shiftId))
+          .where(
+            and(
+              eq(shiftTable.locationId, location.id),
+              gte(shiftTable.startsAt, rangeStart),
+              lt(shiftTable.startsAt, rangeEnd),
+            ),
+          );
+        await notifyUsers(
+          tx,
+          assigned.map((row) => row.userId),
+          {
+            kind: "week_published",
+            title: "A schedule week was published",
+            body: `${location.name}: week of ${weekStart} is now visible.`,
+          },
+        );
       });
-      await recordScheduleAudit(db, {
-        locationId: location.id,
-        actorUserId: session.user.id,
-        action: "publish",
-        after: { weekStart },
-      });
-      const week = await loadWeekSchedule(session.user.id, location.id, weekStart);
-      const staffIds = week.days.flatMap((day) =>
-        day.shifts.flatMap((shift) => shift.assignees.map((person) => person.id)),
-      );
-      await notifyUsers(db, staffIds, {
-        kind: "week_published",
-        title: "A schedule week was published",
-        body: `${location.name}: week of ${weekStart} is now visible.`,
-      });
-      return week;
+      return loadWeekSchedule(session.user.id, location.id, weekStart);
     }
 
     return loadWeekSchedule(session.user.id, location.id, weekStart);
@@ -383,19 +398,21 @@ export const unpublishManagerWeek = createServerFn({ method: "POST" })
     }
 
     const db = await getDb();
-    await db
-      .delete(scheduleWeekTable)
-      .where(
-        and(
-          eq(scheduleWeekTable.locationId, week.location.id),
-          eq(scheduleWeekTable.weekStartDate, week.weekStart),
-        ),
-      );
-    await recordScheduleAudit(db, {
-      locationId: week.location.id,
-      actorUserId: session.user.id,
-      action: "unpublish",
-      before: { weekStart: week.weekStart },
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(scheduleWeekTable)
+        .where(
+          and(
+            eq(scheduleWeekTable.locationId, week.location.id),
+            eq(scheduleWeekTable.weekStartDate, week.weekStart),
+          ),
+        );
+      await recordScheduleAudit(tx, {
+        locationId: week.location.id,
+        actorUserId: session.user.id,
+        action: "unpublish",
+        before: { weekStart: week.weekStart },
+      });
     });
 
     return loadWeekSchedule(session.user.id, week.location.id, week.weekStart);
@@ -415,34 +432,36 @@ export const deleteManagerWeek = createServerFn({ method: "POST" })
 
     const { rangeStart, rangeEnd } = weekStartUtcRange(week.weekStart, week.location.timezone);
     const db = await getDb();
-    await recordScheduleAudit(db, {
-      locationId: week.location.id,
-      actorUserId: session.user.id,
-      action: "delete_week",
-      before: {
-        weekStart: week.weekStart,
-        shiftCount: week.days.flatMap((day) => day.shifts).length,
-      },
+    await db.transaction(async (tx) => {
+      await recordScheduleAudit(tx, {
+        locationId: week.location.id,
+        actorUserId: session.user.id,
+        action: "delete_week",
+        before: {
+          weekStart: week.weekStart,
+          shiftCount: week.days.flatMap((day) => day.shifts).length,
+        },
+      });
+
+      await tx
+        .delete(shiftTable)
+        .where(
+          and(
+            eq(shiftTable.locationId, week.location.id),
+            gte(shiftTable.startsAt, rangeStart),
+            lt(shiftTable.startsAt, rangeEnd),
+          ),
+        );
+
+      await tx
+        .delete(scheduleWeekTable)
+        .where(
+          and(
+            eq(scheduleWeekTable.locationId, week.location.id),
+            eq(scheduleWeekTable.weekStartDate, week.weekStart),
+          ),
+        );
     });
-
-    await db
-      .delete(shiftTable)
-      .where(
-        and(
-          eq(shiftTable.locationId, week.location.id),
-          gte(shiftTable.startsAt, rangeStart),
-          lt(shiftTable.startsAt, rangeEnd),
-        ),
-      );
-
-    await db
-      .delete(scheduleWeekTable)
-      .where(
-        and(
-          eq(scheduleWeekTable.locationId, week.location.id),
-          eq(scheduleWeekTable.weekStartDate, week.weekStart),
-        ),
-      );
 
     return { locationId: week.location.id, weekStart: week.weekStart };
   });

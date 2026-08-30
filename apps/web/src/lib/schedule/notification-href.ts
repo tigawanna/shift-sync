@@ -10,6 +10,7 @@ export function hrefForNotification(kind: string, role: AppRole) {
     return isCoverageNotification(kind) ? ("/staff/coverage" as const) : ("/staff" as const);
   }
   if (role === ROLE.manager) {
+    if (kind === "schedule_change_request") return "/manager/schedule" as const;
     return isCoverageNotification(kind) ? ("/manager/requests" as const) : ("/manager" as const);
   }
   return "/admin" as const;

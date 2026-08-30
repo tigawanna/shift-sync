@@ -35,7 +35,7 @@ function AdminSchedulesLayout() {
     <div className="flex flex-col gap-8">
       <DashboardPageHeader
         title="Schedules"
-        description="Pick a location, then overtime and fairness, who's working, or who's on a shift right now."
+        description="Overtime and fairness, who's working, and who's on a shift right now. Filter to one restaurant when you need to."
       />
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
         <AdminScheduleLocationPicker />

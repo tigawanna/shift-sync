@@ -4,11 +4,13 @@ export function StaffScheduleDesiredHours({
   weekStart,
   hours,
   pending,
+  readOnly = false,
   onSave,
 }: {
   weekStart: string;
   hours: number | null;
   pending: boolean;
+  readOnly?: boolean;
   onSave: (weekStartDate: string, hours: number | null) => void;
 }) {
   return (
@@ -23,10 +25,12 @@ export function StaffScheduleDesiredHours({
         max={60}
         step={1}
         defaultValue={hours ?? ""}
-        disabled={pending}
+        disabled={pending || readOnly}
+        readOnly={readOnly}
         aria-label={`Desired hours the week of ${weekStart}`}
         className="h-7 px-1 text-center text-[11px] tabular-nums"
         onBlur={(event) => {
+          if (readOnly) return;
           const raw = event.target.value.trim();
           if (raw === "") {
             if (hours !== null) onSave(weekStart, null);

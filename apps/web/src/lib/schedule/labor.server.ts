@@ -14,25 +14,51 @@ import {
   premiumFairnessScore,
   type LaborReport,
 } from "@/lib/schedule/labor";
+import { HQ_TIMEZONE } from "@/lib/schedule/oversight";
 import { addDaysYmd, zonedWallTimeToUtc } from "@/lib/time/zoned";
-import { and, eq, gt, gte, inArray, lt } from "drizzle-orm";
+import { and, eq, gt, gte, inArray, lt, or, type SQL } from "drizzle-orm";
 
-export async function loadLaborReport(locationId: string, weekStart: string) {
+function weekWindow(weekStart: string, timezone: string) {
+  return {
+    rangeStart: zonedWallTimeToUtc(weekStart, "00:00", timezone),
+    rangeEnd: zonedWallTimeToUtc(addDaysYmd(weekStart, 7), "00:00", timezone),
+  };
+}
+
+export async function loadLaborReport(locationId: string | undefined, weekStart: string) {
   const db = await getDb();
-  const [location] = await db
+  const locations = await db
     .select({
       id: locationTable.id,
       name: locationTable.name,
       timezone: locationTable.timezone,
     })
     .from(locationTable)
-    .where(eq(locationTable.id, locationId))
-    .limit(1);
+    .where(locationId ? eq(locationTable.id, locationId) : undefined);
 
-  if (!location) throw new Error("Location not found.");
+  if (locationId && locations.length === 0) throw new Error("Location not found.");
 
-  const rangeStart = zonedWallTimeToUtc(weekStart, "00:00", location.timezone);
-  const rangeEnd = zonedWallTimeToUtc(addDaysYmd(weekStart, 7), "00:00", location.timezone);
+  const hoursTimezone = locations.length === 1 ? locations[0]!.timezone : HQ_TIMEZONE;
+  const hoursWindow = weekWindow(weekStart, hoursTimezone);
+  const locationName = locations.length === 1 ? locations[0]!.name : "All locations";
+  const empty: LaborReport = {
+    locationName,
+    weekStart,
+    overtimeCostUsd: 0,
+    fairnessScore: 100,
+    premiumShiftCount: 0,
+    people: [],
+  };
+
+  const startInLocationWeek: SQL[] = locations.map((location) => {
+    const window = weekWindow(weekStart, location.timezone);
+    return and(
+      eq(shiftTable.locationId, location.id),
+      gte(shiftTable.startsAt, window.rangeStart),
+      lt(shiftTable.startsAt, window.rangeEnd),
+    )!;
+  });
+  if (startInLocationWeek.length === 0) return empty;
 
   const locationRows = await db
     .select({
@@ -41,28 +67,15 @@ export async function loadLaborReport(locationId: string, weekStart: string) {
       shiftId: shiftTable.id,
       startsAt: shiftTable.startsAt,
       endsAt: shiftTable.endsAt,
+      timezone: locationTable.timezone,
     })
     .from(shiftAssignmentTable)
     .innerJoin(shiftTable, eq(shiftTable.id, shiftAssignmentTable.shiftId))
+    .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
     .innerJoin(userTable, eq(userTable.id, shiftAssignmentTable.userId))
-    .where(
-      and(
-        eq(shiftTable.locationId, location.id),
-        gte(shiftTable.startsAt, rangeStart),
-        lt(shiftTable.startsAt, rangeEnd),
-      ),
-    );
+    .where(or(...startInLocationWeek));
 
   const userIds = [...new Set(locationRows.map((row) => row.userId))];
-  const empty: LaborReport = {
-    locationName: location.name,
-    weekStart,
-    overtimeCostUsd: 0,
-    fairnessScore: 100,
-    premiumShiftCount: 0,
-    people: [],
-  };
-
   if (userIds.length === 0) return empty;
 
   const [weekRows, desiredRows] = await Promise.all([
@@ -77,8 +90,8 @@ export async function loadLaborReport(locationId: string, weekStart: string) {
       .where(
         and(
           inArray(shiftAssignmentTable.userId, userIds),
-          lt(shiftTable.startsAt, rangeEnd),
-          gt(shiftTable.endsAt, rangeStart),
+          lt(shiftTable.startsAt, hoursWindow.rangeEnd),
+          gt(shiftTable.endsAt, hoursWindow.rangeStart),
         ),
       ),
     db
@@ -103,10 +116,10 @@ export async function loadLaborReport(locationId: string, weekStart: string) {
     weekIntervals.set(row.userId, list);
   }
 
-  const peopleById = new Map<string, (typeof empty.people)[number]>();
+  const peopleById = new Map<string, LaborReport["people"][number]>();
   for (const row of locationRows) {
     const existing = peopleById.get(row.userId);
-    const premium = isPremiumStart(row.startsAt, location.timezone);
+    const premium = isPremiumStart(row.startsAt, row.timezone);
     if (existing) {
       if (premium) existing.premiumCount += 1;
       continue;
@@ -115,7 +128,7 @@ export async function loadLaborReport(locationId: string, weekStart: string) {
     const weekHours = clipWeeklyHours(
       weekIntervals.get(row.userId) ?? [],
       weekStart,
-      location.timezone,
+      hoursTimezone,
     );
     const otHours = overtimeHours(weekHours);
     const desiredHours = desiredByUser.get(row.userId) ?? null;
@@ -139,7 +152,7 @@ export async function loadLaborReport(locationId: string, weekStart: string) {
   const premiumShiftCount = people.reduce((sum, person) => sum + person.premiumCount, 0);
 
   return {
-    locationName: location.name,
+    locationName,
     weekStart,
     overtimeCostUsd: overtimeCost,
     fairnessScore: premiumFairnessScore(people.map((person) => person.premiumCount)),

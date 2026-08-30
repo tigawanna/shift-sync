@@ -23,9 +23,9 @@ export function adminWhoWorksWhereQueryOptions(input: AdminWhoWorksInput) {
   });
 }
 
-export function adminLaborReportQueryOptions(input: { locationId: string; weekStart: string }) {
+export function adminLaborReportQueryOptions(input: { locationId?: string; weekStart: string }) {
   return queryOptions({
-    queryKey: ["admin-labor", input.locationId, input.weekStart],
+    queryKey: ["admin-labor", input.locationId ?? "all", input.weekStart],
     queryFn: () => getAdminLaborReport({ data: input }),
   });
 }

@@ -21,32 +21,36 @@ export const upsertMyDesiredHoursInputSchema = z.object({
 
 export type ListMyDesiredHoursInput = z.infer<typeof listMyDesiredHoursInputSchema>;
 
+export async function loadDesiredHoursForMonth(userId: string, month: string) {
+  const grid = monthGridDates(month);
+  const rangeStart = grid[0] ?? monthStartYmd(month);
+  const rangeEnd = grid[grid.length - 1] ?? monthStartYmd(addMonthsYm(month, 1));
+
+  const db = await getDb();
+  const rows = await db
+    .select({
+      weekStartDate: staffDesiredHours.weekStartDate,
+      hours: staffDesiredHours.hours,
+    })
+    .from(staffDesiredHours)
+    .where(
+      and(
+        eq(staffDesiredHours.userId, userId),
+        gte(staffDesiredHours.weekStartDate, rangeStart),
+        lte(staffDesiredHours.weekStartDate, rangeEnd),
+      ),
+    );
+
+  const byWeek: Record<string, number> = {};
+  for (const row of rows) byWeek[row.weekStartDate] = row.hours;
+  return { byWeek };
+}
+
 export const listMyDesiredHours = createServerFn({ method: "GET" })
   .validator(listMyDesiredHoursInputSchema)
   .handler(async ({ data }) => {
     const { session } = await requireSessionRoles([ROLE.staff]);
-    const grid = monthGridDates(data.month);
-    const rangeStart = grid[0] ?? monthStartYmd(data.month);
-    const rangeEnd = grid[grid.length - 1] ?? monthStartYmd(addMonthsYm(data.month, 1));
-
-    const db = await getDb();
-    const rows = await db
-      .select({
-        weekStartDate: staffDesiredHours.weekStartDate,
-        hours: staffDesiredHours.hours,
-      })
-      .from(staffDesiredHours)
-      .where(
-        and(
-          eq(staffDesiredHours.userId, session.user.id),
-          gte(staffDesiredHours.weekStartDate, rangeStart),
-          lte(staffDesiredHours.weekStartDate, rangeEnd),
-        ),
-      );
-
-    const byWeek: Record<string, number> = {};
-    for (const row of rows) byWeek[row.weekStartDate] = row.hours;
-    return { byWeek };
+    return loadDesiredHoursForMonth(session.user.id, data.month);
   });
 
 export const upsertMyDesiredHours = createServerFn({ method: "POST" })
@@ -67,30 +71,34 @@ export const upsertMyDesiredHours = createServerFn({ method: "POST" })
       return { weekStartDate: data.weekStartDate, hours: null };
     }
 
-    const existing = await db
-      .select({ id: staffDesiredHours.id })
-      .from(staffDesiredHours)
-      .where(
-        and(
-          eq(staffDesiredHours.userId, session.user.id),
-          eq(staffDesiredHours.weekStartDate, data.weekStartDate),
-        ),
-      )
-      .then((rows) => rows[0]);
+    const hours = data.hours;
+    await db.transaction(async (tx) => {
+      const existing = await tx
+        .select({ id: staffDesiredHours.id })
+        .from(staffDesiredHours)
+        .where(
+          and(
+            eq(staffDesiredHours.userId, session.user.id),
+            eq(staffDesiredHours.weekStartDate, data.weekStartDate),
+          ),
+        )
+        .then((rows) => rows[0]);
 
-    if (existing) {
-      await db
-        .update(staffDesiredHours)
-        .set({ hours: data.hours })
-        .where(eq(staffDesiredHours.id, existing.id));
-    } else {
-      await db.insert(staffDesiredHours).values({
+      if (existing) {
+        await tx
+          .update(staffDesiredHours)
+          .set({ hours })
+          .where(eq(staffDesiredHours.id, existing.id));
+        return;
+      }
+
+      await tx.insert(staffDesiredHours).values({
         id: crypto.randomUUID(),
         userId: session.user.id,
         weekStartDate: data.weekStartDate,
-        hours: data.hours,
+        hours,
       });
-    }
+    });
 
-    return { weekStartDate: data.weekStartDate, hours: data.hours };
+    return { weekStartDate: data.weekStartDate, hours };
   });

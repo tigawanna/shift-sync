@@ -155,8 +155,8 @@ export const approveCoverage = createServerFn({ method: "POST" })
       throw new Error("That request is not waiting on a manager.");
     }
 
-    const before = await snapshotShift(db, row.request.shiftId);
     await db.transaction(async (tx) => {
+      const before = await snapshotShift(tx, row.request.shiftId);
       await applyApprovedCoverage(tx, row.request);
       await tx
         .update(coverageRequest)
@@ -166,21 +166,20 @@ export const approveCoverage = createServerFn({ method: "POST" })
           resolvedByUserId: session.user.id,
         })
         .where(eq(coverageRequest.id, row.request.id));
-    });
-    await emitCoverageAudit({
-      db,
-      locationId: row.locationId,
-      shiftId: row.request.shiftId,
-      actorUserId: session.user.id,
-      action: "coverage_approve",
-      before,
-      after: await snapshotShift(db, row.request.shiftId),
-    });
-
-    await notifyUsers(db, [row.request.fromUserId, row.request.toUserId ?? ""], {
-      kind: "coverage_approved",
-      title: "Coverage approved",
-      body: "A manager approved a swap or pickup. The assignment has moved.",
+      await emitCoverageAudit({
+        db: tx,
+        locationId: row.locationId,
+        shiftId: row.request.shiftId,
+        actorUserId: session.user.id,
+        action: "coverage_approve",
+        before,
+        after: await snapshotShift(tx, row.request.shiftId),
+      });
+      await notifyUsers(tx, [row.request.fromUserId, row.request.toUserId ?? ""], {
+        kind: "coverage_approved",
+        title: "Coverage approved",
+        body: "A manager approved a swap or pickup. The assignment has moved.",
+      });
     });
 
     return { ok: true as const };
@@ -211,27 +210,29 @@ export const rejectCoverage = createServerFn({ method: "POST" })
       throw new Error("That request is not waiting on a manager.");
     }
 
-    await db
-      .update(coverageRequest)
-      .set({
-        status: COVERAGE_STATUS.rejected,
-        resolvedAt: new Date(),
-        resolvedByUserId: session.user.id,
-      })
-      .where(eq(coverageRequest.id, row.request.id));
+    await db.transaction(async (tx) => {
+      await tx
+        .update(coverageRequest)
+        .set({
+          status: COVERAGE_STATUS.rejected,
+          resolvedAt: new Date(),
+          resolvedByUserId: session.user.id,
+        })
+        .where(eq(coverageRequest.id, row.request.id));
 
-    await notifyUsers(db, [row.request.fromUserId, row.request.toUserId ?? ""], {
-      kind: "coverage_rejected",
-      title: "Coverage rejected",
-      body: "A manager rejected a swap or pickup. The original assignment stays.",
-    });
-    await emitCoverageAudit({
-      db,
-      locationId: row.locationId,
-      shiftId: row.request.shiftId,
-      actorUserId: session.user.id,
-      action: "coverage_reject",
-      after: { requestId: row.request.id, status: COVERAGE_STATUS.rejected },
+      await notifyUsers(tx, [row.request.fromUserId, row.request.toUserId ?? ""], {
+        kind: "coverage_rejected",
+        title: "Coverage rejected",
+        body: "A manager rejected a swap or pickup. The original assignment stays.",
+      });
+      await emitCoverageAudit({
+        db: tx,
+        locationId: row.locationId,
+        shiftId: row.request.shiftId,
+        actorUserId: session.user.id,
+        action: "coverage_reject",
+        after: { requestId: row.request.id, status: COVERAGE_STATUS.rejected },
+      });
     });
 
     return { ok: true as const };

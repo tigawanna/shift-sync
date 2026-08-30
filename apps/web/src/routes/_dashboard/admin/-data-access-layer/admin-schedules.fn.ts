@@ -55,7 +55,7 @@ export const listAdminWhoWorksWhere = createServerFn({ method: "GET" })
 export const getAdminLaborReport = createServerFn({ method: "GET" })
   .validator(
     z.object({
-      locationId: z.string().min(1),
+      locationId: z.string().min(1).optional(),
       weekStart: weekStartSchema,
     }),
   )

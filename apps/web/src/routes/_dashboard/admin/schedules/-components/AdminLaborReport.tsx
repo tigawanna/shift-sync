@@ -6,12 +6,12 @@ export function AdminLaborReport({
   locationId,
   weekStart,
 }: {
-  locationId: string;
+  locationId?: string;
   weekStart: string;
 }) {
   const { data: report } = useSuspenseQuery(
     adminLaborReportQueryOptions({ locationId, weekStart }),
   );
 
-  return <LaborReportView report={report} testId="admin-labor-report" />;
+  return <LaborReportView report={report} testId="admin-labor-report" linkStaff />;
 }

@@ -1,4 +1,4 @@
-import { getDb, type AppDatabase } from "@/lib/drizzle/client";
+import { getDb, type AppDatabase, type DbSession } from "@/lib/drizzle/client";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
 import { coverageRequest } from "@/lib/drizzle/schema/coverage-schema";
 import { location as locationTable, userLocation } from "@/lib/drizzle/schema/locations-schema";
@@ -37,36 +37,36 @@ export async function expireOpenDrops(db: AppDatabase, now = new Date()) {
 
   if (expired.length === 0) return 0;
 
-  await db
-    .update(coverageRequest)
-    .set({
-      status: COVERAGE_STATUS.expired,
-      resolvedAt: now,
-    })
-    .where(
-      inArray(
-        coverageRequest.id,
-        expired.map((row) => row.id),
-      ),
-    );
+  await db.transaction(async (tx) => {
+    await tx
+      .update(coverageRequest)
+      .set({
+        status: COVERAGE_STATUS.expired,
+        resolvedAt: now,
+      })
+      .where(
+        inArray(
+          coverageRequest.id,
+          expired.map((row) => row.id),
+        ),
+      );
 
-  await Promise.all(
-    expired.map((row) =>
-      auditCoverageChange(db, {
+    for (const row of expired) {
+      await auditCoverageChange(tx, {
         locationId: row.locationId,
         shiftId: row.shiftId,
         actorUserId: row.fromUserId,
         action: "coverage_expire",
         after: { requestId: row.id, status: COVERAGE_STATUS.expired },
-      }),
-    ),
-  );
+      });
+    }
+  });
 
   return expired.length;
 }
 
 export async function cancelActiveCoverageForShift(
-  db: AppDatabase,
+  db: DbSession,
   shiftId: string,
   resolvedByUserId: string,
 ) {
@@ -106,20 +106,18 @@ export async function cancelActiveCoverageForShift(
     title: "Coverage request cancelled",
     body: "A pending swap or drop was cancelled because that shift was edited.",
   });
-  await Promise.all(
-    pending.map((row) =>
-      auditCoverageChange(db, {
-        locationId: row.locationId,
-        shiftId,
-        actorUserId: resolvedByUserId,
-        action: "coverage_cancel",
-        after: { requestId: row.id, status: COVERAGE_STATUS.cancelled },
-      }),
-    ),
-  );
+  for (const row of pending) {
+    await auditCoverageChange(db, {
+      locationId: row.locationId,
+      shiftId,
+      actorUserId: resolvedByUserId,
+      action: "coverage_cancel",
+      after: { requestId: row.id, status: COVERAGE_STATUS.cancelled },
+    });
+  }
 }
 
-export async function countActiveCoverageForUser(db: AppDatabase, userId: string) {
+export async function countActiveCoverageForUser(db: DbSession, userId: string) {
   const [row] = await db
     .select({ total: count() })
     .from(coverageRequest)
@@ -132,7 +130,7 @@ export async function countActiveCoverageForUser(db: AppDatabase, userId: string
   return row?.total ?? 0;
 }
 
-export async function assertPendingCapacity(db: AppDatabase, userId: string, additional = 1) {
+export async function assertPendingCapacity(db: DbSession, userId: string, additional = 1) {
   const total = await countActiveCoverageForUser(db, userId);
   if (total + additional > COVERAGE_PENDING_LIMIT) {
     throw new Error(
@@ -141,7 +139,7 @@ export async function assertPendingCapacity(db: AppDatabase, userId: string, add
   }
 }
 
-export async function assertQualifiedForShift(db: AppDatabase, userId: string, shiftId: string) {
+export async function assertQualifiedForShift(db: DbSession, userId: string, shiftId: string) {
   const [row] = await db
     .select({
       userId: userTable.id,
@@ -166,7 +164,7 @@ export async function assertQualifiedForShift(db: AppDatabase, userId: string, s
   }
 }
 
-export async function loadPublishedShift(db: AppDatabase, shiftId: string) {
+export async function loadPublishedShift(db: DbSession, shiftId: string) {
   const [row] = await db
     .select({
       shift: shiftTable,
@@ -196,7 +194,7 @@ export async function loadPublishedShift(db: AppDatabase, shiftId: string) {
   return { ...row, weekStart, published: true };
 }
 
-export async function assertAssignedToShift(db: AppDatabase, shiftId: string, userId: string) {
+export async function assertAssignedToShift(db: DbSession, shiftId: string, userId: string) {
   const [row] = await db
     .select({ id: shiftAssignmentTable.id })
     .from(shiftAssignmentTable)
@@ -206,7 +204,7 @@ export async function assertAssignedToShift(db: AppDatabase, shiftId: string, us
 }
 
 export async function applyApprovedCoverage(
-  db: Pick<AppDatabase, "delete" | "insert">,
+  db: Pick<DbSession, "delete" | "insert">,
   request: { kind: string; shiftId: string; fromUserId: string; toUserId: string | null },
 ) {
   if (!request.toUserId) {

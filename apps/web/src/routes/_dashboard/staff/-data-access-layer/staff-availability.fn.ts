@@ -50,7 +50,7 @@ function parseExceptionKind(kind: string) {
   return AVAILABILITY_EXCEPTION_KINDS[0];
 }
 
-async function loadMyStaffAvailability(month: string, userId: string) {
+export async function loadStaffAvailabilityForUser(month: string, userId: string) {
   const db = await getDb();
   const grid = monthGridDates(month);
   const rangeStart = grid[0] ?? `${month}-01`;
@@ -103,7 +103,7 @@ async function loadMyStaffAvailability(month: string, userId: string) {
   };
 }
 
-export type StaffAvailabilityResult = Awaited<ReturnType<typeof loadMyStaffAvailability>>;
+export type StaffAvailabilityResult = Awaited<ReturnType<typeof loadStaffAvailabilityForUser>>;
 export type StaffAvailabilityException = StaffAvailabilityResult["exceptions"][number];
 export type StaffWeeklyWindow = StaffAvailabilityResult["weeklyWindows"][number];
 
@@ -111,7 +111,7 @@ export const listMyStaffAvailability = createServerFn({ method: "GET" })
   .validator((data: ListMyStaffAvailabilityInput) => listMyStaffAvailabilityInputSchema.parse(data))
   .handler(async ({ data }) => {
     const { session } = await requireSessionRoles([ROLE.staff]);
-    return loadMyStaffAvailability(data.month, session.user.id);
+    return loadStaffAvailabilityForUser(data.month, session.user.id);
   });
 
 export const addMyAvailabilityException = createServerFn({ method: "POST" })
@@ -123,27 +123,29 @@ export const addMyAvailabilityException = createServerFn({ method: "POST" })
     const db = await getDb();
     const userId = session.user.id;
 
-    await db.insert(userAvailabilityExceptionTable).values({
-      id: crypto.randomUUID(),
-      userId,
-      date: data.date,
-      kind: data.kind,
-      startMinute: data.startMinute,
-      endMinute: data.endMinute,
-      note: data.note?.trim() || null,
-    });
+    await db.transaction(async (tx) => {
+      await tx.insert(userAvailabilityExceptionTable).values({
+        id: crypto.randomUUID(),
+        userId,
+        date: data.date,
+        kind: data.kind,
+        startMinute: data.startMinute,
+        endMinute: data.endMinute,
+        note: data.note?.trim() || null,
+      });
 
-    const locations = await db
-      .select({ locationId: userLocation.locationId })
-      .from(userLocation)
-      .where(eq(userLocation.userId, userId));
-    const managerIds = (
-      await Promise.all(locations.map((row) => loadLocationManagerIds(db, row.locationId)))
-    ).flat();
-    await notifyUsers(db, managerIds, {
-      kind: "availability",
-      title: "Staff availability changed",
-      body: `${session.user.name} added an availability exception.`,
+      const locations = await tx
+        .select({ locationId: userLocation.locationId })
+        .from(userLocation)
+        .where(eq(userLocation.userId, userId));
+      const managerIds = (
+        await Promise.all(locations.map((row) => loadLocationManagerIds(tx, row.locationId)))
+      ).flat();
+      await notifyUsers(tx, managerIds, {
+        kind: "availability",
+        title: "Staff availability changed",
+        body: `${session.user.name} added an availability exception.`,
+      });
     });
 
     return { ok: true as const };

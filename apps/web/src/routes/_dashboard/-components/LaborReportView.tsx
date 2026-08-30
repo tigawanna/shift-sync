@@ -1,4 +1,5 @@
 import { formatUsd, type LaborReport } from "@/lib/schedule/labor";
+import { AdminStaffNameLink } from "../admin/-components/AdminStaffNameLink";
 
 function desiredCell(person: LaborReport["people"][number]) {
   if (person.desiredHours === null || person.hoursVsDesired === null) return "—";
@@ -9,17 +10,23 @@ function desiredCell(person: LaborReport["people"][number]) {
 export function LaborReportView({
   report,
   testId = "labor-report",
+  linkStaff = false,
 }: {
   report: LaborReport;
   testId?: string;
+  linkStaff?: boolean;
 }) {
   return (
     <section className="flex flex-col gap-4" data-test={testId}>
       <div>
         <h3 className="text-sm font-semibold">Overtime and fairness</h3>
         <p className="text-muted-foreground text-xs">
-          Weekly hours include every location. Overtime is time over 40h at $22 × 1.5. Premium is a
-          Friday or Saturday start at 16:00 or later in this location timezone.
+          {report.locationName === "All locations"
+            ? "All locations this week. Weekly hours still include every restaurant a person worked."
+            : `${report.locationName} this week. Weekly hours include every location.`}{" "}
+          Overtime is time over 40h at $22 × 1.5. Premium is a Friday or Saturday start at 16:00 or
+          later in {report.locationName === "All locations" ? "each location's" : "this location"}{" "}
+          timezone.
         </p>
       </div>
       <dl className="grid gap-3 sm:grid-cols-3">
@@ -57,7 +64,11 @@ export function LaborReportView({
               {report.people.map((person) => (
                 <tr key={person.userId} className="border-t">
                   <td className="px-3 py-2">
-                    {person.name}
+                    {linkStaff ? (
+                      <AdminStaffNameLink staffId={person.userId} name={person.name} />
+                    ) : (
+                      person.name
+                    )}
                     {person.pushingOvertime ? (
                       <span className="text-warning ml-2 text-xs">over 40h</span>
                     ) : null}

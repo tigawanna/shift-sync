@@ -1,8 +1,8 @@
-import type { AppDatabase } from "@/lib/drizzle/client";
+import type { DbSession } from "@/lib/drizzle/client";
 import { recordScheduleAudit, snapshotShift } from "@/lib/schedule/audit.server";
 
 export type CoverageAuditEvent = {
-  db: AppDatabase;
+  db: DbSession;
   locationId: string;
   shiftId: string;
   actorUserId: string;
@@ -37,7 +37,7 @@ export async function emitCoverageAudit(event: CoverageAuditEvent) {
 }
 
 export async function auditCoverageChange(
-  db: AppDatabase,
+  db: DbSession,
   input: {
     locationId: string;
     shiftId: string;

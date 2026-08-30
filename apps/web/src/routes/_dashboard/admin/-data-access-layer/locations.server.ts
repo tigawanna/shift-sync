@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/drizzle/client";
+import { getDb, type DbSession } from "@/lib/drizzle/client";
 import { location as locationTable, userLocation } from "@/lib/drizzle/schema";
 import { eq, inArray } from "drizzle-orm";
 
@@ -17,19 +17,23 @@ export async function assertLocationIdsExist(locationIds: string[]) {
   return unique;
 }
 
+export async function writeUserLocations(tx: DbSession, userId: string, locationIds: string[]) {
+  await tx.delete(userLocation).where(eq(userLocation.userId, userId));
+  if (locationIds.length === 0) return;
+  await tx.insert(userLocation).values(
+    locationIds.map((locationId) => ({
+      id: crypto.randomUUID(),
+      userId,
+      locationId,
+    })),
+  );
+}
+
 export async function replaceUserLocations(userId: string, locationIds: string[]) {
   const unique = await assertLocationIdsExist(locationIds);
   const db = await getDb();
   await db.transaction(async (tx) => {
-    await tx.delete(userLocation).where(eq(userLocation.userId, userId));
-    if (unique.length === 0) return;
-    await tx.insert(userLocation).values(
-      unique.map((locationId) => ({
-        id: crypto.randomUUID(),
-        userId,
-        locationId,
-      })),
-    );
+    await writeUserLocations(tx, userId, unique);
   });
 }
 

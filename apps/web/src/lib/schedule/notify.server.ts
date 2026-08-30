@@ -1,4 +1,4 @@
-import type { AppDatabase } from "@/lib/drizzle/client";
+import type { DbSession } from "@/lib/drizzle/client";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
 import { userLocation } from "@/lib/drizzle/schema/locations-schema";
 import { appNotification, notificationPreference } from "@/lib/drizzle/schema/notification-schema";
@@ -6,7 +6,7 @@ import { ROLE } from "@/lib/better-auth/roles";
 import { and, eq, inArray, like } from "drizzle-orm";
 
 export async function notifyUsers(
-  db: Pick<AppDatabase, "insert" | "select">,
+  db: Pick<DbSession, "insert" | "select">,
   userIds: string[],
   message: { kind: string; title: string; body: string },
 ) {
@@ -34,7 +34,7 @@ export async function notifyUsers(
   );
 }
 
-export async function loadLocationManagerIds(db: Pick<AppDatabase, "select">, locationId: string) {
+export async function loadLocationManagerIds(db: Pick<DbSession, "select">, locationId: string) {
   const rows = await db
     .select({ id: userTable.id })
     .from(userTable)

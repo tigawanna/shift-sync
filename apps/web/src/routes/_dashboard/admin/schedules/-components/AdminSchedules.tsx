@@ -19,13 +19,7 @@ export function AdminSchedules() {
           });
         }}
       />
-      {search.locationId ? (
-        <AdminLaborReport locationId={search.locationId} weekStart={search.weekStart} />
-      ) : (
-        <p className="text-muted-foreground text-sm" data-test="admin-labor-pick-location">
-          Choose a location to see overtime and fairness for that week.
-        </p>
-      )}
+      <AdminLaborReport locationId={search.locationId} weekStart={search.weekStart} />
     </div>
   );
 }

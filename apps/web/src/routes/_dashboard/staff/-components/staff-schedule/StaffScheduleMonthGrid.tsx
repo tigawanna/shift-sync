@@ -32,6 +32,8 @@ export function StaffScheduleMonthGrid({
   onBlockHours,
   onSwapShifts,
   onDropShifts,
+  onAskManager,
+  readOnlyDesiredHours = false,
 }: {
   month: string;
   weeks: string[][];
@@ -46,8 +48,10 @@ export function StaffScheduleMonthGrid({
   onMarkAvailable: (date: string) => void;
   onRequestOff: (date: string) => void;
   onBlockHours: (date: string) => void;
-  onSwapShifts: (shifts: StaffScheduleShift[]) => void;
-  onDropShifts: (shifts: StaffScheduleShift[]) => void;
+  onSwapShifts?: (shifts: StaffScheduleShift[]) => void;
+  onDropShifts?: (shifts: StaffScheduleShift[]) => void;
+  onAskManager?: (shifts: StaffScheduleShift[]) => void;
+  readOnlyDesiredHours?: boolean;
 }) {
   const today = formatDateInZone(new Date(), "UTC");
 
@@ -119,6 +123,7 @@ export function StaffScheduleMonthGrid({
                             pendingShiftIds={pendingShiftIds}
                             onSwap={onSwapShifts}
                             onDrop={onDropShifts}
+                            onAskManager={onAskManager}
                           />
                         </div>
                       ))}
@@ -136,6 +141,7 @@ export function StaffScheduleMonthGrid({
                       weekStart={weekStart}
                       hours={desiredByWeek[weekStart] ?? null}
                       pending={desiredPending}
+                      readOnly={readOnlyDesiredHours}
                       onSave={onSaveDesiredHours}
                     />
                   </div>
