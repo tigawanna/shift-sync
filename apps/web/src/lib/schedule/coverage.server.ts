@@ -99,9 +99,9 @@ export async function countActiveCoverageForUser(db: AppDatabase, userId: string
   return row?.total ?? 0;
 }
 
-export async function assertPendingCapacity(db: AppDatabase, userId: string) {
+export async function assertPendingCapacity(db: AppDatabase, userId: string, additional = 1) {
   const total = await countActiveCoverageForUser(db, userId);
-  if (total >= COVERAGE_PENDING_LIMIT) {
+  if (total + additional > COVERAGE_PENDING_LIMIT) {
     throw new Error(
       `You can have at most ${COVERAGE_PENDING_LIMIT} pending swap or drop requests.`,
     );

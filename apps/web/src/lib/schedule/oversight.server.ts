@@ -100,6 +100,89 @@ export async function loadOnDutyNow(locationIds?: string[]): Promise<OnDutyNowRe
   };
 }
 
+export async function loadOnDutyNowPage(input: {
+  page: number;
+  perPage: number;
+  sq: string;
+  locationId?: string;
+}) {
+  const locations = await loadLocations(input.locationId ? [input.locationId] : undefined);
+  const asOf = new Date().toISOString();
+  if (locations.length === 0) {
+    return { items: [], total: 0, page: input.page, perPage: input.perPage, totalPages: 1, asOf };
+  }
+
+  const now = new Date();
+  const trimmed = input.sq.trim();
+  const pattern = `%${trimmed}%`;
+  const search: SQL | undefined = trimmed
+    ? or(
+        like(userTable.name, pattern),
+        like(locationTable.name, pattern),
+        like(skillTable.name, pattern),
+      )
+    : undefined;
+  const where = and(
+    lte(shiftTable.startsAt, now),
+    gt(shiftTable.endsAt, now),
+    inArray(
+      shiftTable.locationId,
+      locations.map((location) => location.id),
+    ),
+    search,
+  );
+  const offset = (input.page - 1) * input.perPage;
+  const db = await getDb();
+
+  const [rows, totalRow] = await Promise.all([
+    db
+      .select({
+        assignmentId: shiftAssignmentTable.id,
+        userName: userTable.name,
+        locationName: locationTable.name,
+        timezone: locationTable.timezone,
+        skillName: skillTable.name,
+        startsAt: shiftTable.startsAt,
+        endsAt: shiftTable.endsAt,
+      })
+      .from(shiftAssignmentTable)
+      .innerJoin(shiftTable, eq(shiftTable.id, shiftAssignmentTable.shiftId))
+      .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
+      .innerJoin(skillTable, eq(skillTable.id, shiftTable.skillId))
+      .innerJoin(userTable, eq(userTable.id, shiftAssignmentTable.userId))
+      .where(where)
+      .orderBy(asc(locationTable.name), asc(shiftTable.startsAt), asc(userTable.name))
+      .limit(input.perPage)
+      .offset(offset),
+    db
+      .select({ total: count() })
+      .from(shiftAssignmentTable)
+      .innerJoin(shiftTable, eq(shiftTable.id, shiftAssignmentTable.shiftId))
+      .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
+      .innerJoin(skillTable, eq(skillTable.id, shiftTable.skillId))
+      .innerJoin(userTable, eq(userTable.id, shiftAssignmentTable.userId))
+      .where(where),
+  ]);
+
+  const total = totalRow[0]?.total ?? 0;
+  return {
+    asOf,
+    items: rows.map((row) => ({
+      assignmentId: row.assignmentId,
+      userName: row.userName,
+      locationName: row.locationName,
+      skillName: row.skillName,
+      date: formatDateInZone(row.startsAt, row.timezone),
+      startTime: formatTimeInZone(row.startsAt, row.timezone),
+      endTime: formatTimeInZone(row.endsAt, row.timezone),
+    })),
+    total,
+    page: input.page,
+    perPage: input.perPage,
+    totalPages: Math.max(1, Math.ceil(total / input.perPage)),
+  };
+}
+
 export async function loadLocationWeekSummaries(weekStart: string) {
   const locations = await loadLocations();
   const db = await getDb();

@@ -17,7 +17,16 @@ export function getDashboardPrimaryRoutes(role: AppRole): SidebarItem[] {
   if (role === ROLE.admin) {
     return [
       { title: "Overview", href: "/admin", icon: LayoutDashboard },
-      { title: "Schedules", href: "/admin/schedules", icon: CalendarDays },
+      {
+        title: "Schedules",
+        href: "/admin/schedules",
+        icon: CalendarDays,
+        sublinks: [
+          { title: "Overtime and fairness", href: "/admin/schedules" },
+          { title: "Who's working", href: "/admin/schedules/who" },
+          { title: "On duty", href: "/admin/schedules/on-duty" },
+        ],
+      },
       { title: "Audit", href: "/admin/audit", icon: ScrollText },
       { title: "Staff", href: "/admin/staff", icon: Users },
       { title: "Managers", href: "/admin/managers", icon: UserCog },

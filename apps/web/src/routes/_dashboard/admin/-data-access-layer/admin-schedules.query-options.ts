@@ -2,24 +2,17 @@ import { ON_DUTY_REFETCH_MS } from "@/lib/schedule/oversight";
 import { queryOptions } from "@tanstack/react-query";
 import {
   getAdminLaborReport,
-  listAdminLocationWeeks,
   listAdminOnDutyNow,
   listAdminWhoWorksWhere,
+  type AdminOnDutyNowInput,
   type AdminWhoWorksInput,
 } from "./admin-schedules.fn";
 
-export function adminOnDutyNowQueryOptions() {
+export function adminOnDutyNowQueryOptions(input: AdminOnDutyNowInput) {
   return queryOptions({
-    queryKey: ["admin-on-duty"],
-    queryFn: () => listAdminOnDutyNow(),
+    queryKey: ["admin-on-duty", input],
+    queryFn: () => listAdminOnDutyNow({ data: input }),
     refetchInterval: ON_DUTY_REFETCH_MS,
-  });
-}
-
-export function adminLocationWeeksQueryOptions(weekStart: string) {
-  return queryOptions({
-    queryKey: ["admin-location-weeks", weekStart],
-    queryFn: () => listAdminLocationWeeks({ data: { weekStart } }),
   });
 }
 

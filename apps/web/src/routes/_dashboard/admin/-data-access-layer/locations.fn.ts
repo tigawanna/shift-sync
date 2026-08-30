@@ -78,6 +78,24 @@ export const updateLocationInputSchema = locationFieldsSchema.extend({
   locationId: z.string().min(1),
 });
 
+export const getLocation = createServerFn({ method: "GET" })
+  .validator(z.object({ locationId: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireSessionRoles([ROLE.admin]);
+    const db = await getDb();
+    const [row] = await db
+      .select({
+        id: locationTable.id,
+        name: locationTable.name,
+        timezone: locationTable.timezone,
+      })
+      .from(locationTable)
+      .where(eq(locationTable.id, data.locationId))
+      .limit(1);
+    if (!row) throw new Error("Location not found.");
+    return row;
+  });
+
 export const listLocationOptions = createServerFn({ method: "GET" }).handler(async () => {
   await requireSessionRoles([ROLE.admin]);
   const db = await getDb();

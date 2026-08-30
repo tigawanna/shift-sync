@@ -25,10 +25,13 @@ export function StaffScheduleMonthGrid({
   canEditAvailability,
   desiredByWeek,
   desiredPending,
+  pendingShiftIds,
   onSaveDesiredHours,
   onMarkAvailable,
   onRequestOff,
   onBlockHours,
+  onSwapShifts,
+  onDropShifts,
 }: {
   month: string;
   weeks: string[][];
@@ -38,10 +41,13 @@ export function StaffScheduleMonthGrid({
   canEditAvailability: boolean;
   desiredByWeek: Record<string, number>;
   desiredPending: boolean;
+  pendingShiftIds: Set<string>;
   onSaveDesiredHours: (weekStartDate: string, hours: number | null) => void;
   onMarkAvailable: (date: string) => void;
   onRequestOff: (date: string) => void;
   onBlockHours: (date: string) => void;
+  onSwapShifts: (shifts: StaffScheduleShift[]) => void;
+  onDropShifts: (shifts: StaffScheduleShift[]) => void;
 }) {
   const today = formatDateInZone(new Date(), "UTC");
 
@@ -110,6 +116,9 @@ export function StaffScheduleMonthGrid({
                           <ShiftSpanHover
                             span={span}
                             side={weekIndex >= weeks.length - 2 ? "top" : "bottom"}
+                            pendingShiftIds={pendingShiftIds}
+                            onSwap={onSwapShifts}
+                            onDrop={onDropShifts}
                           />
                         </div>
                       ))}

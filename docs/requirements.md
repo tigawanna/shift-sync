@@ -222,7 +222,11 @@ The following are **deliberately unspecified**. Part of the evaluation is how yo
 
 **Live schedule views refetch every 15 seconds.** Assign re-checks overlapping shifts inside a write transaction so two managers cannot both land the same person in an overlap.
 
-**Notifications are in-app rows** (unread until opened). Optional “simulate email” stores a flag on the row. Events include publish, assign, coverage steps, edit-cancels-pending, overtime, and availability exceptions.
+**Notifications are in-app rows** (unread until opened). Optional “simulate email” stores a flag on the row. Events include publish, assign, shift edit, coverage steps, edit-cancels-pending, overtime, and availability exceptions.
+
+**An approved swap already moved the assignment.** Editing that shift later is a normal shift edit (48-hour cutoff still applies). The current assignee stays; pending (not-yet-approved) swap/drop rows on that shift are cancelled and the parties are notified. The approved request is not unwound.
+
+**A location has one IANA timezone.** Shifts, availability matching, overnight splits, and weekly hours use that stored zone — not the staff browser and not a second zone for a nearby state. If a restaurant sat on a state line, pick the zone Coastal Eats operates in and put it on the location row.
 
 ---
 

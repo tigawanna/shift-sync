@@ -11,9 +11,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { myCoverageQueryOptions } from "../-data-access-layer/staff-coverage.query-options";
 import { myStaffScheduleQueryOptions } from "../-data-access-layer/staff-schedule.query-options";
 import { Route } from "../index";
 import { StaffCoverage } from "./StaffCoverage";
+import { StaffCoverageSheet, type StaffCoveragePanel } from "./staff-coverage/StaffCoverageSheet";
 import { StaffScheduleBlockHoursDialog } from "./staff-schedule/StaffScheduleBlockHoursDialog";
 import { StaffScheduleLegend } from "./staff-schedule/StaffScheduleLegend";
 import { StaffScheduleMonthGrid } from "./staff-schedule/StaffScheduleMonthGrid";
@@ -26,11 +28,24 @@ export function StaffSchedule() {
   const queryClient = useQueryClient();
   const month = search.month ?? currentYearMonth("UTC");
   const [blockHoursDate, setBlockHoursDate] = useState<string | null>(null);
+  const [coveragePanel, setCoveragePanel] = useState<StaffCoveragePanel | null>(null);
 
   const scheduleQuery = useQuery(myStaffScheduleQueryOptions({ month }));
   const availabilityQuery = useQuery(myStaffAvailabilityQueryOptions({ month }));
   const desiredQuery = useQuery(myDesiredHoursQueryOptions({ month }));
+  const coverageQuery = useQuery(myCoverageQueryOptions());
   const schedule = scheduleQuery.data;
+  const pendingShiftIds = new Set(
+    (coverageQuery.data?.mine ?? [])
+      .filter(
+        (row) =>
+          row.request.status === "open" ||
+          row.request.status === "pending_peer" ||
+          row.request.status === "pending_manager",
+      )
+      .map((row) => row.request.shiftId),
+  );
+  const pendingCount = pendingShiftIds.size;
 
   const goToMonth = (nextMonth: string) => {
     void navigate({ search: { month: nextMonth } });
@@ -187,16 +202,27 @@ export function StaffSchedule() {
         onMarkAvailable={markAvailable}
         onRequestOff={requestOff}
         onBlockHours={setBlockHoursDate}
+        pendingShiftIds={pendingShiftIds}
+        onSwapShifts={(nextShifts) => setCoveragePanel({ intent: "swap", shifts: nextShifts })}
+        onDropShifts={(nextShifts) => setCoveragePanel({ intent: "drop", shifts: nextShifts })}
       />
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <StaffScheduleLegend />
         <p className="text-muted-foreground text-xs">
-          Click a date to mark it available. Right-click to request the day off or block hours.
+          Click a date to mark it available. Right-click a date to request off. Click or right-click
+          a shift bar to swap or drop.
         </p>
       </div>
 
-      <StaffCoverage shifts={shifts} />
+      <StaffCoverage />
+
+      <StaffCoverageSheet
+        panel={coveragePanel}
+        pendingShiftIds={pendingShiftIds}
+        pendingCount={pendingCount}
+        onClose={() => setCoveragePanel(null)}
+      />
 
       <StaffScheduleBlockHoursDialog
         date={blockHoursDate}

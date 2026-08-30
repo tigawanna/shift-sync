@@ -10,10 +10,12 @@ export function myCoverageQueryOptions() {
   });
 }
 
-export function swapCandidatesQueryOptions(shiftId: string) {
+export function swapCandidatesQueryOptions(shiftIds: string[], q = "") {
+  const ids = [...shiftIds].sort();
+  const query = q.trim();
   return queryOptions({
-    queryKey: ["staff-swap-candidates", shiftId],
-    queryFn: () => listSwapCandidates({ data: { shiftId } }),
-    enabled: shiftId.length > 0,
+    queryKey: ["staff-swap-candidates", ids, query],
+    queryFn: () => listSwapCandidates({ data: { shiftIds: ids, q: query } }),
+    enabled: ids.length > 0,
   });
 }

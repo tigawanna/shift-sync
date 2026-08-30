@@ -474,13 +474,19 @@ export const updateManagerShift = createServerFn({ method: "POST" })
       })
       .where(eq(shiftTable.id, data.shiftId));
     await cancelActiveCoverageForShift(db, data.shiftId, session.user.id);
+    const after = await snapshotShift(db, data.shiftId);
     await recordScheduleAudit(db, {
       locationId: context.shift.locationId,
       shiftId: data.shiftId,
       actorUserId: session.user.id,
       action: "update",
       before,
-      after: await snapshotShift(db, data.shiftId),
+      after,
+    });
+    await notifyUsers(db, after?.assignees.map((person) => person.userId) ?? [], {
+      kind: "shift_changed",
+      title: "A shift you are on changed",
+      body: `${context.shift.location.name}: a manager edited date, time, skill, or notes.`,
     });
 
     return { weekStart: mondayOfWeekContaining(startsAt, context.shift.location.timezone) };

@@ -8,16 +8,15 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { adminWhoWorksWhereQueryOptions } from "../../-data-access-layer/admin-schedules.query-options";
+import { adminOnDutyNowQueryOptions } from "../../-data-access-layer/admin-schedules.query-options";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
-import { AdminWeekNav } from "./AdminWeekNav";
 import { WhoWorksListItem } from "./WhoWorksListItem";
 
-const ROUTE_ID = "/_dashboard/admin/schedules/who";
+const ROUTE_ID = "/_dashboard/admin/schedules/on-duty";
 const routeApi = getRouteApi(ROUTE_ID);
 
-function WhoWorksEmpty({
+function OnDutyEmpty({
   hasSearch,
   query,
   onClearSearch,
@@ -28,7 +27,7 @@ function WhoWorksEmpty({
 }) {
   if (hasSearch) {
     return (
-      <Empty data-test="who-works-search-empty">
+      <Empty data-test="on-duty-search-empty">
         <EmptyHeader>
           <EmptyTitle>No results for “{query}”</EmptyTitle>
           <EmptyDescription>Try a person, location, or skill.</EmptyDescription>
@@ -43,29 +42,27 @@ function WhoWorksEmpty({
   }
 
   return (
-    <Empty data-test="who-works-empty">
+    <Empty data-test="on-duty-empty">
       <EmptyHeader>
-        <EmptyTitle>No one is scheduled this week</EmptyTitle>
+        <EmptyTitle>Nobody is on a shift right now</EmptyTitle>
         <EmptyDescription>
-          Assignments at every location for this Monday–Sunday week will show up here.
+          People whose shift is in progress will show up here. The list refreshes every 15 seconds.
         </EmptyDescription>
       </EmptyHeader>
     </Empty>
   );
 }
 
-export function ListWhoWorks() {
+export function ListOnDuty() {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
   const search = routeApi.useSearch();
-  const navigate = routeApi.useNavigate();
   const page = search.page;
   const perPage = search.perPage;
   const sq = search.sq.trim();
   const hasSearch = sq.length > 0;
 
   const { data } = useSuspenseQuery(
-    adminWhoWorksWhereQueryOptions({
-      weekStart: search.weekStart,
+    adminOnDutyNowQueryOptions({
       page,
       perPage,
       sq,
@@ -75,21 +72,16 @@ export function ListWhoWorks() {
   const { items, total, totalPages } = data;
 
   return (
-    <div className="flex flex-col gap-4" data-test="who-works-list">
-      <AdminWeekNav
-        weekStart={search.weekStart}
-        onChange={(weekStart) => {
-          void navigate({
-            to: ".",
-            search: (prev) => ({ ...prev, weekStart, page: undefined }),
-          });
-        }}
-      />
+    <div className="flex flex-col gap-4" data-test="on-duty-now">
+      <div>
+        <h3 className="text-sm font-semibold">On duty now</h3>
+        <p className="text-muted-foreground text-xs">
+          Assignments whose shift is in progress. Refreshes every 15 seconds.
+        </p>
+      </div>
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <p className="text-muted-foreground text-xs">
-          {total} assignments this week
-          {search.locationId ? " at this location" : " across locations"}. Times use each location
-          timezone.
+          {`${total} people on a shift right now${search.locationId ? " at this location" : ""}.`}
         </p>
         <SearchBox
           keyword={inputValue}
@@ -99,7 +91,7 @@ export function ListWhoWorks() {
         />
       </div>
       {items.length === 0 ? (
-        <WhoWorksEmpty hasSearch={hasSearch} query={sq} onClearSearch={clearSearch} />
+        <OnDutyEmpty hasSearch={hasSearch} query={sq} onClearSearch={clearSearch} />
       ) : (
         <>
           <div className="overflow-x-auto rounded-xl border">

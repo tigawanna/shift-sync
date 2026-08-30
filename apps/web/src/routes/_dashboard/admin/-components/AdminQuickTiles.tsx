@@ -1,12 +1,26 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, MapPin, ScrollText, Shield, UserCog, Users } from "lucide-react";
+import {
+  CalendarDays,
+  ClipboardList,
+  MapPin,
+  ScrollText,
+  Shield,
+  UserCog,
+  Users,
+} from "lucide-react";
 
 const tiles = [
   {
     to: "/admin/schedules",
     title: "Schedules",
-    description: "See every location and every person on the week board — who is working where.",
+    description: "Overtime and fairness for a location week, who is working, and who is on duty.",
     icon: CalendarDays,
+  },
+  {
+    to: "/admin/schedules/who",
+    title: "Who's working",
+    description: "Search the full assignment list for a week — who is working where.",
+    icon: ClipboardList,
   },
   {
     to: "/admin/audit",

@@ -26,7 +26,7 @@ cp apps/web/.env.example apps/web/.env
 pnpm dev
 ```
 
-The web app runs at http://localhost:3090.
+The web app runs at http://localhost:3090. Auth origin must stay **`http://localhost:3090`** (`BETTER_AUTH_URL` / `CORS_ORIGINS`). A second Vite port (3091) will fail Better Auth with “Invalid origin”.
 
 ### Database
 
@@ -36,7 +36,49 @@ Local development uses a SQLite file at `apps/web/data/shift-sync.db`. Migration
 pnpm --filter web db:migrate
 ```
 
+Seed the demo roster once:
+
+```bash
+pnpm --filter web db:seed
+```
+
 For production Turso, set `DATABASE_URL` (`libsql://…`) and `DATABASE_AUTH_TOKEN` in your Vercel project environment variables.
+
+Password for every seed account: **`CoastalEats!seed`**
+
+### Log in as each role
+
+Easiest path: sign in at `/auth`, then as admin **Impersonate** from Staff / Managers / Admins lists.
+
+| Role | Email | What to open |
+| --- | --- | --- |
+| Admin | `admin@coastaleats.test` | `/admin`, `/admin/schedules`, `/admin/audit` |
+| Manager | `manager-001@costal-eats.com` … `manager-008@costal-eats.com` | `/manager/schedule`, `/manager/requests`, `/manager/team` |
+| Staff | `staff-001@costal-eats.com` … `staff-041@costal-eats.com` | `/staff` calendar + coverage under it |
+
+Emails use `costal-eats.com` (seed spelling), except the admin account.
+
+**Staff 41** (`staff-041@costal-eats.com`) is the overtime / timezone fixture: certified at Harbor House + Pier 39 (Pacific) and Atlantic Table (Eastern), desired hours **25**, overlapping seed shifts across sites. Use calendar `?month=` for a seeded week (often **2026-08**).
+
+Locations: Harbor House and Pier 39 Bistro (`America/Los_Angeles`); Atlantic Table and Harbor Light (`America/New_York`).
+
+### Evaluation scenarios
+
+1. **Sunday night chaos** — Staff: drop the shift. Another staff: pick it up. Manager **Coverage** (`/manager/requests`): approve. Assignment does not move until approve.
+2. **Overtime trap** — Impersonate Staff 41; week hours include every location. As a manager of Harbor House or Pier 39, open that week: labor table, OT on bars, assign sheet “would be Xh”.
+3. **Timezone tangle** — Availability is matched in the **shift location** timezone, not the browser. Staff 41’s “9–5” is 9–5 Pacific at Pier 39 and 9–5 Eastern at Atlantic Table.
+4. **Simultaneous assignment** — Two managers assigning the same person to overlapping times: the write re-reads overlaps in a transaction and rejects the second with a double-booking error.
+5. **Fairness complaint** — Manager week board: **Premium** on Fri/Sat starts at 16:00 local. Labor report: premium counts + fairness score 0–100.
+6. **Regret swap** — Staff A withdraws before manager approval. After approval, A cannot withdraw; a later shift edit does not unwind the swap (see [docs/requirements.md](./docs/requirements.md) decisions).
+
+Assumptions and remaining product choices: [docs/requirements.md](./docs/requirements.md) (Intentional Ambiguities → Decisions). Role checklist: [docs/objectives.md](./docs/objectives.md).
+
+### Known limitations
+
+- “Email” is a flag on the notification row, not SMTP.
+- Live updates are a **15s refetch**, not websockets.
+- Admin schedules are oversight (who works where, labor, on duty), not the manager edit board.
+- Concurrent assign integrity is a transaction re-check on SQLite, not an exclusion constraint.
 
 ## Deploy to Vercel
 
