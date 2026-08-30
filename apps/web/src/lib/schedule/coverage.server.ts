@@ -203,14 +203,10 @@ export async function assertAssignedToShift(db: DbSession, shiftId: string, user
   if (!row) throw new Error("You are not assigned to this shift.");
 }
 
-export async function applyApprovedCoverage(
+async function transferCoverageAssignment(
   db: Pick<DbSession, "delete" | "insert">,
-  request: { kind: string; shiftId: string; fromUserId: string; toUserId: string | null },
+  request: { shiftId: string; fromUserId: string; toUserId: string },
 ) {
-  if (!request.toUserId) {
-    throw new Error("No one is on the other side of this request.");
-  }
-
   await db
     .delete(shiftAssignmentTable)
     .where(
@@ -225,6 +221,16 @@ export async function applyApprovedCoverage(
     shiftId: request.shiftId,
     userId: request.toUserId,
   });
+}
+
+export async function applyApprovedCoverageOn(
+  db: Pick<DbSession, "delete" | "insert">,
+  request: { kind: string; shiftId: string; fromUserId: string; toUserId: string | null },
+) {
+  if (!request.toUserId) {
+    throw new Error("No one is on the other side of this request.");
+  }
+  await transferCoverageAssignment(db, { ...request, toUserId: request.toUserId });
 }
 
 export async function getDbAndExpire() {

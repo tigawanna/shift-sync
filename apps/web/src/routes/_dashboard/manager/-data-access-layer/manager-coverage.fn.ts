@@ -10,7 +10,7 @@ import { ACTIVE_COVERAGE_STATUSES, COVERAGE_STATUS } from "@/lib/schedule/covera
 import { notifyUsers } from "@/lib/schedule/notify.server";
 import { snapshotShift } from "@/lib/schedule/audit.server";
 import { emitCoverageAudit } from "@/lib/schedule/coverage-audit.hooks";
-import { applyApprovedCoverage, getDbAndExpire } from "@/lib/schedule/coverage.server";
+import { applyApprovedCoverageOn, getDbAndExpire } from "@/lib/schedule/coverage.server";
 import { createServerFn } from "@tanstack/react-start";
 import { and, count, desc, eq, inArray, like, notInArray, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/sqlite-core";
@@ -157,7 +157,7 @@ export const approveCoverage = createServerFn({ method: "POST" })
 
     await db.transaction(async (tx) => {
       const before = await snapshotShift(tx, row.request.shiftId);
-      await applyApprovedCoverage(tx, row.request);
+      await applyApprovedCoverageOn(tx, row.request);
       await tx
         .update(coverageRequest)
         .set({

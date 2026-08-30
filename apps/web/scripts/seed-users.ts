@@ -348,8 +348,10 @@ async function main() {
     }));
   });
   if (desiredValues.length > 0) {
-    await db.delete(staffDesiredHours);
-    await db.insert(staffDesiredHours).values(desiredValues);
+    await db.transaction(async (tx) => {
+      await tx.delete(staffDesiredHours);
+      await tx.insert(staffDesiredHours).values(desiredValues);
+    });
   }
 
   console.log(
