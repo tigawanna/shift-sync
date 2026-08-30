@@ -5,9 +5,25 @@ import tailwindcss from "@tailwindcss/vite";
 import evlog from "evlog/vite";
 import { nitro } from "nitro/vite";
 import { fileURLToPath, URL } from "url";
-import { defineConfig } from "vite-plus";
+import { defineConfig, lazyPlugins } from "vite-plus";
 
 export default defineConfig({
+  lint: {
+    ignorePatterns: ["dist/**", ".output/**", "routeTree.gen.ts"],
+    options: {
+      typeAware: true,
+      typeCheck: true,
+    },
+    jsPlugins: [
+      {
+        name: "vite-plus",
+        specifier: "vite-plus/oxlint-plugin",
+      },
+    ],
+    rules: {
+      "vite-plus/prefer-vite-plus-imports": "error",
+    },
+  },
   staged: { "*": "vp check --fix" },
   server: {
     host: "::",
@@ -23,7 +39,7 @@ export default defineConfig({
     },
     tsconfigPaths: true,
   },
-  plugins: [
+  plugins: lazyPlugins(() => [
     devtools(),
     evlog({ service: "shift-sync" }),
     nitro(),
@@ -60,5 +76,5 @@ export default defineConfig({
       ],
     }),
     viteReact(),
-  ],
+  ]),
 });

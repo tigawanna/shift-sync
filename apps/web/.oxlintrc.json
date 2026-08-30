@@ -1,3 +1,0 @@
-{
-  "ignorePatterns": ["dist/**", ".output/**", "routeTree.gen.ts"]
-}
