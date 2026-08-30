@@ -1,6 +1,7 @@
 import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
+import { cancelActiveCoverageForShift } from "@/lib/schedule/coverage.server";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
 import { location as locationTable, userLocation } from "@/lib/drizzle/schema/locations-schema";
 import {
@@ -443,6 +444,7 @@ export const updateManagerShift = createServerFn({ method: "POST" })
         notes: data.notes?.trim() || null,
       })
       .where(eq(shiftTable.id, data.shiftId));
+    await cancelActiveCoverageForShift(db, data.shiftId, session.user.id);
 
     return { weekStart: mondayOfWeekContaining(startsAt, context.shift.location.timezone) };
   });
@@ -456,6 +458,7 @@ export const deleteManagerShift = createServerFn({ method: "POST" })
     assertCanMutate(context.shift.startsAt, context.published, "delete this shift");
 
     const db = await getDb();
+    await cancelActiveCoverageForShift(db, data.shiftId, session.user.id);
     await db.delete(shiftTable).where(eq(shiftTable.id, data.shiftId));
     return { weekStart: context.weekStart };
   });

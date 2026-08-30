@@ -91,8 +91,9 @@ What a manager must be able to accomplish for the locations they run. Do this bl
 
 ### Coverage approvals — pair with staff swap/drop
 
-- [ ] Approve or reject a swap/drop; original assignment stays until this happens
-- [ ] Auto-cancel a pending swap if that shift is edited, and notify the parties
+- [x] Approve or reject a swap/drop; original assignment stays until this happens
+- [x] Auto-cancel a pending swap if that shift is edited
+- [ ] Notify the parties when a pending swap is cancelled by an edit
 
 ### Overtime and fairness
 

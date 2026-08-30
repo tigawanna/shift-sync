@@ -27,7 +27,7 @@ Staff can request a swap, accept/decline, withdraw, drop a shift, and pick up an
 
 - Tick all Staff → Coverage boxes except those that need manager approve (those tick in step 4)
 
-## 4. Manager coverage approvals
+## 4. Manager coverage approvals — done
 
 Manager inbox: approve or reject. Approve is the only write that moves the assignment. Shift edit/delete cancels pending requests.
 
