@@ -10,7 +10,10 @@ import { DEFAULT_DATABASE_URL, isTursoRemote } from "@/lib/drizzle/turso";
 type AppDatabase = ReturnType<typeof createLocalDb> | ReturnType<typeof createRemoteDb>;
 
 /** `db` or a Drizzle `tx` — enough for helpers that must run inside a mutation transaction. */
-export type DbSession = Pick<AppDatabase, "insert" | "select" | "update" | "delete">;
+export type DbSession = Pick<
+  AppDatabase,
+  "insert" | "select" | "update" | "delete" | "transaction"
+>;
 
 export type { AppDatabase };
 

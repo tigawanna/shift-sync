@@ -3,12 +3,12 @@ import { AppConfig } from "@/utils/system";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { DashboardPageHeader } from "../-components/DashboardPageHeader";
-import { managerOnDutyNowQueryOptions } from "./-data-access-layer/manager-on-duty.query-options";
+import { managerHomeQueryOptions } from "./-data-access-layer/manager-home.query-options";
 import { ManagerOverview } from "./-components/ManagerOverview";
 
 export const Route = createFileRoute("/_dashboard/manager/")({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(managerOnDutyNowQueryOptions());
+    await context.queryClient.ensureQueryData(managerHomeQueryOptions());
   },
   component: ManagerOverviewPage,
   pendingComponent: RouterPendingComponent,
@@ -22,7 +22,7 @@ function ManagerOverviewPage() {
     <div className="flex flex-col gap-8">
       <DashboardPageHeader
         title="Manager"
-        description="Build a location week, then publish it. Staff only see shifts after that."
+        description="Your team and locations. Open a person to see their calendar."
       />
       <Suspense fallback={<RouterPendingComponent />}>
         <ManagerOverview />

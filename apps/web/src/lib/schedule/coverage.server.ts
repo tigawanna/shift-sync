@@ -19,6 +19,7 @@ import { notifyUsers } from "@/lib/schedule/notify.server";
 import { mondayOfWeekContaining } from "@/lib/time/zoned";
 import { and, count, eq, inArray } from "drizzle-orm";
 
+/** Close unclaimed drop offers once the shift is within DROP_EXPIRE_HOURS (24h). Runs on coverage reads/writes via getDbAndExpire — there is no scheduler. Example: now 3pm Monday, a Tuesday 2pm shift is expired (starts ≤ now+24h); a Tuesday 4pm shift stays open. */
 export async function expireOpenDrops(db: AppDatabase, now = new Date()) {
   const cutoff = now.getTime() + DROP_EXPIRE_HOURS * 3_600_000;
   const openDrops = await db
@@ -70,51 +71,53 @@ export async function cancelActiveCoverageForShift(
   shiftId: string,
   resolvedByUserId: string,
 ) {
-  const pending = await db
-    .select({
-      id: coverageRequest.id,
-      fromUserId: coverageRequest.fromUserId,
-      toUserId: coverageRequest.toUserId,
-      locationId: shiftTable.locationId,
-    })
-    .from(coverageRequest)
-    .innerJoin(shiftTable, eq(shiftTable.id, coverageRequest.shiftId))
-    .where(
-      and(
-        eq(coverageRequest.shiftId, shiftId),
-        inArray(coverageRequest.status, [...ACTIVE_COVERAGE_STATUSES]),
-      ),
-    );
+  await db.transaction(async (tx) => {
+    const pending = await tx
+      .select({
+        id: coverageRequest.id,
+        fromUserId: coverageRequest.fromUserId,
+        toUserId: coverageRequest.toUserId,
+        locationId: shiftTable.locationId,
+      })
+      .from(coverageRequest)
+      .innerJoin(shiftTable, eq(shiftTable.id, coverageRequest.shiftId))
+      .where(
+        and(
+          eq(coverageRequest.shiftId, shiftId),
+          inArray(coverageRequest.status, [...ACTIVE_COVERAGE_STATUSES]),
+        ),
+      );
 
-  await db
-    .update(coverageRequest)
-    .set({
-      status: COVERAGE_STATUS.cancelled,
-      resolvedAt: new Date(),
-      resolvedByUserId,
-    })
-    .where(
-      and(
-        eq(coverageRequest.shiftId, shiftId),
-        inArray(coverageRequest.status, [...ACTIVE_COVERAGE_STATUSES]),
-      ),
-    );
+    await tx
+      .update(coverageRequest)
+      .set({
+        status: COVERAGE_STATUS.cancelled,
+        resolvedAt: new Date(),
+        resolvedByUserId,
+      })
+      .where(
+        and(
+          eq(coverageRequest.shiftId, shiftId),
+          inArray(coverageRequest.status, [...ACTIVE_COVERAGE_STATUSES]),
+        ),
+      );
 
-  const userIds = pending.flatMap((row) => [row.fromUserId, row.toUserId ?? ""]);
-  await notifyUsers(db, userIds, {
-    kind: "coverage_cancelled",
-    title: "Coverage request cancelled",
-    body: "A pending swap or drop was cancelled because that shift was edited.",
-  });
-  for (const row of pending) {
-    await auditCoverageChange(db, {
-      locationId: row.locationId,
-      shiftId,
-      actorUserId: resolvedByUserId,
-      action: "coverage_cancel",
-      after: { requestId: row.id, status: COVERAGE_STATUS.cancelled },
+    const userIds = pending.flatMap((row) => [row.fromUserId, row.toUserId ?? ""]);
+    await notifyUsers(tx, userIds, {
+      kind: "coverage_cancelled",
+      title: "Coverage request cancelled",
+      body: "A pending swap or drop was cancelled because that shift was edited.",
     });
-  }
+    for (const row of pending) {
+      await auditCoverageChange(tx, {
+        locationId: row.locationId,
+        shiftId,
+        actorUserId: resolvedByUserId,
+        action: "coverage_cancel",
+        after: { requestId: row.id, status: COVERAGE_STATUS.cancelled },
+      });
+    }
+  });
 }
 
 export async function countActiveCoverageForUser(db: DbSession, userId: string) {
@@ -204,27 +207,29 @@ export async function assertAssignedToShift(db: DbSession, shiftId: string, user
 }
 
 async function transferCoverageAssignment(
-  db: Pick<DbSession, "delete" | "insert">,
+  db: DbSession,
   request: { shiftId: string; fromUserId: string; toUserId: string },
 ) {
-  await db
-    .delete(shiftAssignmentTable)
-    .where(
-      and(
-        eq(shiftAssignmentTable.shiftId, request.shiftId),
-        eq(shiftAssignmentTable.userId, request.fromUserId),
-      ),
-    );
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(shiftAssignmentTable)
+      .where(
+        and(
+          eq(shiftAssignmentTable.shiftId, request.shiftId),
+          eq(shiftAssignmentTable.userId, request.fromUserId),
+        ),
+      );
 
-  await db.insert(shiftAssignmentTable).values({
-    id: crypto.randomUUID(),
-    shiftId: request.shiftId,
-    userId: request.toUserId,
+    await tx.insert(shiftAssignmentTable).values({
+      id: crypto.randomUUID(),
+      shiftId: request.shiftId,
+      userId: request.toUserId,
+    });
   });
 }
 
 export async function applyApprovedCoverageOn(
-  db: Pick<DbSession, "delete" | "insert">,
+  db: DbSession,
   request: { kind: string; shiftId: string; fromUserId: string; toUserId: string | null },
 ) {
   if (!request.toUserId) {
