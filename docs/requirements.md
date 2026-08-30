@@ -216,6 +216,8 @@ The following are **deliberately unspecified**. Part of the evaluation is how yo
 
 **Premium is Friday or Saturday, location-local start at 16:00 or later.** Fairness is 100 when premium counts are even (or nobody has any) and drops when a few people hold most of them.
 
+**On duty now is a 15-second refetch** of assignments whose shift interval contains the current instant. Managers see their locations; admins see every location. Times are in the location timezone.
+
 ---
 
 ## Time Limit

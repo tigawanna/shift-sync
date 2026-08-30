@@ -108,7 +108,7 @@ What a manager must be able to accomplish for the locations they run. Do this bl
 ### Live ops, comms, audit
 
 - [ ] Immediate conflict if two managers assign the same person at the same time
-- [ ] “On duty now” for their locations (live)
+- [x] “On duty now” for their locations (live)
 - [ ] Notifications: pending swap/drop, overtime warnings, staff availability changes
 - [ ] Notification center + in-app / email-simulation preference
 - [ ] View the change history of any shift
@@ -134,10 +134,10 @@ What corporate admin must be able to accomplish across **all** locations.
 
 ### Oversight
 
-- [ ] See every location’s schedule (admin schedules page is still a stub)
-- [ ] See who is working where this week (the “no central view” pain)
-- [ ] See the same overtime and fairness reports as managers, but for any location
-- [ ] See “on duty now” for every location (live)
+- [x] See every location’s schedule
+- [x] See who is working where this week (the “no central view” pain)
+- [x] See the same overtime and fairness reports as managers, but for any location
+- [x] See “on duty now” for every location (live)
 
 ### Audit and comms
 

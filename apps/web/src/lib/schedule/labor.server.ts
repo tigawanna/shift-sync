@@ -12,6 +12,7 @@ import {
   overtimeCostUsd,
   overtimeHours,
   premiumFairnessScore,
+  type LaborReport,
 } from "@/lib/schedule/labor";
 import { addDaysYmd, zonedWallTimeToUtc } from "@/lib/time/zoned";
 import { and, eq, gt, gte, inArray, lt } from "drizzle-orm";
@@ -53,23 +54,13 @@ export async function loadLaborReport(locationId: string, weekStart: string) {
     );
 
   const userIds = [...new Set(locationRows.map((row) => row.userId))];
-  const empty = {
+  const empty: LaborReport = {
     locationName: location.name,
     weekStart,
     overtimeCostUsd: 0,
     fairnessScore: 100,
     premiumShiftCount: 0,
-    people: [] as Array<{
-      userId: string;
-      name: string;
-      weekHours: number;
-      overtimeHours: number;
-      overtimeCostUsd: number;
-      desiredHours: number | null;
-      hoursVsDesired: number | null;
-      premiumCount: number;
-      pushingOvertime: boolean;
-    }>,
+    people: [],
   };
 
   if (userIds.length === 0) return empty;

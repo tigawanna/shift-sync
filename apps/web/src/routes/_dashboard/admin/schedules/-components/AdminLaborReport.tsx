@@ -1,15 +1,15 @@
 import { LaborReportView } from "../../../-components/LaborReportView";
-import { managerLaborReportQueryOptions } from "../../-data-access-layer/manager-schedule.query-options";
+import { adminLaborReportQueryOptions } from "../../-data-access-layer/admin-schedules.query-options";
 import { useQuery } from "@tanstack/react-query";
 
-export function ManagerLaborReport({
+export function AdminLaborReport({
   locationId,
   weekStart,
 }: {
   locationId: string;
   weekStart: string;
 }) {
-  const reportQuery = useQuery(managerLaborReportQueryOptions({ locationId, weekStart }));
+  const reportQuery = useQuery(adminLaborReportQueryOptions({ locationId, weekStart }));
   const report = reportQuery.data;
 
   if (reportQuery.isPending) {
@@ -26,5 +26,5 @@ export function ManagerLaborReport({
     );
   }
 
-  return <LaborReportView report={report} testId="manager-labor-report" />;
+  return <LaborReportView report={report} testId="admin-labor-report" />;
 }

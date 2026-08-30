@@ -40,7 +40,7 @@ Projected OT cost for a location-week. Highlight assignments that push someone o
 
 - Tick Manager → Overtime and fairness
 
-## 6. Admin oversight + on duty
+## 6. Admin oversight + on duty — done
 
 Admin schedules page: every location week + who is working where. Same OT/fairness reports, any location. “On duty now” (refetch) for managers (their locations) and admin (all).
 

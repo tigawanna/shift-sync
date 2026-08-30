@@ -34,3 +34,24 @@ export function premiumFairnessScore(counts: number[]) {
 export function formatUsd(amount: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
 }
+
+export type LaborReportPerson = {
+  userId: string;
+  name: string;
+  weekHours: number;
+  overtimeHours: number;
+  overtimeCostUsd: number;
+  desiredHours: number | null;
+  hoursVsDesired: number | null;
+  premiumCount: number;
+  pushingOvertime: boolean;
+};
+
+export type LaborReport = {
+  locationName: string;
+  weekStart: string;
+  overtimeCostUsd: number;
+  fairnessScore: number;
+  premiumShiftCount: number;
+  people: LaborReportPerson[];
+};
