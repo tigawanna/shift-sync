@@ -3,6 +3,7 @@ import { AppConfig } from "@/utils/system";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { DashboardPageHeader } from "../-components/DashboardPageHeader";
+import { myDesiredHoursQueryOptions } from "./-data-access-layer/staff-desired-hours.query-options";
 import { myStaffAvailabilityQueryOptions } from "./-data-access-layer/staff-availability.query-options";
 import { myStaffScheduleQueryOptions } from "./-data-access-layer/staff-schedule.query-options";
 import { StaffSchedule } from "./-components/StaffSchedule";
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/_dashboard/staff/")({
     await Promise.allSettled([
       context.queryClient.ensureQueryData(myStaffScheduleQueryOptions({ month })),
       context.queryClient.ensureQueryData(myStaffAvailabilityQueryOptions({ month })),
+      context.queryClient.ensureQueryData(myDesiredHoursQueryOptions({ month })),
     ]);
   },
   component: StaffHomePage,
@@ -35,7 +37,7 @@ function StaffHomePage() {
     <div className="flex flex-col gap-8">
       <DashboardPageHeader
         title="My calendar"
-        description="Published shifts and the days you cannot work — loaded separately, shown together."
+        description="Published shifts, days you cannot work, and the hours you want each week."
       />
       <StaffSchedule />
     </div>

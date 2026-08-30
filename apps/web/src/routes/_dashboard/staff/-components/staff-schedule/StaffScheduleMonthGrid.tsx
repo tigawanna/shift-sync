@@ -3,6 +3,7 @@ import { formatDateInZone, yearMonthOf } from "@/lib/time/zoned";
 import { cn } from "@/lib/utils";
 import { StaffScheduleDayCell } from "./StaffScheduleDayCell";
 import { ShiftSpanHover } from "./StaffScheduleShiftBar";
+import { StaffScheduleDesiredHours } from "./StaffScheduleDesiredHours";
 import { WeekHoursCell } from "./StaffScheduleWeekHours";
 import type { DayAvailability } from "./staff-availability.day";
 import {
@@ -22,6 +23,9 @@ export function StaffScheduleMonthGrid({
   hoursByDate,
   availabilityByDate,
   canEditAvailability,
+  desiredByWeek,
+  desiredPending,
+  onSaveDesiredHours,
   onMarkAvailable,
   onRequestOff,
   onBlockHours,
@@ -32,6 +36,9 @@ export function StaffScheduleMonthGrid({
   hoursByDate: Record<string, number>;
   availabilityByDate: Map<string, DayAvailability>;
   canEditAvailability: boolean;
+  desiredByWeek: Record<string, number>;
+  desiredPending: boolean;
+  onSaveDesiredHours: (weekStartDate: string, hours: number | null) => void;
   onMarkAvailable: (date: string) => void;
   onRequestOff: (date: string) => void;
   onBlockHours: (date: string) => void;
@@ -108,11 +115,21 @@ export function StaffScheduleMonthGrid({
                       ))}
                     </div>
                   </div>
-                  <WeekHoursCell
-                    hours={hours}
-                    weekStart={weekStart}
-                    consecutiveDays={consecutiveDays}
-                  />
+                  <div className="flex h-full min-h-0 flex-col">
+                    <div className="min-h-0 flex-1">
+                      <WeekHoursCell
+                        hours={hours}
+                        weekStart={weekStart}
+                        consecutiveDays={consecutiveDays}
+                      />
+                    </div>
+                    <StaffScheduleDesiredHours
+                      weekStart={weekStart}
+                      hours={desiredByWeek[weekStart] ?? null}
+                      pending={desiredPending}
+                      onSave={onSaveDesiredHours}
+                    />
+                  </div>
                 </div>
               );
             })}

@@ -17,6 +17,7 @@ import {
   userAvailabilityException as userAvailabilityExceptionTable,
   userSkill as userSkillTable,
 } from "../src/lib/drizzle/schema/skills-schema";
+import { staffDesiredHours } from "../src/lib/drizzle/schema/staff-preferences-schema";
 import { addDaysYmd, mondayOfWeekContaining, zonedWallTimeToUtc } from "../src/lib/time/zoned";
 import { createAuthFromEnv } from "../src/server/create-auth";
 import { and, eq, like, or } from "drizzle-orm";
@@ -28,7 +29,12 @@ import {
   buildSeedUserSkills,
   SEED_SKILLS,
 } from "./seed/schedule.data";
-import { SEED_DEFAULT_PASSWORD, SEED_MANAGER_COUNT, SEED_STAFF_COUNT, SEED_USERS } from "./seed/users.data";
+import {
+  SEED_DEFAULT_PASSWORD,
+  SEED_MANAGER_COUNT,
+  SEED_STAFF_COUNT,
+  SEED_USERS,
+} from "./seed/users.data";
 
 async function ensureSeedUser(
   auth: Awaited<ReturnType<typeof createAuthFromEnv>>,
@@ -150,7 +156,9 @@ async function main() {
   const db = await getDb();
   const auth = createAuthFromEnv(env, db);
 
-  console.log(`Seeding ${SEED_USERS.length} Coastal Eats accounts (${SEED_MANAGER_COUNT} managers, ${SEED_STAFF_COUNT} staff)…`);
+  console.log(
+    `Seeding ${SEED_USERS.length} Coastal Eats accounts (${SEED_MANAGER_COUNT} managers, ${SEED_STAFF_COUNT} staff)…`,
+  );
   console.log(`Default password: ${SEED_DEFAULT_PASSWORD}`);
   console.log("");
 
@@ -324,6 +332,24 @@ async function main() {
         publishedByUserId: creatorId,
       });
     }
+  }
+
+  const weekStarts = [...new Set(seededWeeks.map((week) => week.weekStart))];
+  const desiredValues = SEED_USERS.flatMap((seed) => {
+    if (seed.role !== ROLE.staff) return [];
+    const userId = userIds.get(seed.email);
+    if (!userId) return [];
+    const hours = seed.email === "staff-041@costal-eats.com" ? 25 : 32;
+    return weekStarts.map((weekStartDate) => ({
+      id: crypto.randomUUID(),
+      userId,
+      weekStartDate,
+      hours,
+    }));
+  });
+  if (desiredValues.length > 0) {
+    await db.delete(staffDesiredHours);
+    await db.insert(staffDesiredHours).values(desiredValues);
   }
 
   console.log(

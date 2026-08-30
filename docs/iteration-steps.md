@@ -6,7 +6,7 @@ Work the leftover [objectives.md](./objectives.md) boxes in small commits. Tick 
 
 ---
 
-## 1. Desired hours
+## 1. Desired hours — done
 
 Staff state a weekly hour target for each Monday–Sunday week. Availability stays “when I can work”; desired hours stay “how much I want.” Fairness later compares scheduled hours in that week to this number.
 

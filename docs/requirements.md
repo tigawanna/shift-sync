@@ -210,6 +210,8 @@ The following are **deliberately unspecified**. Part of the evaluation is how yo
 
 **40h is over the weekly limit, not a hard assign block.** Assign still goes through after a confirmation. Daily hours hard-block above 12h on a civil date in the location timezone.
 
+**Desired hours are a weekly target, not a filter on availability.** Availability is when someone can be assigned. Desired hours is how many hours they want in that Monday–Sunday week. An unset week has no target. Fairness later compares scheduled hours to this number; it does not change assign eligibility.
+
 ---
 
 ## Time Limit

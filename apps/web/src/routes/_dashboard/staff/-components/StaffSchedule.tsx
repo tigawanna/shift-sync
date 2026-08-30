@@ -5,6 +5,8 @@ import {
   removeMyAvailabilityExceptionsOnDate,
 } from "@/routes/_dashboard/staff/-data-access-layer/staff-availability.fn";
 import { myStaffAvailabilityQueryOptions } from "@/routes/_dashboard/staff/-data-access-layer/staff-availability.query-options";
+import { upsertMyDesiredHours } from "@/routes/_dashboard/staff/-data-access-layer/staff-desired-hours.fn";
+import { myDesiredHoursQueryOptions } from "@/routes/_dashboard/staff/-data-access-layer/staff-desired-hours.query-options";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -26,6 +28,7 @@ export function StaffSchedule() {
 
   const scheduleQuery = useQuery(myStaffScheduleQueryOptions({ month }));
   const availabilityQuery = useQuery(myStaffAvailabilityQueryOptions({ month }));
+  const desiredQuery = useQuery(myDesiredHoursQueryOptions({ month }));
   const schedule = scheduleQuery.data;
 
   const goToMonth = (nextMonth: string) => {
@@ -49,6 +52,17 @@ export function StaffSchedule() {
   const invalidateAvailability = async () => {
     await queryClient.invalidateQueries({ queryKey: ["staff-availability"] });
   };
+
+  const saveDesired = useMutation({
+    mutationFn: upsertMyDesiredHours,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["staff-desired-hours"] });
+      toast.success("Desired hours saved.");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Could not save desired hours.");
+    },
+  });
 
   const addException = useMutation({
     mutationFn: addMyAvailabilityException,
@@ -164,6 +178,11 @@ export function StaffSchedule() {
         hoursByDate={schedule?.hoursByDate ?? {}}
         availabilityByDate={availabilityByDate}
         canEditAvailability={availabilityQuery.isSuccess}
+        desiredByWeek={desiredQuery.data?.byWeek ?? {}}
+        desiredPending={saveDesired.isPending}
+        onSaveDesiredHours={(weekStartDate, hours) => {
+          saveDesired.mutate({ data: { weekStartDate, hours } });
+        }}
         onMarkAvailable={markAvailable}
         onRequestOff={requestOff}
         onBlockHours={setBlockHoursDate}

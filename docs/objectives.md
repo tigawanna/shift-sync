@@ -21,7 +21,7 @@ What a staff person must be able to do for themselves.
 - [x] Carry skills used for assignment (skills are assigned by admin)
 - [x] Set recurring weekly availability
 - [x] Set one-off availability exceptions (block hours / mark a day off)
-- [ ] State desired hours for the period (needed later for fairness “under/over scheduled”)
+- [x] State desired hours for the period (needed later for fairness “under/over scheduled”)
 
 ### Own schedule
 

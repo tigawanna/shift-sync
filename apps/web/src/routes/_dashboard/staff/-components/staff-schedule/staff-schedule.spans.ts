@@ -3,7 +3,7 @@ import { eachYmdInclusive } from "@/lib/time/zoned";
 
 export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 export const LANE_PX = 24;
-export const WEEK_GRID_COLS = "grid-cols-[repeat(7,minmax(0,1fr))_4.5rem]";
+export const WEEK_GRID_COLS = "grid-cols-[repeat(7,minmax(0,1fr))_5.75rem]";
 
 export type CalendarSpan = {
   id: string;
