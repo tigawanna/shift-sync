@@ -63,7 +63,7 @@ What a manager must be able to accomplish for the locations they run. Do this bl
 
 - [x] Sign in as manager and land on a manager dashboard
 - [x] See and manage **only** locations they are assigned to
-- [ ] See the team for those locations
+- [x] See the team for those locations
 - [x] See those locations’ details
 
 ### Build and publish a week

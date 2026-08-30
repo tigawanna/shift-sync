@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays, MapPin, Users } from "lucide-react";
 
 const tiles = [
   {
@@ -7,6 +7,12 @@ const tiles = [
     title: "Schedule",
     description: "Open a location-week to edit, publish, unpublish, or delete it.",
     icon: CalendarDays,
+  },
+  {
+    to: "/manager/team",
+    title: "Team",
+    description: "Staff certified at your locations — skills and where they can work.",
+    icon: Users,
   },
   {
     to: "/manager/locations",
