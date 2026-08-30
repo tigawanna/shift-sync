@@ -42,7 +42,11 @@ export default defineConfig({
   plugins: lazyPlugins(() => [
     devtools(),
     evlog({ service: "shift-sync" }),
-    nitro(),
+    nitro({
+      // Vite 8.2 / Rolldown splits the SSR service and re-exports undeclared `ssr_exports`.
+      // https://github.com/TanStack/router/issues/8031
+      inlineDynamicImports: true,
+    }),
     tailwindcss(),
     tanstackStart({
       importProtection: {
