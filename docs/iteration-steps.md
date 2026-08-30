@@ -14,7 +14,7 @@ Staff state a weekly hour target for each Monday–Sunday week. Availability sta
 - Staff calendar: set/see desired hours per week
 - Tick: *State desired hours for the period*
 
-## 2. Coverage data model
+## 2. Coverage data model — done
 
 Swap, drop, and pickup as persisted requests. Original assignment does not move until a manager approves. Max **3** pending swap/drop per staff. Unclaimed drops expire **24 hours** before the shift starts. Editing a shift cancels pending requests on it.
 
