@@ -13,6 +13,7 @@ export function useCoverageMutations(onSettledSuccess?: () => void) {
   const queryClient = useQueryClient();
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ["staff-coverage"] });
+    await queryClient.invalidateQueries({ queryKey: ["staff-coverage-requests"] });
     await queryClient.invalidateQueries({ queryKey: ["staff-schedule"] });
     await queryClient.invalidateQueries({ queryKey: ["staff-swap-candidates"] });
   };

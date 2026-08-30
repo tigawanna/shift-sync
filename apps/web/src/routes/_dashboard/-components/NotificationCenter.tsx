@@ -1,15 +1,20 @@
+import { isStaffUser, useViewer } from "@/data-access-layer/auth/viewer";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { Bell } from "lucide-react";
 import {
   markAllNotificationsRead,
   markNotificationRead,
   setNotificationPreference,
 } from "../-data-access-layer/notifications.fn";
 import { myNotificationsQueryOptions } from "../-data-access-layer/notifications.query-options";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell } from "lucide-react";
 
 export function NotificationCenter() {
   const queryClient = useQueryClient();
-  const query = useQuery(myNotificationsQueryOptions());
+  const { viewer } = useViewer();
+  const query = useQuery(
+    myNotificationsQueryOptions({ page: 1, perPage: 8, sq: "", unread: "all" }),
+  );
   const data = query.data;
   const unread = data?.unreadCount ?? 0;
 
@@ -88,6 +93,14 @@ export function NotificationCenter() {
             ))
           )}
         </ul>
+        {isStaffUser(viewer.user) ? (
+          <Link
+            to="/staff/notifications"
+            className="text-primary mt-3 block text-center text-xs font-medium"
+          >
+            Open notification center
+          </Link>
+        ) : null}
       </div>
     </details>
   );

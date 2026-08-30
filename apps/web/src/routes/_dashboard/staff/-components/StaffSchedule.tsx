@@ -8,19 +8,33 @@ import { myStaffAvailabilityQueryOptions } from "@/routes/_dashboard/staff/-data
 import { upsertMyDesiredHours } from "@/routes/_dashboard/staff/-data-access-layer/staff-desired-hours.fn";
 import { myDesiredHoursQueryOptions } from "@/routes/_dashboard/staff/-data-access-layer/staff-desired-hours.query-options";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { myCoverageQueryOptions } from "../-data-access-layer/staff-coverage.query-options";
 import { myStaffScheduleQueryOptions } from "../-data-access-layer/staff-schedule.query-options";
 import { Route } from "../index";
-import { StaffCoverage } from "./StaffCoverage";
 import { StaffCoverageSheet, type StaffCoveragePanel } from "./staff-coverage/StaffCoverageSheet";
 import { StaffScheduleBlockHoursDialog } from "./staff-schedule/StaffScheduleBlockHoursDialog";
 import { StaffScheduleLegend } from "./staff-schedule/StaffScheduleLegend";
 import { StaffScheduleMonthGrid } from "./staff-schedule/StaffScheduleMonthGrid";
 import { summarizeDayAvailability } from "./staff-schedule/staff-availability.day";
 import { monthWeeks } from "./staff-schedule/staff-schedule.spans";
+
+function coverageInboxSummary(incomingCount: number, openDropCount: number, pendingCount: number) {
+  const parts: string[] = [];
+  if (incomingCount > 0) {
+    parts.push(`${incomingCount} incoming swap${incomingCount === 1 ? "" : "s"}`);
+  }
+  if (openDropCount > 0) {
+    parts.push(`${openDropCount} open drop${openDropCount === 1 ? "" : "s"}`);
+  }
+  if (pendingCount > 0) {
+    parts.push(`${pendingCount} of your requests pending`);
+  }
+  return parts.join(" · ");
+}
 
 export function StaffSchedule() {
   const search = Route.useSearch();
@@ -35,17 +49,10 @@ export function StaffSchedule() {
   const desiredQuery = useQuery(myDesiredHoursQueryOptions({ month }));
   const coverageQuery = useQuery(myCoverageQueryOptions());
   const schedule = scheduleQuery.data;
-  const pendingShiftIds = new Set(
-    (coverageQuery.data?.mine ?? [])
-      .filter(
-        (row) =>
-          row.request.status === "open" ||
-          row.request.status === "pending_peer" ||
-          row.request.status === "pending_manager",
-      )
-      .map((row) => row.request.shiftId),
-  );
-  const pendingCount = pendingShiftIds.size;
+  const pendingShiftIds = new Set(coverageQuery.data?.pendingShiftIds ?? []);
+  const pendingCount = coverageQuery.data?.pendingCount ?? pendingShiftIds.size;
+  const incomingCount = coverageQuery.data?.incoming.length ?? 0;
+  const openDropCount = coverageQuery.data?.openDrops.length ?? 0;
 
   const goToMonth = (nextMonth: string) => {
     void navigate({ search: { month: nextMonth } });
@@ -215,7 +222,18 @@ export function StaffSchedule() {
         </p>
       </div>
 
-      <StaffCoverage />
+      {incomingCount > 0 || openDropCount > 0 || pendingCount > 0 ? (
+        <Link
+          to="/staff/coverage"
+          className="hover:bg-muted/40 rounded-xl border px-4 py-3 text-sm"
+          data-test="staff-coverage-teaser"
+        >
+          <span className="font-medium">Coverage inbox</span>
+          <span className="text-muted-foreground ml-2">
+            {coverageInboxSummary(incomingCount, openDropCount, pendingCount)}
+          </span>
+        </Link>
+      ) : null}
 
       <StaffCoverageSheet
         panel={coveragePanel}

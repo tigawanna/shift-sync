@@ -1,4 +1,4 @@
-import { SWAP_CANDIDATE_LIMIT } from "@/components/pagination/constants";
+import { ADMIN_LIST_PER_PAGE, SWAP_CANDIDATE_LIMIT } from "@/components/pagination/constants";
 import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
@@ -9,7 +9,12 @@ import {
   shiftAssignment as shiftAssignmentTable,
 } from "@/lib/drizzle/schema/schedule-schema";
 import { skill as skillTable, userSkill } from "@/lib/drizzle/schema/skills-schema";
-import { COVERAGE_KIND, COVERAGE_PENDING_LIMIT, COVERAGE_STATUS } from "@/lib/schedule/coverage";
+import {
+  ACTIVE_COVERAGE_STATUSES,
+  COVERAGE_KIND,
+  COVERAGE_PENDING_LIMIT,
+  COVERAGE_STATUS,
+} from "@/lib/schedule/coverage";
 import {
   assertAssignedToShift,
   assertPendingCapacity,
@@ -20,7 +25,10 @@ import {
 import { loadLocationManagerIds, notifyUsers } from "@/lib/schedule/notify.server";
 import { createServerFn } from "@tanstack/react-start";
 import { and, asc, count, desc, eq, inArray, like, ne, notInArray, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
+
+const coverageToUser = alias(userTable, "coverage_to_user");
 
 const requestIdSchema = z.object({ requestId: z.string().min(1) });
 const shiftIdsSchema = z.object({
@@ -74,6 +82,29 @@ async function loadMyPublishedShifts(
   return { uniqueIds, published, lead };
 }
 
+export const listMyCoverageRequestsInputSchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  perPage: z.coerce.number().int().min(1).max(100).optional().default(ADMIN_LIST_PER_PAGE),
+  sq: z.string().optional().default(""),
+  status: z.enum(["all", "pending", "resolved"]).optional().default("all"),
+});
+
+export type ListMyCoverageRequestsInput = z.input<typeof listMyCoverageRequestsInputSchema>;
+
+function coverageSearch(sq: string) {
+  const trimmed = sq.trim();
+  if (!trimmed) return undefined;
+  const pattern = `%${trimmed}%`;
+  return or(
+    like(locationTable.name, pattern),
+    like(skillTable.name, pattern),
+    like(userTable.name, pattern),
+    like(coverageToUser.name, pattern),
+    like(coverageRequest.kind, pattern),
+    like(coverageRequest.status, pattern),
+  );
+}
+
 export const listMyCoverage = createServerFn({ method: "GET" }).handler(async () => {
   const { session } = await requireSessionRoles([ROLE.staff]);
   const db = await getDbAndExpire();
@@ -84,6 +115,7 @@ export const listMyCoverage = createServerFn({ method: "GET" }).handler(async ()
       request: coverageRequest,
       shift: shiftTable,
       locationName: locationTable.name,
+      locationTimezone: locationTable.timezone,
       skillName: skillTable.name,
       fromName: userTable.name,
     })
@@ -92,7 +124,12 @@ export const listMyCoverage = createServerFn({ method: "GET" }).handler(async ()
     .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
     .innerJoin(skillTable, eq(skillTable.id, shiftTable.skillId))
     .innerJoin(userTable, eq(userTable.id, coverageRequest.fromUserId))
-    .where(and(eq(coverageRequest.fromUserId, userId)))
+    .where(
+      and(
+        eq(coverageRequest.fromUserId, userId),
+        inArray(coverageRequest.status, [...ACTIVE_COVERAGE_STATUSES]),
+      ),
+    )
     .orderBy(desc(coverageRequest.createdAt));
 
   const incoming = await db
@@ -100,6 +137,7 @@ export const listMyCoverage = createServerFn({ method: "GET" }).handler(async ()
       request: coverageRequest,
       shift: shiftTable,
       locationName: locationTable.name,
+      locationTimezone: locationTable.timezone,
       skillName: skillTable.name,
       fromName: userTable.name,
     })
@@ -121,6 +159,7 @@ export const listMyCoverage = createServerFn({ method: "GET" }).handler(async ()
       request: coverageRequest,
       shift: shiftTable,
       locationName: locationTable.name,
+      locationTimezone: locationTable.timezone,
       skillName: skillTable.name,
       fromName: userTable.name,
     })
@@ -145,8 +184,78 @@ export const listMyCoverage = createServerFn({ method: "GET" }).handler(async ()
       ),
     );
 
-  return { mine: rows, incoming, openDrops };
+  return {
+    mine: rows,
+    incoming,
+    openDrops,
+    pendingShiftIds: rows.map((row) => row.request.shiftId),
+    pendingCount: rows.length,
+  };
 });
+
+export const listMyCoverageRequests = createServerFn({ method: "GET" })
+  .validator(listMyCoverageRequestsInputSchema)
+  .handler(async ({ data }) => {
+    const { session } = await requireSessionRoles([ROLE.staff]);
+    const db = await getDbAndExpire();
+    const userId = session.user.id;
+    const page = data.page;
+    const perPage = data.perPage;
+    const statusWhere =
+      data.status === "pending"
+        ? inArray(coverageRequest.status, [...ACTIVE_COVERAGE_STATUSES])
+        : data.status === "resolved"
+          ? notInArray(coverageRequest.status, [...ACTIVE_COVERAGE_STATUSES])
+          : undefined;
+
+    const where = and(
+      or(eq(coverageRequest.fromUserId, userId), eq(coverageRequest.toUserId, userId)),
+      statusWhere,
+      coverageSearch(data.sq),
+    );
+
+    const [items, totalRow] = await Promise.all([
+      db
+        .select({
+          request: coverageRequest,
+          shift: shiftTable,
+          locationName: locationTable.name,
+          locationTimezone: locationTable.timezone,
+          skillName: skillTable.name,
+          fromName: userTable.name,
+          toName: coverageToUser.name,
+        })
+        .from(coverageRequest)
+        .innerJoin(shiftTable, eq(shiftTable.id, coverageRequest.shiftId))
+        .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
+        .innerJoin(skillTable, eq(skillTable.id, shiftTable.skillId))
+        .innerJoin(userTable, eq(userTable.id, coverageRequest.fromUserId))
+        .leftJoin(coverageToUser, eq(coverageToUser.id, coverageRequest.toUserId))
+        .where(where)
+        .orderBy(desc(coverageRequest.createdAt))
+        .limit(perPage)
+        .offset((page - 1) * perPage),
+      db
+        .select({ total: count() })
+        .from(coverageRequest)
+        .innerJoin(shiftTable, eq(shiftTable.id, coverageRequest.shiftId))
+        .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
+        .innerJoin(skillTable, eq(skillTable.id, shiftTable.skillId))
+        .innerJoin(userTable, eq(userTable.id, coverageRequest.fromUserId))
+        .leftJoin(coverageToUser, eq(coverageToUser.id, coverageRequest.toUserId))
+        .where(where),
+    ]);
+
+    const total = totalRow[0]?.total ?? 0;
+
+    return {
+      items,
+      total,
+      page,
+      perPage,
+      totalPages: Math.max(1, Math.ceil(total / perPage)),
+    };
+  });
 
 export const listSwapCandidates = createServerFn({ method: "GET" })
   .validator(listSwapCandidatesInputSchema)

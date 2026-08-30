@@ -2,6 +2,7 @@ import type { SidebarItem } from "@/components/sidebar/types";
 import { ROLE, type AppRole } from "@/lib/better-auth/roles";
 import {
   ArrowLeftRight,
+  Bell,
   CalendarDays,
   LayoutDashboard,
   MapPin,
@@ -45,5 +46,9 @@ export function getDashboardPrimaryRoutes(role: AppRole): SidebarItem[] {
     ];
   }
 
-  return [{ title: "My calendar", href: "/staff", icon: CalendarDays }];
+  return [
+    { title: "My calendar", href: "/staff", icon: CalendarDays },
+    { title: "Coverage", href: "/staff/coverage", icon: ArrowLeftRight },
+    { title: "Notifications", href: "/staff/notifications", icon: Bell },
+  ];
 }

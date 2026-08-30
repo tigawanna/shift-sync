@@ -14,6 +14,7 @@ export function ListCoverage() {
     await queryClient.invalidateQueries({ queryKey: ["manager-week"] });
     await queryClient.invalidateQueries({ queryKey: ["staff-schedule"] });
     await queryClient.invalidateQueries({ queryKey: ["staff-coverage"] });
+    await queryClient.invalidateQueries({ queryKey: ["staff-coverage-requests"] });
   };
 
   const approve = useMutation({

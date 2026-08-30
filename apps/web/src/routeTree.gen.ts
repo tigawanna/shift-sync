@@ -36,6 +36,8 @@ import { Route as DashboardManagerLocationsIndexRouteImport } from './routes/_da
 import { Route as DashboardManagerRequestsIndexRouteImport } from './routes/_dashboard/manager/requests/index'
 import { Route as DashboardManagerScheduleIndexRouteImport } from './routes/_dashboard/manager/schedule/index'
 import { Route as DashboardManagerTeamIndexRouteImport } from './routes/_dashboard/manager/team/index'
+import { Route as DashboardStaffCoverageIndexRouteImport } from './routes/_dashboard/staff/coverage/index'
+import { Route as DashboardStaffNotificationsIndexRouteImport } from './routes/_dashboard/staff/notifications/index'
 import { Route as DashboardManagerScheduleLocationIdIndexRouteImport } from './routes/_dashboard/manager/schedule/$locationId/index'
 import { Route as DashboardManagerScheduleLocationIdWeekStartRouteImport } from './routes/_dashboard/manager/schedule/$locationId/$weekStart'
 
@@ -185,6 +187,18 @@ const DashboardManagerTeamIndexRoute =
     path: '/manager/team/',
     getParentRoute: () => DashboardLayoutRoute,
   } as any)
+const DashboardStaffCoverageIndexRoute =
+  DashboardStaffCoverageIndexRouteImport.update({
+    id: '/staff/coverage/',
+    path: '/staff/coverage/',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
+const DashboardStaffNotificationsIndexRoute =
+  DashboardStaffNotificationsIndexRouteImport.update({
+    id: '/staff/notifications/',
+    path: '/staff/notifications/',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
 const DashboardManagerScheduleLocationIdIndexRoute =
   DashboardManagerScheduleLocationIdIndexRouteImport.update({
     id: '/manager/schedule/$locationId/',
@@ -225,6 +239,8 @@ export interface FileRoutesByFullPath {
   '/manager/requests/': typeof DashboardManagerRequestsIndexRoute
   '/manager/schedule/': typeof DashboardManagerScheduleIndexRoute
   '/manager/team/': typeof DashboardManagerTeamIndexRoute
+  '/staff/coverage/': typeof DashboardStaffCoverageIndexRoute
+  '/staff/notifications/': typeof DashboardStaffNotificationsIndexRoute
   '/manager/schedule/$locationId/$weekStart': typeof DashboardManagerScheduleLocationIdWeekStartRoute
   '/manager/schedule/$locationId/': typeof DashboardManagerScheduleLocationIdIndexRoute
 }
@@ -253,6 +269,8 @@ export interface FileRoutesByTo {
   '/manager/requests': typeof DashboardManagerRequestsIndexRoute
   '/manager/schedule': typeof DashboardManagerScheduleIndexRoute
   '/manager/team': typeof DashboardManagerTeamIndexRoute
+  '/staff/coverage': typeof DashboardStaffCoverageIndexRoute
+  '/staff/notifications': typeof DashboardStaffNotificationsIndexRoute
   '/manager/schedule/$locationId/$weekStart': typeof DashboardManagerScheduleLocationIdWeekStartRoute
   '/manager/schedule/$locationId': typeof DashboardManagerScheduleLocationIdIndexRoute
 }
@@ -285,6 +303,8 @@ export interface FileRoutesById {
   '/_dashboard/manager/requests/': typeof DashboardManagerRequestsIndexRoute
   '/_dashboard/manager/schedule/': typeof DashboardManagerScheduleIndexRoute
   '/_dashboard/manager/team/': typeof DashboardManagerTeamIndexRoute
+  '/_dashboard/staff/coverage/': typeof DashboardStaffCoverageIndexRoute
+  '/_dashboard/staff/notifications/': typeof DashboardStaffNotificationsIndexRoute
   '/_dashboard/manager/schedule/$locationId/$weekStart': typeof DashboardManagerScheduleLocationIdWeekStartRoute
   '/_dashboard/manager/schedule/$locationId/': typeof DashboardManagerScheduleLocationIdIndexRoute
 }
@@ -317,6 +337,8 @@ export interface FileRouteTypes {
     | '/manager/requests/'
     | '/manager/schedule/'
     | '/manager/team/'
+    | '/staff/coverage/'
+    | '/staff/notifications/'
     | '/manager/schedule/$locationId/$weekStart'
     | '/manager/schedule/$locationId/'
   fileRoutesByTo: FileRoutesByTo
@@ -345,6 +367,8 @@ export interface FileRouteTypes {
     | '/manager/requests'
     | '/manager/schedule'
     | '/manager/team'
+    | '/staff/coverage'
+    | '/staff/notifications'
     | '/manager/schedule/$locationId/$weekStart'
     | '/manager/schedule/$locationId'
   id:
@@ -376,6 +400,8 @@ export interface FileRouteTypes {
     | '/_dashboard/manager/requests/'
     | '/_dashboard/manager/schedule/'
     | '/_dashboard/manager/team/'
+    | '/_dashboard/staff/coverage/'
+    | '/_dashboard/staff/notifications/'
     | '/_dashboard/manager/schedule/$locationId/$weekStart'
     | '/_dashboard/manager/schedule/$locationId/'
   fileRoutesById: FileRoutesById
@@ -581,6 +607,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardManagerTeamIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/_dashboard/staff/coverage/': {
+      id: '/_dashboard/staff/coverage/'
+      path: '/staff/coverage'
+      fullPath: '/staff/coverage/'
+      preLoaderRoute: typeof DashboardStaffCoverageIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/_dashboard/staff/notifications/': {
+      id: '/_dashboard/staff/notifications/'
+      path: '/staff/notifications'
+      fullPath: '/staff/notifications/'
+      preLoaderRoute: typeof DashboardStaffNotificationsIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/_dashboard/manager/schedule/$locationId/': {
       id: '/_dashboard/manager/schedule/$locationId/'
       path: '/manager/schedule/$locationId'
@@ -630,6 +670,8 @@ interface DashboardLayoutRouteChildren {
   DashboardManagerRequestsIndexRoute: typeof DashboardManagerRequestsIndexRoute
   DashboardManagerScheduleIndexRoute: typeof DashboardManagerScheduleIndexRoute
   DashboardManagerTeamIndexRoute: typeof DashboardManagerTeamIndexRoute
+  DashboardStaffCoverageIndexRoute: typeof DashboardStaffCoverageIndexRoute
+  DashboardStaffNotificationsIndexRoute: typeof DashboardStaffNotificationsIndexRoute
   DashboardManagerScheduleLocationIdWeekStartRoute: typeof DashboardManagerScheduleLocationIdWeekStartRoute
   DashboardManagerScheduleLocationIdIndexRoute: typeof DashboardManagerScheduleLocationIdIndexRoute
 }
@@ -648,6 +690,8 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardManagerRequestsIndexRoute: DashboardManagerRequestsIndexRoute,
   DashboardManagerScheduleIndexRoute: DashboardManagerScheduleIndexRoute,
   DashboardManagerTeamIndexRoute: DashboardManagerTeamIndexRoute,
+  DashboardStaffCoverageIndexRoute: DashboardStaffCoverageIndexRoute,
+  DashboardStaffNotificationsIndexRoute: DashboardStaffNotificationsIndexRoute,
   DashboardManagerScheduleLocationIdWeekStartRoute:
     DashboardManagerScheduleLocationIdWeekStartRoute,
   DashboardManagerScheduleLocationIdIndexRoute:
