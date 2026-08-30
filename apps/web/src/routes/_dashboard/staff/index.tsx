@@ -3,6 +3,7 @@ import { AppConfig } from "@/utils/system";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { DashboardPageHeader } from "../-components/DashboardPageHeader";
+import { myCoverageQueryOptions } from "./-data-access-layer/staff-coverage.query-options";
 import { myDesiredHoursQueryOptions } from "./-data-access-layer/staff-desired-hours.query-options";
 import { myStaffAvailabilityQueryOptions } from "./-data-access-layer/staff-availability.query-options";
 import { myStaffScheduleQueryOptions } from "./-data-access-layer/staff-schedule.query-options";
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/_dashboard/staff/")({
       context.queryClient.ensureQueryData(myStaffScheduleQueryOptions({ month })),
       context.queryClient.ensureQueryData(myStaffAvailabilityQueryOptions({ month })),
       context.queryClient.ensureQueryData(myDesiredHoursQueryOptions({ month })),
+      context.queryClient.ensureQueryData(myCoverageQueryOptions()),
     ]);
   },
   component: StaffHomePage,

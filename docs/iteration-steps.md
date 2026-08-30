@@ -21,7 +21,7 @@ Swap, drop, and pickup as persisted requests. Original assignment does not move 
 - Tables + status machine + expiry helper
 - Shared server rules (qualify, pending cap, expire)
 
-## 3. Staff coverage UI
+## 3. Staff coverage UI — done
 
 Staff can request a swap, accept/decline, withdraw, drop a shift, and pick up an open drop they qualify for.
 

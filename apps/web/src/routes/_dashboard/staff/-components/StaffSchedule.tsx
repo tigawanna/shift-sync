@@ -13,6 +13,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { myStaffScheduleQueryOptions } from "../-data-access-layer/staff-schedule.query-options";
 import { Route } from "../index";
+import { StaffCoverage } from "./StaffCoverage";
 import { StaffScheduleBlockHoursDialog } from "./staff-schedule/StaffScheduleBlockHoursDialog";
 import { StaffScheduleLegend } from "./staff-schedule/StaffScheduleLegend";
 import { StaffScheduleMonthGrid } from "./staff-schedule/StaffScheduleMonthGrid";
@@ -194,6 +195,8 @@ export function StaffSchedule() {
           Click a date to mark it available. Right-click to request the day off or block hours.
         </p>
       </div>
+
+      <StaffCoverage shifts={shifts} />
 
       <StaffScheduleBlockHoursDialog
         date={blockHoursDate}

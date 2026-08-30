@@ -36,14 +36,14 @@ What a staff person must be able to do for themselves.
 
 Swap, drop, and pickup are staff-initiated, but they do not make sense until a manager can approve the final change and until editing a shift cancels a pending request.
 
-- [ ] Request a swap with another qualified staff member
-- [ ] Accept or decline an incoming swap
-- [ ] Withdraw a pending swap before manager approval
-- [ ] Offer a shift as a drop request
-- [ ] Pick up an open / dropped shift they are qualified for
-- [ ] Stay on the original assignment until the manager approves
-- [ ] Be limited to **3** pending swap/drop requests at once
-- [ ] Have unclaimed drop requests expire **24 hours** before the shift
+- [x] Request a swap with another qualified staff member
+- [x] Accept or decline an incoming swap
+- [x] Withdraw a pending swap before manager approval
+- [x] Offer a shift as a drop request
+- [x] Pick up an open / dropped shift they are qualified for
+- [x] Stay on the original assignment until the manager approves
+- [x] Be limited to **3** pending swap/drop requests at once
+- [x] Have unclaimed drop requests expire **24 hours** before the shift
 
 ### Notifications and live updates — **needs manager** (publish / assign / swap resolution)
 
