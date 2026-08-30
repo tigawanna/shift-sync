@@ -8,6 +8,8 @@
     "preview": "vp preview",
     "check-types": "tsgo --noEmit",
     "lint": "vp lint .",
+    "test": "vp test --run",
+    "test:watch": "vp test",
     "test:e2e": "playwright test",
     "auth:generate": "better-auth generate --config ./better-auth.config.ts --output ./src/lib/drizzle/schema/auth-schema.ts -y",
     "db:generate": "drizzle-kit generate",

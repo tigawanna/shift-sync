@@ -210,6 +210,10 @@ The following are **deliberately unspecified**. Part of the evaluation is how yo
 
 **40h is over the weekly limit, not a hard assign block.** Assign still goes through after a confirmation. Daily hours hard-block above 12h on a civil date in the location timezone.
 
+**Daily hours are bucketed in the clock of the location being assigned.** Someone can hold shifts in two zones on the same civil date. Every interval — including shifts at other locations — is split onto civil dates using the timezone of the shift being assigned, so "12h on 2026-08-17" always means a Harbor House day when you are assigning at Harbor House. Bucketing each site in its own zone was tried and rejected: it merges two different civil-day frames onto one date key, so the total stops describing any real day. Weekly hours use the same single frame (the location week), and they sum every location.
+
+**One gate for putting someone on a shift.** Manager assign, coverage approval, and a shift edit that moves times or changes the required skill all run the same check (`assertAssignable`): skill, cert, overlap, 10h rest, availability, daily and weekly hours, consecutive days. Approving a pickup is an assignment, so it can fail with the same named rule — a manager who wants it anyway removes the blocker or assigns by hand. An edit that would strand a current assignee is rejected and names the person and the rule rather than silently leaving an illegal assignment.
+
 **Desired hours are a weekly target, not a filter on availability.** Availability is when someone can be assigned. Desired hours is how many hours they want in that Monday–Sunday week. An unset week has no target. Fairness later compares scheduled hours to this number; it does not change assign eligibility.
 
 **Overtime cost is projected at $22/h × 1.5 for hours over 40.** Weekly hours for OT include assignments at every location (the multi-site trap). The location-week report roster is people assigned at that location that week.
@@ -220,7 +224,7 @@ The following are **deliberately unspecified**. Part of the evaluation is how yo
 
 **Schedule writes append an audit row** (actor, time, action, JSON before/after). Deleting a shift keeps the log (`shift_id` is not a foreign key). Admin export uses Coastal Eats HQ civil dates (`America/Los_Angeles`).
 
-**Live schedule views refetch every 15 seconds.** Assign re-checks overlapping shifts inside a write transaction so two managers cannot both land the same person in an overlap.
+**Live views are driven by a 4-second pulse.** One small server function returns four aggregates (latest shift write, latest assignment, latest coverage change, latest publish) plus the viewer's unread count. The dashboard polls that and invalidates the heavy queries only when the value moves; those queries keep a 30-second interval as a safety net, and "on duty now" stays on its own 15-second timer because it turns over with the clock rather than with a write. Assign re-checks overlapping shifts inside a write transaction so two managers cannot both land the same person in an overlap, and every coverage state change is a conditional update, so a second claimer or approver is told the request already moved instead of overwriting it.
 
 **Notifications are in-app rows** (unread until opened). Optional “simulate email” stores a flag on the row. Events include publish, assign, shift edit, coverage steps, edit-cancels-pending, overtime, and availability exceptions.
 

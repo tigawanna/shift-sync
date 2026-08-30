@@ -14,6 +14,7 @@ import {
   COVERAGE_STATUS,
   DROP_EXPIRE_HOURS,
 } from "@/lib/schedule/coverage";
+import { assertAssignable } from "@/lib/schedule/assign.server";
 import { auditCoverageChange } from "@/lib/schedule/coverage-audit.hooks";
 import { notifyUsers } from "@/lib/schedule/notify.server";
 import { mondayOfWeekContaining } from "@/lib/time/zoned";
@@ -228,6 +229,11 @@ async function transferCoverageAssignment(
   });
 }
 
+/**
+ * Approving coverage is an assignment, so it clears the same rules as the manager
+ * assign sheet: overlap, 10h rest, availability, daily and weekly hours. Without
+ * this, a pickup could land someone who is already double-booked.
+ */
 export async function applyApprovedCoverageOn(
   db: DbSession,
   request: { kind: string; shiftId: string; fromUserId: string; toUserId: string | null },
@@ -235,6 +241,30 @@ export async function applyApprovedCoverageOn(
   if (!request.toUserId) {
     throw new Error("No one is on the other side of this request.");
   }
+
+  const { shift, location } = await loadPublishedShift(db, request.shiftId);
+  await assertAssignable(
+    db,
+    {
+      shift: {
+        id: shift.id,
+        startsAt: shift.startsAt,
+        endsAt: shift.endsAt,
+        locationId: shift.locationId,
+        skillId: shift.skillId,
+        locationName: location.name,
+        timezone: location.timezone,
+      },
+      userId: request.toUserId,
+    },
+    {
+      phase: "commit",
+      messagePrefix: "Cannot approve — ",
+      overlapMessage:
+        "Cannot approve: they picked up an overlapping shift since this request was made.",
+    },
+  );
+
   await transferCoverageAssignment(db, { ...request, toUserId: request.toUserId });
 }
 

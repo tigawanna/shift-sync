@@ -406,13 +406,21 @@ export const pickupDrop = createServerFn({ method: "POST" })
     await db.transaction(async (tx) => {
       await assertQualifiedForShift(tx, session.user.id, row.shiftId);
       await assertPendingCapacity(tx, session.user.id);
-      await tx
+      // Conditional on `open` so two people cannot claim the same drop.
+      const claimed = await tx
         .update(coverageRequest)
         .set({
           toUserId: session.user.id,
           status: COVERAGE_STATUS.pending_manager,
         })
-        .where(eq(coverageRequest.id, row.id));
+        .where(
+          and(eq(coverageRequest.id, row.id), eq(coverageRequest.status, COVERAGE_STATUS.open)),
+        )
+        .returning({ id: coverageRequest.id });
+
+      if (claimed.length === 0) {
+        throw new Error("Someone else just claimed this shift.");
+      }
 
       const published = await loadPublishedShift(tx, row.shiftId);
       const managers = await loadLocationManagerIds(tx, published.location.id);
@@ -449,10 +457,20 @@ export const acceptIncomingSwap = createServerFn({ method: "POST" })
     }
 
     await db.transaction(async (tx) => {
-      await tx
+      const accepted = await tx
         .update(coverageRequest)
         .set({ status: COVERAGE_STATUS.pending_manager })
-        .where(eq(coverageRequest.id, row.id));
+        .where(
+          and(
+            eq(coverageRequest.id, row.id),
+            eq(coverageRequest.status, COVERAGE_STATUS.pending_peer),
+          ),
+        )
+        .returning({ id: coverageRequest.id });
+
+      if (accepted.length === 0) {
+        throw new Error("That swap is no longer waiting on you.");
+      }
 
       const published = await loadPublishedShift(tx, row.shiftId);
       const managers = await loadLocationManagerIds(tx, published.location.id);

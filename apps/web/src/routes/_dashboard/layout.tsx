@@ -12,6 +12,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { DashboardLayout } from "./-components/dashboard-sidebar/DashboardLayout";
 import { dashboard_account_routes } from "./-components/dashboard-sidebar/dashboard_routes";
+import { useLivePulse } from "./-hooks/useLivePulse";
 
 export const Route = createFileRoute("/_dashboard")({
   pendingComponent: RouterPendingComponent,
@@ -40,6 +41,8 @@ export const Route = createFileRoute("/_dashboard")({
 });
 
 function DashboardShell() {
+  useLivePulse();
+
   return (
     <Suspense fallback={<RouterPendingComponent />}>
       <DashboardLayout

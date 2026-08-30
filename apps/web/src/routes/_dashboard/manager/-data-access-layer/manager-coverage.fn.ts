@@ -157,15 +157,27 @@ export const approveCoverage = createServerFn({ method: "POST" })
 
     await db.transaction(async (tx) => {
       const before = await snapshotShift(tx, row.request.shiftId);
-      await applyApprovedCoverageOn(tx, row.request);
-      await tx
+      // Claim the request first: a second approver finds nothing to update.
+      const resolved = await tx
         .update(coverageRequest)
         .set({
           status: COVERAGE_STATUS.approved,
           resolvedAt: new Date(),
           resolvedByUserId: session.user.id,
         })
-        .where(eq(coverageRequest.id, row.request.id));
+        .where(
+          and(
+            eq(coverageRequest.id, row.request.id),
+            eq(coverageRequest.status, COVERAGE_STATUS.pending_manager),
+          ),
+        )
+        .returning({ id: coverageRequest.id });
+
+      if (resolved.length === 0) {
+        throw new Error("That request was already resolved.");
+      }
+
+      await applyApprovedCoverageOn(tx, row.request);
       await emitCoverageAudit({
         db: tx,
         locationId: row.locationId,
@@ -211,14 +223,24 @@ export const rejectCoverage = createServerFn({ method: "POST" })
     }
 
     await db.transaction(async (tx) => {
-      await tx
+      const resolved = await tx
         .update(coverageRequest)
         .set({
           status: COVERAGE_STATUS.rejected,
           resolvedAt: new Date(),
           resolvedByUserId: session.user.id,
         })
-        .where(eq(coverageRequest.id, row.request.id));
+        .where(
+          and(
+            eq(coverageRequest.id, row.request.id),
+            eq(coverageRequest.status, COVERAGE_STATUS.pending_manager),
+          ),
+        )
+        .returning({ id: coverageRequest.id });
+
+      if (resolved.length === 0) {
+        throw new Error("That request was already resolved.");
+      }
 
       await notifyUsers(tx, [row.request.fromUserId, row.request.toUserId ?? ""], {
         kind: "coverage_rejected",

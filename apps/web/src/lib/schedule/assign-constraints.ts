@@ -228,6 +228,9 @@ export function evaluateAssignmentConstraints(input: {
     input.candidateEndsAt,
     input.locationTimezone,
   );
+  // Every interval is bucketed in the candidate location's clock. Mixing each
+  // site's own clock would merge two different civil-day frames on one date key,
+  // so "that day" always means a day at the location being assigned.
   for (const other of input.otherShifts) {
     mergeHours(dailyHours, hoursByLocalDate(other.startsAt, other.endsAt, input.locationTimezone));
   }

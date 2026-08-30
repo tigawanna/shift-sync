@@ -89,7 +89,9 @@ Role checklist: [docs/objectives.md](./docs/objectives.md). Full decision notes:
 - Admin schedules are oversight (who works where, labor, on duty), not the manager edit board.
 - Concurrent assign integrity is a transaction re-check on SQLite, not an exclusion constraint.
 
-**Realtime is long polling, not a push channel.** Schedule, coverage, notifications, and “on duty now” refetch on a **15-second** interval (TanStack Query). That is the fit for a **serverless** host (Vercel / Nitro functions): there is no long-lived process to hold SSE or WebSocket connections, and holding those open is billed and timed out as request duration. On a more serious setup (a persistent Node/Go service, or a dedicated realtime layer), SSE or WebSockets would be the better push path. Mutations still invalidate queries immediately, so the actor who wrote sees the change without waiting for the next poll.
+**Realtime is polling, not a push channel.** A small **4-second** pulse query returns the latest shift, assignment, coverage, and publish timestamps plus the viewer's unread count; the dashboard invalidates the heavy queries only when that value changes. Those queries hold a 30-second interval as a fallback, and “on duty now” refetches every 15 seconds because it turns over with the clock rather than with a write. That is the fit for a **serverless** host (Vercel / Nitro functions): there is no long-lived process to hold SSE or WebSocket connections, and holding those open is billed and timed out as request duration. On a more serious setup (a persistent Node/Go service, or a dedicated realtime layer), SSE or WebSockets would be the better push path. Mutations still invalidate queries immediately, so the actor who wrote sees the change without waiting for the next poll.
+
+**One constraint gate.** Manager assign, coverage approval, and a shift edit that moves times or changes the skill all call the same `assertAssignable` (`src/lib/schedule/assign.server.ts`), so approving a pickup cannot land someone who is double-booked, short on rest, or over the daily cap. `pnpm test` runs the Vitest suite over the time and constraint layer (41 cases: DST-length days, overnight splits, rest boundaries, consecutive-day streaks, two-zone weekly hours).
 
 ### Assumptions (ambiguous requirements)
 
@@ -100,7 +102,8 @@ The brief left these unspecified. Choices in the product:
 | Historical data after de-certification | Cert removal does not rewrite `shift` / `shift_assignment`. Staff calendar only shows locations they are still certified for. Managers cannot assign them there again. |
 | Desired hours vs availability | Separate. Availability is *when* they can work; desired hours is a weekly target. Unset week = no target. Desired hours does not change assign eligibility. Empty weekly windows = open except blocked exceptions. |
 | Consecutive days (1h vs 11h) | Any assigned time on a civil date in the location week counts as a worked day. Overnight hours that land on a date count for that date. |
-| Edit after swap approval | Approval already moved the assignment. Later edit is a normal shift edit (48h cutoff still applies). Current assignee stays. Pending (not-yet-approved) swap/drop on that shift is cancelled and parties are notified. The approved swap is not unwound. |
+| Edit after swap approval | Approval already moved the assignment. Later edit is a normal shift edit (48h cutoff still applies). Current assignee stays, but moving the time or skill re-runs every rule for them and is rejected if it would strand them. Pending (not-yet-approved) swap/drop on that shift is cancelled and parties are notified. The approved swap is not unwound. |
+| Daily hours across two zones | Bucketed in the clock of the location being assigned, so a stated daily total always describes a day at that site. |
 | Location spanning a timezone boundary | One IANA timezone per location. Shifts, availability, overnight splits, and weekly hours use that stored zone, not the browser and not a second zone for a nearby state. |
 
 Also: 40h is over the weekly limit with a confirm, not a hard assign block (12h daily is a hard block). OT is projected at **$22/h × 1.5** over 40h, summing hours at every location. Premium is Fri/Sat start at **16:00** location-local. Audit export uses Coastal Eats HQ dates (`America/Los_Angeles`).
@@ -126,6 +129,7 @@ vercel deploy
 | `pnpm dev` | Start web dev server |
 | `pnpm build` | Production build |
 | `pnpm check-types` | TypeScript check |
+| `pnpm test` | Vitest unit suite (time + constraint engine) |
 | `pnpm lint` | Oxlint |
 | `pnpm format` | Prettier write |
 | `pnpm format:check` | Prettier check |
