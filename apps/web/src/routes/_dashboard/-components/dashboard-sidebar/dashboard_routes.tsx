@@ -5,6 +5,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   MapPin,
+  ScrollText,
   Shield,
   UserCog,
   Users,
@@ -17,6 +18,7 @@ export function getDashboardPrimaryRoutes(role: AppRole): SidebarItem[] {
     return [
       { title: "Overview", href: "/admin", icon: LayoutDashboard },
       { title: "Schedules", href: "/admin/schedules", icon: CalendarDays },
+      { title: "Audit", href: "/admin/audit", icon: ScrollText },
       { title: "Staff", href: "/admin/staff", icon: Users },
       { title: "Managers", href: "/admin/managers", icon: UserCog },
       { title: "Admins", href: "/admin/admins", icon: Shield },

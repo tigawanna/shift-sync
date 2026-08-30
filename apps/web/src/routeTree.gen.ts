@@ -24,6 +24,7 @@ import { Route as DashboardManagerIndexRouteImport } from './routes/_dashboard/m
 import { Route as DashboardStaffIndexRouteImport } from './routes/_dashboard/staff/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as DashboardAdminAdminsIndexRouteImport } from './routes/_dashboard/admin/admins/index'
+import { Route as DashboardAdminAuditIndexRouteImport } from './routes/_dashboard/admin/audit/index'
 import { Route as DashboardAdminLocationsIndexRouteImport } from './routes/_dashboard/admin/locations/index'
 import { Route as DashboardAdminManagersIndexRouteImport } from './routes/_dashboard/admin/managers/index'
 import { Route as DashboardAdminSchedulesIndexRouteImport } from './routes/_dashboard/admin/schedules/index'
@@ -110,6 +111,12 @@ const DashboardAdminAdminsIndexRoute =
     path: '/admin/admins/',
     getParentRoute: () => DashboardLayoutRoute,
   } as any)
+const DashboardAdminAuditIndexRoute =
+  DashboardAdminAuditIndexRouteImport.update({
+    id: '/admin/audit/',
+    path: '/admin/audit/',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
 const DashboardAdminLocationsIndexRoute =
   DashboardAdminLocationsIndexRouteImport.update({
     id: '/admin/locations/',
@@ -186,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/manager/': typeof DashboardManagerIndexRoute
   '/staff/': typeof DashboardStaffIndexRoute
   '/admin/admins/': typeof DashboardAdminAdminsIndexRoute
+  '/admin/audit/': typeof DashboardAdminAuditIndexRoute
   '/admin/locations/': typeof DashboardAdminLocationsIndexRoute
   '/admin/managers/': typeof DashboardAdminManagersIndexRoute
   '/admin/schedules/': typeof DashboardAdminSchedulesIndexRoute
@@ -211,6 +219,7 @@ export interface FileRoutesByTo {
   '/manager': typeof DashboardManagerIndexRoute
   '/staff': typeof DashboardStaffIndexRoute
   '/admin/admins': typeof DashboardAdminAdminsIndexRoute
+  '/admin/audit': typeof DashboardAdminAuditIndexRoute
   '/admin/locations': typeof DashboardAdminLocationsIndexRoute
   '/admin/managers': typeof DashboardAdminManagersIndexRoute
   '/admin/schedules': typeof DashboardAdminSchedulesIndexRoute
@@ -239,6 +248,7 @@ export interface FileRoutesById {
   '/_dashboard/manager/': typeof DashboardManagerIndexRoute
   '/_dashboard/staff/': typeof DashboardStaffIndexRoute
   '/_dashboard/admin/admins/': typeof DashboardAdminAdminsIndexRoute
+  '/_dashboard/admin/audit/': typeof DashboardAdminAuditIndexRoute
   '/_dashboard/admin/locations/': typeof DashboardAdminLocationsIndexRoute
   '/_dashboard/admin/managers/': typeof DashboardAdminManagersIndexRoute
   '/_dashboard/admin/schedules/': typeof DashboardAdminSchedulesIndexRoute
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/manager/'
     | '/staff/'
     | '/admin/admins/'
+    | '/admin/audit/'
     | '/admin/locations/'
     | '/admin/managers/'
     | '/admin/schedules/'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/manager'
     | '/staff'
     | '/admin/admins'
+    | '/admin/audit'
     | '/admin/locations'
     | '/admin/managers'
     | '/admin/schedules'
@@ -319,6 +331,7 @@ export interface FileRouteTypes {
     | '/_dashboard/manager/'
     | '/_dashboard/staff/'
     | '/_dashboard/admin/admins/'
+    | '/_dashboard/admin/audit/'
     | '/_dashboard/admin/locations/'
     | '/_dashboard/admin/managers/'
     | '/_dashboard/admin/schedules/'
@@ -448,6 +461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminAdminsIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/_dashboard/admin/audit/': {
+      id: '/_dashboard/admin/audit/'
+      path: '/admin/audit'
+      fullPath: '/admin/audit/'
+      preLoaderRoute: typeof DashboardAdminAuditIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/_dashboard/admin/locations/': {
       id: '/_dashboard/admin/locations/'
       path: '/admin/locations'
@@ -526,6 +546,7 @@ interface DashboardLayoutRouteChildren {
   DashboardManagerIndexRoute: typeof DashboardManagerIndexRoute
   DashboardStaffIndexRoute: typeof DashboardStaffIndexRoute
   DashboardAdminAdminsIndexRoute: typeof DashboardAdminAdminsIndexRoute
+  DashboardAdminAuditIndexRoute: typeof DashboardAdminAuditIndexRoute
   DashboardAdminLocationsIndexRoute: typeof DashboardAdminLocationsIndexRoute
   DashboardAdminManagersIndexRoute: typeof DashboardAdminManagersIndexRoute
   DashboardAdminSchedulesIndexRoute: typeof DashboardAdminSchedulesIndexRoute
@@ -543,6 +564,7 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardManagerIndexRoute: DashboardManagerIndexRoute,
   DashboardStaffIndexRoute: DashboardStaffIndexRoute,
   DashboardAdminAdminsIndexRoute: DashboardAdminAdminsIndexRoute,
+  DashboardAdminAuditIndexRoute: DashboardAdminAuditIndexRoute,
   DashboardAdminLocationsIndexRoute: DashboardAdminLocationsIndexRoute,
   DashboardAdminManagersIndexRoute: DashboardAdminManagersIndexRoute,
   DashboardAdminSchedulesIndexRoute: DashboardAdminSchedulesIndexRoute,

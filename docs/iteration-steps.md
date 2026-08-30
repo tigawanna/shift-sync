@@ -47,7 +47,7 @@ Admin schedules page: every location week + who is working where. Same OT/fairne
 - Tick Admin → Oversight
 - Tick Manager “on duty now”
 
-## 7. Audit trail
+## 7. Audit trail — done
 
 Log schedule writes (who, when, before, after). Manager can open history on a shift. Admin can export by date range + location.
 

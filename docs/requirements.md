@@ -218,6 +218,8 @@ The following are **deliberately unspecified**. Part of the evaluation is how yo
 
 **On duty now is a 15-second refetch** of assignments whose shift interval contains the current instant. Managers see their locations; admins see every location. Times are in the location timezone.
 
+**Schedule writes append an audit row** (actor, time, action, JSON before/after). Deleting a shift keeps the log (`shift_id` is not a foreign key). Admin export uses Coastal Eats HQ civil dates (`America/Los_Angeles`).
+
 ---
 
 ## Time Limit

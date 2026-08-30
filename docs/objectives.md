@@ -111,7 +111,7 @@ What a manager must be able to accomplish for the locations they run. Do this bl
 - [x] “On duty now” for their locations (live)
 - [ ] Notifications: pending swap/drop, overtime warnings, staff availability changes
 - [ ] Notification center + in-app / email-simulation preference
-- [ ] View the change history of any shift
+- [x] View the change history of any shift
 
 ---
 
@@ -141,6 +141,6 @@ What corporate admin must be able to accomplish across **all** locations.
 
 ### Audit and comms
 
-- [ ] Every schedule change logged: who, when, before, after
-- [ ] Export audit logs for a date range and location
+- [x] Every schedule change logged: who, when, before, after
+- [x] Export audit logs for a date range and location
 - [ ] Same notification center / preference model as other roles, scoped to org-wide events

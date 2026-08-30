@@ -1,4 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
+import { listManagerShiftAudit } from "./manager-audit.fn";
 import { getManagerLaborReport } from "./manager-labor.fn";
 import { listManagerSkills, listStaffForManagerShift } from "./manager-shifts.fn";
 import {
@@ -38,6 +39,14 @@ export function managerSkillsQueryOptions() {
   return queryOptions({
     queryKey: ["manager-skills"],
     queryFn: () => listManagerSkills(),
+  });
+}
+
+export function managerShiftAuditQueryOptions(shiftId: string) {
+  return queryOptions({
+    queryKey: ["manager-shift-audit", shiftId],
+    queryFn: () => listManagerShiftAudit({ data: { shiftId } }),
+    enabled: shiftId.length > 0,
   });
 }
 

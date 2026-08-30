@@ -6,6 +6,7 @@ import { location as locationTable } from "@/lib/drizzle/schema/locations-schema
 import { shift as shiftTable } from "@/lib/drizzle/schema/schedule-schema";
 import { skill as skillTable } from "@/lib/drizzle/schema/skills-schema";
 import { COVERAGE_STATUS } from "@/lib/schedule/coverage";
+import { recordScheduleAudit, snapshotShift } from "@/lib/schedule/audit.server";
 import { applyApprovedCoverage, getDbAndExpire } from "@/lib/schedule/coverage.server";
 import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq, inArray } from "drizzle-orm";
@@ -70,6 +71,7 @@ export const approveCoverage = createServerFn({ method: "POST" })
       throw new Error("That request is not waiting on a manager.");
     }
 
+    const before = await snapshotShift(db, row.request.shiftId);
     await db.transaction(async (tx) => {
       await applyApprovedCoverage(tx, row.request);
       await tx
@@ -80,6 +82,14 @@ export const approveCoverage = createServerFn({ method: "POST" })
           resolvedByUserId: session.user.id,
         })
         .where(eq(coverageRequest.id, row.request.id));
+    });
+    await recordScheduleAudit(db, {
+      locationId: row.locationId,
+      shiftId: row.request.shiftId,
+      actorUserId: session.user.id,
+      action: "coverage_approve",
+      before,
+      after: await snapshotShift(db, row.request.shiftId),
     });
 
     return { ok: true as const };

@@ -2,6 +2,7 @@ import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
 import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
+import { recordScheduleAudit } from "@/lib/schedule/audit.server";
 import { isPremiumStart } from "@/lib/schedule/labor";
 import {
   scheduleWeek as scheduleWeekTable,
@@ -343,6 +344,12 @@ export const publishManagerWeek = createServerFn({ method: "POST" })
         publishedAt: new Date(),
         publishedByUserId: session.user.id,
       });
+      await recordScheduleAudit(db, {
+        locationId: location.id,
+        actorUserId: session.user.id,
+        action: "publish",
+        after: { weekStart },
+      });
     }
 
     return loadWeekSchedule(session.user.id, location.id, weekStart);
@@ -373,6 +380,12 @@ export const unpublishManagerWeek = createServerFn({ method: "POST" })
           eq(scheduleWeekTable.weekStartDate, week.weekStart),
         ),
       );
+    await recordScheduleAudit(db, {
+      locationId: week.location.id,
+      actorUserId: session.user.id,
+      action: "unpublish",
+      before: { weekStart: week.weekStart },
+    });
 
     return loadWeekSchedule(session.user.id, week.location.id, week.weekStart);
   });
@@ -391,6 +404,15 @@ export const deleteManagerWeek = createServerFn({ method: "POST" })
 
     const { rangeStart, rangeEnd } = weekStartUtcRange(week.weekStart, week.location.timezone);
     const db = await getDb();
+    await recordScheduleAudit(db, {
+      locationId: week.location.id,
+      actorUserId: session.user.id,
+      action: "delete_week",
+      before: {
+        weekStart: week.weekStart,
+        shiftCount: week.days.flatMap((day) => day.shifts).length,
+      },
+    });
 
     await db
       .delete(shiftTable)

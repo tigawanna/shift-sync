@@ -1,3 +1,4 @@
+import { ShiftHistory } from "./ShiftHistory";
 import { WEEKLY_HOURS_LIMIT } from "@/lib/schedule/assign-constraints";
 import { SearchBox } from "@/components/search/SearchBox";
 import { ConfirmAction } from "@/components/ui/confirm-action";
@@ -109,6 +110,8 @@ function ShiftSheetBody({ panel, onClose }: { panel: ManagerShiftPanel; onClose:
       queryClient.invalidateQueries({ queryKey: ["manager-shift-staff"] }),
       queryClient.invalidateQueries({ queryKey: ["staff-schedule"] }),
       queryClient.invalidateQueries({ queryKey: ["manager-labor"] }),
+      queryClient.invalidateQueries({ queryKey: ["manager-shift-audit"] }),
+      queryClient.invalidateQueries({ queryKey: ["admin-audit"] }),
     ]);
   };
 
@@ -319,6 +322,7 @@ function ShiftSheetBody({ panel, onClose }: { panel: ManagerShiftPanel; onClose:
           onUnassign={(userId) => unassign.mutate(userId)}
         />
       )}
+      {creating ? null : <ShiftHistory shiftId={shiftId} />}
     </>
   );
 }

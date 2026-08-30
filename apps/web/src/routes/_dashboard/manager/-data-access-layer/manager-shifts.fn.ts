@@ -2,6 +2,7 @@ import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
 import { cancelActiveCoverageForShift } from "@/lib/schedule/coverage.server";
+import { recordScheduleAudit, snapshotShift } from "@/lib/schedule/audit.server";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
 import { location as locationTable, userLocation } from "@/lib/drizzle/schema/locations-schema";
 import {
@@ -420,8 +421,9 @@ export const createManagerShift = createServerFn({ method: "POST" })
 
     assertCanMutate(startsAt, Boolean(publication), "create a shift");
 
+    const shiftId = crypto.randomUUID();
     await db.insert(shiftTable).values({
-      id: crypto.randomUUID(),
+      id: shiftId,
       locationId: location.id,
       skillId: data.skillId,
       startsAt,
@@ -429,6 +431,13 @@ export const createManagerShift = createServerFn({ method: "POST" })
       headcountNeeded: data.headcountNeeded,
       notes: data.notes?.trim() || null,
       createdByUserId: session.user.id,
+    });
+    await recordScheduleAudit(db, {
+      locationId: location.id,
+      shiftId,
+      actorUserId: session.user.id,
+      action: "create",
+      after: await snapshotShift(db, shiftId),
     });
 
     return { weekStart };
@@ -451,6 +460,7 @@ export const updateManagerShift = createServerFn({ method: "POST" })
     assertCanMutate(startsAt, context.published, "move this shift");
 
     const db = await getDb();
+    const before = await snapshotShift(db, data.shiftId);
     await db
       .update(shiftTable)
       .set({
@@ -462,6 +472,14 @@ export const updateManagerShift = createServerFn({ method: "POST" })
       })
       .where(eq(shiftTable.id, data.shiftId));
     await cancelActiveCoverageForShift(db, data.shiftId, session.user.id);
+    await recordScheduleAudit(db, {
+      locationId: context.shift.locationId,
+      shiftId: data.shiftId,
+      actorUserId: session.user.id,
+      action: "update",
+      before,
+      after: await snapshotShift(db, data.shiftId),
+    });
 
     return { weekStart: mondayOfWeekContaining(startsAt, context.shift.location.timezone) };
   });
@@ -475,8 +493,16 @@ export const deleteManagerShift = createServerFn({ method: "POST" })
     assertCanMutate(context.shift.startsAt, context.published, "delete this shift");
 
     const db = await getDb();
+    const before = await snapshotShift(db, data.shiftId);
     await cancelActiveCoverageForShift(db, data.shiftId, session.user.id);
     await db.delete(shiftTable).where(eq(shiftTable.id, data.shiftId));
+    await recordScheduleAudit(db, {
+      locationId: context.shift.locationId,
+      shiftId: data.shiftId,
+      actorUserId: session.user.id,
+      action: "delete",
+      before,
+    });
     return { weekStart: context.weekStart };
   });
 
@@ -583,6 +609,13 @@ export const assignManagerShift = createServerFn({ method: "POST" })
       userId: data.userId,
       overrideReason: data.overrideReason ?? null,
     });
+    await recordScheduleAudit(db, {
+      locationId: context.shift.locationId,
+      shiftId: data.shiftId,
+      actorUserId: session.user.id,
+      action: "assign",
+      after: await snapshotShift(db, data.shiftId),
+    });
 
     return { ok: true as const };
   });
@@ -601,6 +634,7 @@ export const unassignManagerShift = createServerFn({ method: "POST" })
     assertCanMutate(context.shift.startsAt, context.published, "change assignments");
 
     const db = await getDb();
+    const before = await snapshotShift(db, data.shiftId);
     await db
       .delete(shiftAssignmentTable)
       .where(
@@ -609,6 +643,14 @@ export const unassignManagerShift = createServerFn({ method: "POST" })
           eq(shiftAssignmentTable.userId, data.userId),
         ),
       );
+    await recordScheduleAudit(db, {
+      locationId: context.shift.locationId,
+      shiftId: data.shiftId,
+      actorUserId: session.user.id,
+      action: "unassign",
+      before,
+      after: await snapshotShift(db, data.shiftId),
+    });
 
     return { ok: true as const };
   });
