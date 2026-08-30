@@ -61,9 +61,9 @@ function LocationListEmpty({
 export function LocationList() {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
   const search = routeApi.useSearch();
-  const page = search.page ?? 1;
+  const page = search.page;
   const perPage = search.perPage;
-  const sq = (search.sq ?? "").trim();
+  const sq = search.sq.trim();
   const hasSearch = sq.length > 0;
 
   const { data } = useSuspenseQuery(listLocationsQueryOptions({ page, perPage, sq }));

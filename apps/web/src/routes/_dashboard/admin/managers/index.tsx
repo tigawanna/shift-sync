@@ -11,7 +11,7 @@ import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
 const managersSearchSchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
   perPage: z.coerce.number().int().min(1).max(100).optional().default(ADMIN_LIST_PER_PAGE),
-  sq: z.string().optional(),
+  sq: z.string().optional().default(""),
 });
 
 export const Route = createFileRoute("/_dashboard/admin/managers/")({

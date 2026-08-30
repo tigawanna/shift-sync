@@ -34,8 +34,8 @@ export function ListUsers() {
   const search = routeApi.useSearch();
   const navigate = routeApi.useNavigate();
 
-  const page = search.page ?? 1;
-  const q = (search.q ?? "").trim();
+  const page = search.page;
+  const q = search.q.trim();
 
   // fetch with committed URL values (page, q) — not inputValue
 }
@@ -67,7 +67,11 @@ const { inputValue, onSearchChange, isDebouncing } = usePageSearchQuery(ROUTE_ID
 ### Search param contract
 
 - URL param is always **`q`** (not `sq` / `search`).
-- Route `validateSearch` must include `q: z.string().optional()` and `page: z.coerce.number().int().min(1).optional()`.
+- Route `validateSearch` must default the list params so the list never re-falls-back:
+  `page: z.coerce.number().int().min(1).optional().default(1)`,
+  `perPage: z.coerce.number().int().min(1).max(100).optional().default(ADMIN_LIST_PER_PAGE)`,
+  `q: z.string().optional().default("")`.
+  Do not write `search.page ?? 1` / `search.q ?? ""` in the list or loader.
 - Debounced commit clears `page` so results start at page 1.
 - Default debounce is **400ms**.
 - `clearSearch()` clears `q` + `page` immediately (no debounce) — use it on search-empty CTAs.
@@ -124,8 +128,8 @@ const routeApi = getRouteApi(ROUTE_ID);
 export function ListUsers() {
   const { inputValue, onSearchChange, isDebouncing } = usePageSearchQuery(ROUTE_ID);
   const search = routeApi.useSearch();
-  const page = search.page ?? 1;
-  const q = (search.q ?? "").trim();
+  const page = search.page;
+  const q = search.q.trim();
 
   const { data } = useSuspenseQuery(
     teamMembersQueryOptions({ page, search: q || undefined }),
@@ -175,8 +179,8 @@ Users, team, and locations style:
 
 ```tsx
 const search = routeApi.useSearch();
-const page = search.page ?? 1;
-const q = (search.q ?? "").trim();
+const page = search.page;
+const q = search.q.trim();
 
 const { data } = useSuspenseQuery(thingsQueryOptions({ page, search: q || undefined }));
 const items = data.items;
@@ -193,8 +197,8 @@ For query-driven collections (see `ListMovies` in the realworld app):
 ```tsx
 const search = routeApi.useSearch();
 const navigate = routeApi.useNavigate();
-const page = search.page ?? 1;
-const q = (search.q ?? "").trim();
+const page = search.page;
+const q = search.q.trim();
 
 const { data, isLoading } = useLiveQuery(
   (qb) =>
@@ -228,7 +232,7 @@ const { meta } = useTSDBQueryMeta(COLLECTION_QUERY_KEY, { page, q });
 
 ## Route checklist
 
-1. `validateSearch`: `page`, `q`, plus any sort/filter enums.
+1. `validateSearch`: `page`, `perPage`, `q`/`sq` with Zod `.default(...)`, plus any sort/filter enums.
 2. `loaderDeps`: `{ page: search.page, q: search.q }` + prefetch in `loader`.
 3. Route file: header, create dialogs, `<Suspense><ListThing /></Suspense>`.
 4. List component: `routes/_dashboard/<area>/<page>/-components/List*.tsx` with hardcoded `ROUTE_ID`.

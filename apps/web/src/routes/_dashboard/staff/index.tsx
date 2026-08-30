@@ -15,7 +15,7 @@ const staffSearchSchema = z.object({
 });
 
 export const Route = createFileRoute("/_dashboard/staff/")({
-  validateSearch: (search) => staffSearchSchema.parse(search),
+  validateSearch: staffSearchSchema,
   loaderDeps: ({ search }) => ({ month: search.month }),
   loader: async ({ context, deps }) => {
     const month = deps.month ?? currentYearMonth("UTC");

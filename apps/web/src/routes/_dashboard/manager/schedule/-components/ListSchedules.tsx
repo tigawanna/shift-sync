@@ -1,4 +1,3 @@
-import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
 import { TSRListPagination } from "@/components/pagination/TSRListPagination";
 import { SearchBox } from "@/components/search/SearchBox";
 import { usePageSearchQuery } from "@/components/search/use-page-search-query";
@@ -65,9 +64,9 @@ function ScheduleListEmpty({
 export function ListSchedules() {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
   const search = routeApi.useSearch();
-  const page = search.page ?? 1;
-  const perPage = search.perPage ?? ADMIN_LIST_PER_PAGE;
-  const sq = (search.sq ?? "").trim();
+  const page = search.page;
+  const perPage = search.perPage;
+  const sq = search.sq.trim();
   const hasSearch = sq.length > 0;
 
   const { data } = useSuspenseQuery(

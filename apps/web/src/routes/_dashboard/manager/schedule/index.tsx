@@ -9,14 +9,14 @@ import { listManagerSchedulesQueryOptions } from "../-data-access-layer/manager-
 import { ListSchedules } from "./-components/ListSchedules";
 
 const scheduleSearchSchema = z.object({
-  page: z.coerce.number().int().min(1).optional(),
-  perPage: z.coerce.number().int().min(1).max(100).optional(),
-  sq: z.string().optional(),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  perPage: z.coerce.number().int().min(1).max(100).optional().default(ADMIN_LIST_PER_PAGE),
+  sq: z.string().optional().default(""),
   locationId: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_dashboard/manager/schedule/")({
-  validateSearch: (search) => scheduleSearchSchema.parse(search),
+  validateSearch: scheduleSearchSchema,
   loaderDeps: ({ search }) => ({
     page: search.page,
     perPage: search.perPage,
@@ -26,8 +26,8 @@ export const Route = createFileRoute("/_dashboard/manager/schedule/")({
   loader: async ({ context, deps }) => {
     await context.queryClient.ensureQueryData(
       listManagerSchedulesQueryOptions({
-        page: deps.page ?? 1,
-        perPage: deps.perPage ?? ADMIN_LIST_PER_PAGE,
+        page: deps.page,
+        perPage: deps.perPage,
         sq: deps.sq,
         locationId: deps.locationId,
       }),

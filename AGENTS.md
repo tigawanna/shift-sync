@@ -33,7 +33,7 @@ release. Add a tool name to select part of the graph. For example, run
 
 **Control flow:** Prefer early returns over nested `if`s and JSX ternary soup. Guard pending/empty/error first, then render the happy path. One-line `cond ? a : b` is fine; stacked `x ? a : y ? b : c` in JSX is not — extract a helper or early-return.
 
-**Lists / search / pagination:** Follow `docs/paginated-list-pattern.md` (`getRouteApi`, `usePageSearchQuery`, `SearchBox`, `TSRListPagination`). Thin route (header + actions + `<Suspense>`), list in `-components/List*.tsx`. Fetch from committed URL `page`/`q`, not the live input. Shared utilities over hand-rolled `useEffect` + `navigate`.
+**Lists / search / pagination:** Follow `docs/paginated-list-pattern.md` (`getRouteApi`, `usePageSearchQuery`, `SearchBox`, `TSRListPagination`). Thin route (header + actions + `<Suspense>`), list in `-components/List*.tsx`. Fetch from committed URL `page`/`q`, not the live input. Shared utilities over hand-rolled `useEffect` + `navigate`. Put defaults on the route `validateSearch` schema (`page`, `perPage`, `sq`/`q`) — do not re-default in the list (`search.page ?? 1`). After parse, use `search.page`, `search.perPage`, and `search.sq.trim()` directly. Put defaults on the route `validateSearch` schema (`page`, `perPage`, `sq`/`q`) — do not re-default in the list (`search.page ?? 1`). After parse, use `search.page`, `search.perPage`, and `search.sq.trim()` directly.
 
 **UI:** shadcn only. DaisyUI is limited to theme utilities, button classes, or tiny standalone bits with no serious a11y needs. Theme tokens, no hardcoded colors. Responsive (`md:`, `lg:`) plus container queries when a sidebar can change the viewport.
 
