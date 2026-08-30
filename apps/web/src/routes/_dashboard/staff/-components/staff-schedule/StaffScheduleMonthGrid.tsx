@@ -9,6 +9,8 @@ import {
   LANE_PX,
   WEEK_GRID_COLS,
   WEEKDAYS,
+  hoursOnDate,
+  longestWorkedStreak,
   weekScheduledHours,
   weekSpans,
 } from "./staff-schedule.spans";
@@ -17,6 +19,7 @@ export function StaffScheduleMonthGrid({
   month,
   weeks,
   shifts,
+  hoursByDate,
   availabilityByDate,
   canEditAvailability,
   onMarkAvailable,
@@ -26,6 +29,7 @@ export function StaffScheduleMonthGrid({
   month: string;
   weeks: string[][];
   shifts: StaffScheduleShift[];
+  hoursByDate: Record<string, number>;
   availabilityByDate: Map<string, DayAvailability>;
   canEditAvailability: boolean;
   onMarkAvailable: (date: string) => void;
@@ -57,6 +61,7 @@ export function StaffScheduleMonthGrid({
               const laneCount = spans.reduce((max, span) => Math.max(max, span.lane + 1), 0);
               const bodyHeight = Math.max(64, 36 + laneCount * LANE_PX);
               const hours = weekScheduledHours(weekDates, shifts);
+              const consecutiveDays = longestWorkedStreak(weekDates, hoursByDate);
               const weekStart = weekDates[0] ?? "";
 
               return (
@@ -72,6 +77,7 @@ export function StaffScheduleMonthGrid({
                         date={date}
                         inMonth={yearMonthOf(date) === month}
                         isToday={date === today}
+                        dailyHours={hoursOnDate(hoursByDate, date)}
                         availability={availabilityByDate.get(date) ?? null}
                         canEdit={canEditAvailability}
                         onMarkAvailable={onMarkAvailable}
@@ -81,7 +87,9 @@ export function StaffScheduleMonthGrid({
                     ))}
                     <div
                       className="pointer-events-none absolute inset-x-0 top-8 bottom-1.5 grid grid-cols-7 gap-x-0.5 px-0.5"
-                      style={{ gridTemplateRows: `repeat(${Math.max(laneCount, 1)}, ${LANE_PX}px)` }}
+                      style={{
+                        gridTemplateRows: `repeat(${Math.max(laneCount, 1)}, ${LANE_PX}px)`,
+                      }}
                     >
                       {spans.map((span) => (
                         <div
@@ -100,7 +108,11 @@ export function StaffScheduleMonthGrid({
                       ))}
                     </div>
                   </div>
-                  <WeekHoursCell hours={hours} weekStart={weekStart} />
+                  <WeekHoursCell
+                    hours={hours}
+                    weekStart={weekStart}
+                    consecutiveDays={consecutiveDays}
+                  />
                 </div>
               );
             })}

@@ -8,6 +8,7 @@ import {
   shiftAssignment as shiftAssignmentTable,
 } from "@/lib/drizzle/schema/schedule-schema";
 import { skill as skillTable } from "@/lib/drizzle/schema/skills-schema";
+import { hoursByLocalDate } from "@/lib/schedule/assign-constraints";
 import {
   addDaysYmd,
   addMonthsYm,
@@ -30,14 +31,14 @@ export const listMyStaffScheduleInputSchema = z.object({
 
 export type ListMyStaffScheduleInput = z.infer<typeof listMyStaffScheduleInputSchema>;
 
-// Pad ±1 day in UTC so overnight/timezone shifts at the month edges still overlap SQL.
+// Pad a full week so grid overflow days and consecutive-day streaks at month edges are complete.
 function monthUtcOverlapRange(month: string) {
   const monthStart = monthStartYmd(month);
   const monthEndExclusive = monthStartYmd(addMonthsYm(month, 1));
 
   return {
-    rangeStart: zonedWallTimeToUtc(addDaysYmd(monthStart, -1), "00:00", "UTC"),
-    rangeEnd: zonedWallTimeToUtc(addDaysYmd(monthEndExclusive, 1), "00:00", "UTC"),
+    rangeStart: zonedWallTimeToUtc(addDaysYmd(monthStart, -8), "00:00", "UTC"),
+    rangeEnd: zonedWallTimeToUtc(addDaysYmd(monthEndExclusive, 8), "00:00", "UTC"),
   };
 }
 
@@ -49,32 +50,31 @@ async function selectMyAssignments(
 ) {
   const { rangeStart, rangeEnd } = monthUtcOverlapRange(month);
 
-  return db
-    .select({
-      shift: shiftTable,
-      location: locationTable,
-      skill: skillTable,
-    })
-    .from(shiftAssignmentTable)
-    .innerJoin(shiftTable, eq(shiftAssignmentTable.shiftId, shiftTable.id))
-    .innerJoin(locationTable, eq(shiftTable.locationId, locationTable.id))
-    // Drop assignments at locations they are no longer certified for.
-    .innerJoin(
-      userLocation,
-      and(
-        eq(userLocation.userId, userId),
-        eq(userLocation.locationId, shiftTable.locationId),
-      ),
-    )
-    .innerJoin(skillTable, eq(shiftTable.skillId, skillTable.id))
-    .where(
-      and(
-        eq(shiftAssignmentTable.userId, userId),
-        lt(shiftTable.startsAt, rangeEnd),
-        gt(shiftTable.endsAt, rangeStart),
-      ),
-    )
-    .orderBy(asc(shiftTable.startsAt));
+  return (
+    db
+      .select({
+        shift: shiftTable,
+        location: locationTable,
+        skill: skillTable,
+      })
+      .from(shiftAssignmentTable)
+      .innerJoin(shiftTable, eq(shiftAssignmentTable.shiftId, shiftTable.id))
+      .innerJoin(locationTable, eq(shiftTable.locationId, locationTable.id))
+      // Drop assignments at locations they are no longer certified for.
+      .innerJoin(
+        userLocation,
+        and(eq(userLocation.userId, userId), eq(userLocation.locationId, shiftTable.locationId)),
+      )
+      .innerJoin(skillTable, eq(shiftTable.skillId, skillTable.id))
+      .where(
+        and(
+          eq(shiftAssignmentTable.userId, userId),
+          lt(shiftTable.startsAt, rangeEnd),
+          gt(shiftTable.endsAt, rangeStart),
+        ),
+      )
+      .orderBy(asc(shiftTable.startsAt))
+  );
 }
 
 // Published location-weeks this person can see (same certification join as assignments).
@@ -97,8 +97,6 @@ async function selectMyPublishedWeeks(db: Awaited<ReturnType<typeof getDb>>, use
 async function loadMyStaffSchedule(month: string, userId: string) {
   const db = await getDb();
   const { rangeStart, rangeEnd } = monthUtcOverlapRange(month);
-
-  // const 
 
   // Assignments, published weeks, and certified-location count in one round.
   const [assignmentRows, publishedWeeks, certifiedLocationCount] = await Promise.all([
@@ -147,21 +145,26 @@ async function loadMyStaffSchedule(month: string, userId: string) {
 
   // Staff only see published weeks.
   const publishedShifts = mapped.filter((shift) => shift.published);
+  const hoursByDate: Record<string, number> = {};
+  for (const shift of publishedShifts) {
+    for (const [ymd, hours] of hoursByLocalDate(shift.startsAt, shift.endsAt, shift.timezone)) {
+      hoursByDate[ymd] = (hoursByDate[ymd] ?? 0) + hours;
+    }
+  }
   // SQL used a padded UTC window; keep only shifts whose local start is in this month.
   const monthShifts = publishedShifts.filter((shift) => yearMonthOf(shift.startDate) === month);
   // One group per local start date for the list UI.
-  const days = [...new Set(monthShifts.map((shift) => shift.startDate))]
-    .sort()
-    .map((date) => ({
-      date,
-      label: formatDayLabel(date),
-      shifts: monthShifts.filter((shift) => shift.startDate === date),
-    }));
+  const days = [...new Set(monthShifts.map((shift) => shift.startDate))].sort().map((date) => ({
+    date,
+    label: formatDayLabel(date),
+    shifts: monthShifts.filter((shift) => shift.startDate === date),
+  }));
 
   return {
     month,
     monthLabel: formatMonthLabel(month),
     monthlyHours: monthShifts.reduce((total, shift) => total + shift.hours, 0),
+    hoursByDate,
     days,
     meta: {
       locationCount: certifiedLocationCount,

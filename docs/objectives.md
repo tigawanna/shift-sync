@@ -29,8 +29,8 @@ What a staff person must be able to do for themselves.
 - [x] See shift times in **that location’s timezone**, not the staff member’s browser timezone
 - [x] Treat an overnight shift (e.g. 11pm–3am) as one shift
 - [x] See weekly hours on their calendar, with a 35h warning and 40h limit readout
-- [ ] See daily-hour warnings (8h warn / 12h hard block) on their own days
-- [ ] See a 6th/7th consecutive-day warning on their own week
+- [x] See daily-hour warnings (8h warn / 12h hard block) on their own days
+- [x] See a 6th/7th consecutive-day warning on their own week
 
 ### Coverage — **needs manager** (approve + edit-cancels-pending)
 

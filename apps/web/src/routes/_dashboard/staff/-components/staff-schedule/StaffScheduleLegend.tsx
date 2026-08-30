@@ -15,6 +15,14 @@ export function StaffScheduleLegend() {
         <LegendSwatch className="ring-2 ring-[#8b95a7]" />
         Day off
       </li>
+      <li className="flex items-center gap-1.5">
+        <LegendSwatch className="bg-warning" />
+        Over 8h in a day / 6th consecutive day
+      </li>
+      <li className="flex items-center gap-1.5">
+        <LegendSwatch className="bg-destructive/80" />
+        Over 12h in a day / 7th consecutive day
+      </li>
     </ul>
   );
 }

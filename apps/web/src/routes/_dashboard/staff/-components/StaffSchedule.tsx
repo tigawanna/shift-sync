@@ -161,6 +161,7 @@ export function StaffSchedule() {
         month={month}
         weeks={weeks}
         shifts={shifts}
+        hoursByDate={schedule?.hoursByDate ?? {}}
         availabilityByDate={availabilityByDate}
         canEditAvailability={availabilityQuery.isSuccess}
         onMarkAvailable={markAvailable}

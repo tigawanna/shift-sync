@@ -33,7 +33,9 @@ export function clipShiftToWeek(shift: StaffScheduleShift, weekDates: string[]) 
   return { startCol, endCol };
 }
 
-function mergeAdjacent(events: Array<{ startCol: number; endCol: number; shift: StaffScheduleShift }>) {
+function mergeAdjacent(
+  events: Array<{ startCol: number; endCol: number; shift: StaffScheduleShift }>,
+) {
   const sorted = [...events].sort(
     (a, b) =>
       a.shift.locationId.localeCompare(b.shift.locationId) ||
@@ -95,6 +97,25 @@ export function weekScheduledHours(weekDates: string[], shifts: StaffScheduleShi
   return shifts
     .filter((shift) => clipShiftToWeek(shift, weekDates))
     .reduce((total, shift) => total + shift.hours, 0);
+}
+
+export function hoursOnDate(hoursByDate: Record<string, number>, date: string) {
+  return hoursByDate[date] ?? 0;
+}
+
+/** Longest Mon–Sun run of dates with any assigned time. A 1h shift counts as a day. */
+export function longestWorkedStreak(weekDates: string[], hoursByDate: Record<string, number>) {
+  let longest = 0;
+  let run = 0;
+  for (const date of weekDates) {
+    if (hoursOnDate(hoursByDate, date) > 0) {
+      run += 1;
+      longest = Math.max(longest, run);
+    } else {
+      run = 0;
+    }
+  }
+  return longest;
 }
 
 export function monthWeeks(dates: string[]) {

@@ -12,11 +12,13 @@ import {
   dayHasOffMark,
   type DayAvailability,
 } from "./staff-availability.day";
+import { StaffScheduleDayHours } from "./StaffScheduleDayHours";
 
 export function StaffScheduleDayCell({
   date,
   inMonth,
   isToday,
+  dailyHours,
   availability,
   canEdit,
   onMarkAvailable,
@@ -26,6 +28,7 @@ export function StaffScheduleDayCell({
   date: string;
   inMonth: boolean;
   isToday: boolean;
+  dailyHours: number;
   availability: DayAvailability | null;
   canEdit: boolean;
   onMarkAvailable: (date: string) => void;
@@ -73,6 +76,7 @@ export function StaffScheduleDayCell({
           >
             {date.slice(8)}
           </button>
+          <StaffScheduleDayHours date={date} hours={dailyHours} />
         </div>
         {label ? (
           <p
