@@ -1,6 +1,6 @@
 # ShiftSync
 
-Multi-location staff scheduling platform for **Coastal Eats** — a fictional restaurant group with **4 locations** across **2 time zones**.
+Multi-location staff scheduling platform for **Coastal Eats**, a fictional restaurant group with **4 locations** across **2 time zones**.
 
 | Package | Path | Purpose |
 |---------|------|---------|
@@ -8,10 +8,16 @@ Multi-location staff scheduling platform for **Coastal Eats** — a fictional re
 
 ## Stack
 
-- **TanStack** — Router, Query, Start (SSR via Nitro)
-- **Drizzle ORM** — schema, migrations, type-safe queries
-- **Turso** — libSQL database (local `file:./data/shift-sync.db` in dev, remote in production)
-- **Vercel** — deployment target
+- **TanStack**: Router, Query, Start (SSR via Nitro)
+- **Drizzle ORM**: schema, migrations, type-safe queries
+- **Turso**: libSQL database (local `file:./data/shift-sync.db` in dev, remote in production)
+- **Vercel**: deployment target
+
+### Why TanStack Start (and what I would do instead)
+
+I picked **TanStack Start** for iteration speed: one repo, file routes, server functions next to the UI, no separate API project to keep in sync during a 72-hour build. This product does **not** need SSR. A staff calendar and a manager board are authenticated, post-login screens. A standalone SPA with **TanStack Router** plus a small API server would have been a fine, and more typical, split.
+
+Because we are on **server functions**, more of the shaping happens on the server: filters, joins, constraint checks, and view-ready payloads. If I went full SPA, I would keep the API closer to **table-filtered rows** (auth + scope + indexes) and let the client mold those rows into the shapes the screens need: hours by day, consecutive-day streaks, fairness buckets, board columns. That is the original SPA bargain: the server is a query surface; the browser distributes the compute. Here the server functions take more of that work so the UI can stay thin and the 72-hour path stays one toolchain.
 
 ## Prerequisites
 
@@ -44,19 +50,23 @@ pnpm --filter web db:seed
 
 For production Turso, set `DATABASE_URL` (`libsql://…`) and `DATABASE_AUTH_TOKEN` in your Vercel project environment variables.
 
-Password for every seed account: **`CoastalEats!seed`**
-
 ### Log in as each role
 
-Easiest path: sign in at `/auth`, then as admin **Impersonate** from Staff / Managers / Admins lists.
+Sign in at `/auth`. Seed emails use `costal-eats.com` (that spelling), except the admin account.
 
-| Role | Email | What to open |
-| --- | --- | --- |
-| Admin | `admin@coastaleats.test` | `/admin`, `/admin/schedules`, `/admin/audit` |
-| Manager | `manager-001@costal-eats.com` … `manager-008@costal-eats.com` | `/manager/schedule`, `/manager/requests`, `/manager/team` |
-| Staff | `staff-001@costal-eats.com` … `staff-041@costal-eats.com` | `/staff` calendar + coverage under it |
+```
+password:     CoastalEats!seed
 
-Emails use `costal-eats.com` (seed spelling), except the admin account.
+admin:        admin@coastaleats.test
+manager:      manager-001@costal-eats.com
+staff:        staff-001@costal-eats.com
+```
+
+> [!TIP]
+> Same password for every seed user. More managers: `manager-001` through `manager-008`. More staff: `staff-001` through `staff-041`, all `@costal-eats.com`. After login: admin `/admin`, manager `/manager/schedule`, staff `/staff`.
+
+> [!NOTE]
+> **Impersonation** is Better Auth’s admin plugin. Sign in as admin, then **Sign in as** on Staff / Managers lists. Handy for a demo; it should stay a **dev-only** feature (off in a real production org). Stop from the impersonation banner.
 
 **Staff 41** (`staff-041@costal-eats.com`) is the overtime / timezone fixture: certified at Harbor House + Pier 39 (Pacific) and Atlantic Table (Eastern), desired hours **25**, overlapping seed shifts across sites. Use calendar `?month=` for a seeded week (often **2026-08**).
 
@@ -64,21 +74,22 @@ Locations: Harbor House and Pier 39 Bistro (`America/Los_Angeles`); Atlantic Tab
 
 ### Evaluation scenarios
 
-1. **Sunday night chaos** — Staff: drop the shift. Another staff: pick it up. Manager **Coverage** (`/manager/requests`): approve. Assignment does not move until approve.
-2. **Overtime trap** — Impersonate Staff 41; week hours include every location. As a manager of Harbor House or Pier 39, open that week: labor table, OT on bars, assign sheet “would be Xh”.
-3. **Timezone tangle** — Availability is matched in the **shift location** timezone, not the browser. Staff 41’s “9–5” is 9–5 Pacific at Pier 39 and 9–5 Eastern at Atlantic Table.
-4. **Simultaneous assignment** — Two managers assigning the same person to overlapping times: the write re-reads overlaps in a transaction and rejects the second with a double-booking error.
-5. **Fairness complaint** — Manager week board: **Premium** on Fri/Sat starts at 16:00 local. Labor report: premium counts + fairness score 0–100.
-6. **Regret swap** — Staff A withdraws before manager approval. After approval, A cannot withdraw; a later shift edit does not unwind the swap (see assumptions below).
+1. **Sunday night chaos**: Staff drop the shift. Another staff member picks it up. Manager **Coverage** (`/manager/requests`): approve. Assignment does not move until approve.
+2. **Overtime trap**: Impersonate Staff 41; week hours include every location. As a manager of Harbor House or Pier 39, open that week: labor table, OT on bars, assign sheet “would be Xh”.
+3. **Timezone tangle**: Availability is matched in the **shift location** timezone, not the browser. Staff 41’s “9–5” is 9–5 Pacific at Pier 39 and 9–5 Eastern at Atlantic Table.
+4. **Simultaneous assignment**: Two managers assigning the same person to overlapping times: the write re-reads overlaps in a transaction and rejects the second with a double-booking error.
+5. **Fairness complaint**: Manager week board: **Premium** on Fri/Sat starts at 16:00 local. Labor report: premium counts + fairness score 0–100.
+6. **Regret swap**: Staff A withdraws before manager approval. After approval, A cannot withdraw; a later shift edit does not unwind the swap (see assumptions below).
 
 Role checklist: [docs/objectives.md](./docs/objectives.md). Full decision notes: [docs/requirements.md](./docs/requirements.md).
 
 ### Known limitations
 
 - “Email” is a flag on the notification row, not SMTP.
-- Live updates are a **15s refetch**, not websockets.
 - Admin schedules are oversight (who works where, labor, on duty), not the manager edit board.
 - Concurrent assign integrity is a transaction re-check on SQLite, not an exclusion constraint.
+
+**Realtime is long polling, not a push channel.** Schedule, coverage, notifications, and “on duty now” refetch on a **15-second** interval (TanStack Query). That is the fit for a **serverless** host (Vercel / Nitro functions): there is no long-lived process to hold SSE or WebSocket connections, and holding those open is billed and timed out as request duration. On a more serious setup (a persistent Node/Go service, or a dedicated realtime layer), SSE or WebSockets would be the better push path. Mutations still invalidate queries immediately, so the actor who wrote sees the change without waiting for the next poll.
 
 ### Assumptions (ambiguous requirements)
 
@@ -90,7 +101,7 @@ The brief left these unspecified. Choices in the product:
 | Desired hours vs availability | Separate. Availability is *when* they can work; desired hours is a weekly target. Unset week = no target. Desired hours does not change assign eligibility. Empty weekly windows = open except blocked exceptions. |
 | Consecutive days (1h vs 11h) | Any assigned time on a civil date in the location week counts as a worked day. Overnight hours that land on a date count for that date. |
 | Edit after swap approval | Approval already moved the assignment. Later edit is a normal shift edit (48h cutoff still applies). Current assignee stays. Pending (not-yet-approved) swap/drop on that shift is cancelled and parties are notified. The approved swap is not unwound. |
-| Location spanning a timezone boundary | One IANA timezone per location. Shifts, availability, overnight splits, and weekly hours use that stored zone — not the browser and not a second zone for a nearby state. |
+| Location spanning a timezone boundary | One IANA timezone per location. Shifts, availability, overnight splits, and weekly hours use that stored zone, not the browser and not a second zone for a nearby state. |
 
 Also: 40h is over the weekly limit with a confirm, not a hard assign block (12h daily is a hard block). OT is projected at **$22/h × 1.5** over 40h, summing hours at every location. Premium is Fri/Sat start at **16:00** location-local. Audit export uses Coastal Eats HQ dates (`America/Los_Angeles`).
 
@@ -122,4 +133,4 @@ vercel deploy
 
 ## Project scope
 
-ShiftSync handles real-world workforce scheduling complexity — multi-location coverage, time zones, manager workflows, and staff visibility — while staying intuitive for both managers and staff.
+ShiftSync handles real-world workforce scheduling complexity (multi-location coverage, time zones, manager workflows, and staff visibility) while staying intuitive for both managers and staff.
