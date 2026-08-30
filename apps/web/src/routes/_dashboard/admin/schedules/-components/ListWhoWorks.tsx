@@ -87,9 +87,7 @@ export function ListWhoWorks() {
       />
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <p className="text-muted-foreground text-xs">
-          {total} assignments this week
-          {search.locationId ? " at this location" : " across locations"}. Times use each location
-          timezone.
+          {`${total} assignments this week${search.locationId ? " at this location" : " across locations"}. Times use each location timezone.`}
         </p>
         <SearchBox
           keyword={inputValue}

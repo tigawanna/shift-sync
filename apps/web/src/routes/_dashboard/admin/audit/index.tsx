@@ -8,7 +8,6 @@ import { Suspense } from "react";
 import { z } from "zod";
 import { DashboardPageHeader } from "../../-components/DashboardPageHeader";
 import { listAdminAuditQueryOptions } from "../-data-access-layer/admin-audit.query-options";
-import { locationOptionsQueryOptions } from "../-data-access-layer/locations.query-options";
 import { ListAudit } from "./-components/ListAudit";
 
 const ymd = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -33,10 +32,7 @@ export const Route = createFileRoute("/_dashboard/admin/audit/")({
     to: search.to,
   }),
   loader: async ({ context, deps }) => {
-    await Promise.all([
-      context.queryClient.ensureQueryData(listAdminAuditQueryOptions(deps)),
-      context.queryClient.ensureQueryData(locationOptionsQueryOptions()),
-    ]);
+    await context.queryClient.ensureQueryData(listAdminAuditQueryOptions(deps));
   },
   component: AdminAuditPage,
   pendingComponent: RouterPendingComponent,

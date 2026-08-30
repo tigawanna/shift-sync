@@ -1,4 +1,5 @@
 import { TSRListPagination } from "@/components/pagination/TSRListPagination";
+import { LocationFilterSheet } from "@/components/picker/LocationFilterSheet";
 import { SearchBox } from "@/components/search/SearchBox";
 import { usePageSearchQuery } from "@/components/search/use-page-search-query";
 import {
@@ -22,10 +23,12 @@ const routeApi = getRouteApi(ROUTE_ID);
 
 function StaffListEmpty({
   hasSearch,
+  hasLocation,
   query,
   onClearSearch,
 }: {
   hasSearch: boolean;
+  hasLocation: boolean;
   query: string;
   onClearSearch: () => void;
 }) {
@@ -48,6 +51,23 @@ function StaffListEmpty({
     );
   }
 
+  if (hasLocation) {
+    return (
+      <Empty
+        data-test="staff-location-empty"
+        className="flex h-full min-h-[70dvh] w-full flex-col items-center justify-center"
+      >
+        <EmptyHeader>
+          <EmptyTitle>No staff at this location</EmptyTitle>
+          <EmptyDescription>
+            Nobody is certified here yet. Pick another restaurant or assign staff in their
+            directory.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+  }
+
   return (
     <Empty
       data-test="staff-empty"
@@ -65,30 +85,53 @@ export function StaffList() {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [selected, setSelected] = useState<StaffListItemData | null>(null);
   const search = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
   const page = search.page;
   const perPage = search.perPage;
   const sq = search.sq.trim();
   const hasSearch = sq.length > 0;
+  const locationId = search.locationId;
 
-  const { data } = useSuspenseQuery(listStaffQueryOptions({ page, perPage, sq }));
+  const { data } = useSuspenseQuery(listStaffQueryOptions({ page, perPage, sq, locationId }));
   const { items, total, totalPages } = data;
 
   return (
     <section className="flex h-full w-full flex-col gap-4" data-test="admin-staff-list">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <p className="text-muted-foreground font-mono text-xs">
-          {total} {total === 1 ? "person" : "people"}
-        </p>
+      <div className="flex flex-wrap items-center gap-2">
         <SearchBox
           keyword={inputValue}
           setKeyword={(value) => onSearchChange(value)}
           isDebouncing={isDebouncing}
           placeholder="Search by name or email"
+          className="w-56 max-w-full"
         />
+        <LocationFilterSheet
+          locationId={locationId}
+          triggerLabel="Filters"
+          showTimezone={false}
+          description="Search restaurants. The staff list shows people certified at the location you pick."
+          searchTestId="admin-staff-location-search"
+          dataTest="admin-staff-location-filter"
+          onSelect={(nextId) => {
+            void navigate({
+              to: ".",
+              search: (prev) => ({ ...prev, locationId: nextId, page: 1 }),
+              replace: true,
+            });
+          }}
+        />
+        <p className="text-muted-foreground ml-auto font-mono text-xs">
+          {total} {total === 1 ? "person" : "people"}
+        </p>
       </div>
 
       {items.length === 0 ? (
-        <StaffListEmpty hasSearch={hasSearch} query={sq} onClearSearch={clearSearch} />
+        <StaffListEmpty
+          hasSearch={hasSearch}
+          hasLocation={Boolean(locationId)}
+          query={sq}
+          onClearSearch={clearSearch}
+        />
       ) : (
         <div className="overflow-hidden rounded-xl border" data-test="staff-table">
           <Table>

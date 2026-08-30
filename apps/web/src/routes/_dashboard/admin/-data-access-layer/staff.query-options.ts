@@ -5,10 +5,11 @@ export function listStaffQueryOptions(input: ListStaffInput) {
   const page = input.page;
   const perPage = input.perPage;
   const sq = input.sq?.trim();
+  const locationId = input.locationId;
 
   return queryOptions({
-    queryKey: ["admin-staff", page, perPage, sq],
-    queryFn: () => listStaff({ data: { page, perPage, sq } }),
+    queryKey: ["admin-staff", page, perPage, sq, locationId],
+    queryFn: () => listStaff({ data: { page, perPage, sq, locationId } }),
   });
 }
 

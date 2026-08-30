@@ -5,9 +5,10 @@ export function listAdminsQueryOptions(input: ListAdminsInput) {
   const page = input.page;
   const perPage = input.perPage;
   const sq = input.sq?.trim();
+  const locationId = input.locationId;
 
   return queryOptions({
-    queryKey: ["admin-admins", page, perPage, sq],
-    queryFn: () => listAdmins({ data: { page, perPage, sq } }),
+    queryKey: ["admin-admins", page, perPage, sq, locationId],
+    queryFn: () => listAdmins({ data: { page, perPage, sq, locationId } }),
   });
 }

@@ -5,6 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
 import { DashboardPageHeader } from "../../-components/DashboardPageHeader";
+import { myManagerLocationsQueryOptions } from "../-data-access-layer/manager-locations.query-options";
 import { listManagerSchedulesQueryOptions } from "../-data-access-layer/manager-schedule.query-options";
 import { ListSchedules } from "./-components/ListSchedules";
 
@@ -24,14 +25,17 @@ export const Route = createFileRoute("/_dashboard/manager/schedule/")({
     locationId: search.locationId,
   }),
   loader: async ({ context, deps }) => {
-    await context.queryClient.ensureQueryData(
-      listManagerSchedulesQueryOptions({
-        page: deps.page,
-        perPage: deps.perPage,
-        sq: deps.sq,
-        locationId: deps.locationId,
-      }),
-    );
+    await Promise.all([
+      context.queryClient.ensureQueryData(
+        listManagerSchedulesQueryOptions({
+          page: deps.page,
+          perPage: deps.perPage,
+          sq: deps.sq,
+          locationId: deps.locationId,
+        }),
+      ),
+      context.queryClient.ensureQueryData(myManagerLocationsQueryOptions()),
+    ]);
   },
   component: ManagerSchedulesPage,
   head: () => ({

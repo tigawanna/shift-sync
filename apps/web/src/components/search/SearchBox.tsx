@@ -9,6 +9,7 @@ type SearchBoxProps = {
   setKeyword: (value: string) => void;
   isDebouncing?: boolean;
   placeholder?: string;
+  className?: string;
   "data-test"?: string;
 };
 
@@ -17,10 +18,11 @@ export function SearchBox({
   setKeyword,
   isDebouncing = false,
   placeholder = "Search…",
+  className,
   "data-test": dataTest = "list-search",
 }: SearchBoxProps) {
   return (
-    <div className="relative w-full max-w-md" data-test={dataTest}>
+    <div className={cn("relative w-full max-w-md", className)} data-test={dataTest}>
       <SearchIcon
         aria-hidden
         className="text-base-content/45 pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"

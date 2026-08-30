@@ -6,6 +6,7 @@ import { getRouteApi, Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { ManagerLocationFilter } from "../../-components/ManagerLocationFilter";
 import { myManagerLocationsQueryOptions } from "../../-data-access-layer/manager-locations.query-options";
 import {
   deleteManagerWeek,
@@ -28,8 +29,7 @@ export function ManagerSchedule() {
   const navigate = routeApi.useNavigate();
   const queryClient = useQueryClient();
   const { data: locationsData } = useSuspenseQuery(myManagerLocationsQueryOptions());
-  const locations = locationsData.items;
-  const selectedLocation = locations.find((location) => location.id === locationId);
+  const selectedLocation = locationsData.items.find((location) => location.id === locationId);
   const [editing, setEditing] = useState(false);
   const [panel, setPanel] = useState<ManagerShiftPanel | null>(null);
 
@@ -121,18 +121,15 @@ export function ManagerSchedule() {
           <Link to="/manager/schedule" className="btn btn-ghost btn-sm">
             All schedules
           </Link>
-          <select
-            className="select-bordered select select-sm min-w-52"
-            value={selectedLocation.id}
-            aria-label="Location"
-            onChange={(event) => goTo({ locationId: event.target.value, weekStart })}
-          >
-            {locations.map((location) => (
-              <option key={location.id} value={location.id}>
-                {location.name}
-              </option>
-            ))}
-          </select>
+          <ManagerLocationFilter
+            locationId={selectedLocation.id}
+            required
+            description="Search the restaurants you manage. This week board uses the location you pick here."
+            onSelect={(nextId) => {
+              if (!nextId) return;
+              goTo({ locationId: nextId, weekStart });
+            }}
+          />
           <span className={`badge badge-sm ${published ? "badge-success" : "badge-ghost"}`}>
             {published ? "Published" : "Draft"}
           </span>

@@ -1,6 +1,7 @@
 import { ShiftHistory } from "./ShiftHistory";
 import { WEEKLY_HOURS_LIMIT } from "@/lib/schedule/assign-constraints";
 import { SearchBox } from "@/components/search/SearchBox";
+import { SearchablePickList } from "@/components/picker/SearchablePickList";
 import { ConfirmAction } from "@/components/ui/confirm-action";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +11,7 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  SheetTrigger,
 } from "@/components/ui/sheet";
 import type { ManagerWeekShift } from "../../-data-access-layer/manager-schedule.fn";
 import {
@@ -46,6 +48,64 @@ export type ManagerShiftPanel = CreateDraft | EditDraft;
 function panelKey(panel: ManagerShiftPanel) {
   if (panel.kind === "create") return `create:${panel.locationId}:${panel.startDate}`;
   return `edit:${panel.shift.id}`;
+}
+
+function SkillPickField({
+  skills,
+  value,
+  onChange,
+  disabled,
+}: {
+  skills: { id: string; name: string }[];
+  value: string;
+  onChange: (id: string) => void;
+  disabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const selected = skills.find((skill) => skill.id === value);
+  const needle = inputValue.trim().toLowerCase();
+  const items = needle
+    ? skills.filter((skill) => skill.name.toLowerCase().includes(needle))
+    : skills;
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger
+        className="btn btn-outline btn-sm w-fit"
+        disabled={disabled}
+        data-test="manager-skill-pick"
+      >
+        {selected?.name ?? "Choose skill"}
+      </SheetTrigger>
+      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>Required skill</SheetTitle>
+          <SheetDescription>Search the skill catalog for this shift.</SheetDescription>
+        </SheetHeader>
+        <SearchablePickList
+          items={items.map((skill) => ({ id: skill.id, label: skill.name }))}
+          selectedId={value || undefined}
+          onSelect={(id) => {
+            if (!id) return;
+            onChange(id);
+            setOpen(false);
+          }}
+          isPending={false}
+          summary={
+            items.length === 0
+              ? "No matches."
+              : `${items.length} ${items.length === 1 ? "skill" : "skills"}.`
+          }
+          inputValue={inputValue}
+          onInputChange={setInputValue}
+          isDebouncing={false}
+          placeholder="Search skills"
+          searchTestId="manager-skill-search"
+        />
+      </SheetContent>
+    </Sheet>
+  );
 }
 
 export function ManagerShiftSheet({
@@ -238,19 +298,12 @@ function ShiftSheetBody({ panel, onClose }: { panel: ManagerShiftPanel; onClose:
 
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-muted-foreground text-xs">Required skill</span>
-          <select
-            className="select-bordered select select-sm"
+          <SkillPickField
+            skills={skills}
             value={resolvedSkillId}
-            onChange={(event) => setSkillId(event.target.value)}
+            onChange={setSkillId}
             disabled={!canMutate}
-            required
-          >
-            {skills.map((skill) => (
-              <option key={skill.id} value={skill.id}>
-                {skill.name}
-              </option>
-            ))}
-          </select>
+          />
         </label>
 
         <label className="flex flex-col gap-1 text-sm">

@@ -11,6 +11,7 @@ import {
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
+import { ManagerLocationFilter } from "../../-components/ManagerLocationFilter";
 import { listManagerSchedulesQueryOptions } from "../../-data-access-layer/manager-schedule.query-options";
 import { ScheduleListItem } from "./ScheduleListItem";
 
@@ -78,6 +79,7 @@ export function ListSchedules() {
     }),
   );
   const { items, total, totalPages } = data;
+  const navigate = routeApi.useNavigate();
 
   return (
     <section className="flex h-full w-full flex-col gap-4" data-test="manager-schedules-list">
@@ -85,12 +87,25 @@ export function ListSchedules() {
         <p className="text-muted-foreground font-mono text-xs">
           {total} {total === 1 ? "schedule" : "schedules"}
         </p>
-        <SearchBox
-          keyword={inputValue}
-          setKeyword={(value) => onSearchChange(value)}
-          isDebouncing={isDebouncing}
-          placeholder="Search by location or week"
-        />
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <ManagerLocationFilter
+            locationId={search.locationId}
+            description="Search the restaurants you manage. The schedule list uses the location you pick here."
+            onSelect={(locationId) => {
+              void navigate({
+                to: ".",
+                search: (prev) => ({ ...prev, locationId, page: undefined }),
+                replace: true,
+              });
+            }}
+          />
+          <SearchBox
+            keyword={inputValue}
+            setKeyword={(value) => onSearchChange(value)}
+            isDebouncing={isDebouncing}
+            placeholder="Search by location or week"
+          />
+        </div>
       </div>
 
       {items.length === 0 ? (

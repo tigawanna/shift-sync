@@ -11,7 +11,7 @@ import {
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
-import { myManagerLocationsQueryOptions } from "../../-data-access-layer/manager-locations.query-options";
+import { ManagerLocationFilter } from "../../-components/ManagerLocationFilter";
 import { listManagerTeamQueryOptions } from "../../-data-access-layer/manager-team.query-options";
 import { TeamListItem } from "./TeamListItem";
 
@@ -70,7 +70,6 @@ export function ListTeam() {
   const sq = search.sq.trim();
   const hasSearch = sq.length > 0;
 
-  const locationsQuery = useSuspenseQuery(myManagerLocationsQueryOptions());
   const { data } = useSuspenseQuery(
     listManagerTeamQueryOptions({
       page,
@@ -88,28 +87,17 @@ export function ListTeam() {
           {total} {total === 1 ? "person" : "people"}
         </p>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-muted-foreground text-xs">Location</span>
-            <select
-              className="select-bordered select select-sm"
-              value={search.locationId ?? ""}
-              onChange={(event) => {
-                const locationId = event.target.value || undefined;
-                void navigate({
-                  to: ".",
-                  search: (prev) => ({ ...prev, locationId, page: undefined }),
-                  replace: true,
-                });
-              }}
-            >
-              <option value="">All my locations</option>
-              {locationsQuery.data.items.map((location) => (
-                <option key={location.id} value={location.id}>
-                  {location.name}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ManagerLocationFilter
+            locationId={search.locationId}
+            description="Search the restaurants you manage. The team list uses the location you pick here."
+            onSelect={(locationId) => {
+              void navigate({
+                to: ".",
+                search: (prev) => ({ ...prev, locationId, page: undefined }),
+                replace: true,
+              });
+            }}
+          />
           <SearchBox
             keyword={inputValue}
             setKeyword={(value) => onSearchChange(value)}

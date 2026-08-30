@@ -13,6 +13,7 @@ const managersSearchSchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
   perPage: z.coerce.number().int().min(1).max(100).optional().default(ADMIN_LIST_PER_PAGE),
   sq: z.string().optional().default(""),
+  locationId: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_dashboard/admin/managers/")({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/_dashboard/admin/managers/")({
     page: search.page,
     perPage: search.perPage,
     sq: search.sq,
+    locationId: search.locationId,
   }),
   loader: async ({ context, deps }) => {
     await Promise.all([
@@ -29,6 +31,7 @@ export const Route = createFileRoute("/_dashboard/admin/managers/")({
           page: deps.page,
           perPage: deps.perPage,
           sq: deps.sq,
+          locationId: deps.locationId,
         }),
       ),
       context.queryClient.ensureQueryData(locationOptionsQueryOptions()),

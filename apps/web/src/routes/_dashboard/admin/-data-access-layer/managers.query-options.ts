@@ -5,10 +5,11 @@ export function listManagersQueryOptions(input: ListManagersInput) {
   const page = input.page;
   const perPage = input.perPage;
   const sq = input.sq?.trim();
+  const locationId = input.locationId;
 
   return queryOptions({
-    queryKey: ["admin-managers", page, perPage, sq],
-    queryFn: () => listManagers({ data: { page, perPage, sq } }),
+    queryKey: ["admin-managers", page, perPage, sq, locationId],
+    queryFn: () => listManagers({ data: { page, perPage, sq, locationId } }),
   });
 }
 

@@ -1,4 +1,5 @@
 import { TSRListPagination } from "@/components/pagination/TSRListPagination";
+import { LocationFilterSheet } from "@/components/picker/LocationFilterSheet";
 import { SearchBox } from "@/components/search/SearchBox";
 import { usePageSearchQuery } from "@/components/search/use-page-search-query";
 import {
@@ -22,10 +23,12 @@ const routeApi = getRouteApi(ROUTE_ID);
 
 function ManagerListEmpty({
   hasSearch,
+  hasLocation,
   query,
   onClearSearch,
 }: {
   hasSearch: boolean;
+  hasLocation: boolean;
   query: string;
   onClearSearch: () => void;
 }) {
@@ -44,6 +47,22 @@ function ManagerListEmpty({
             Clear search
           </button>
         </EmptyContent>
+      </Empty>
+    );
+  }
+
+  if (hasLocation) {
+    return (
+      <Empty
+        data-test="managers-location-empty"
+        className="flex h-full min-h-[70dvh] w-full flex-col items-center justify-center"
+      >
+        <EmptyHeader>
+          <EmptyTitle>No managers at this location</EmptyTitle>
+          <EmptyDescription>
+            Nobody is assigned here yet. Pick another restaurant or edit a manager’s locations.
+          </EmptyDescription>
+        </EmptyHeader>
       </Empty>
     );
   }
@@ -67,30 +86,53 @@ export function ManagerList() {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
   const [selected, setSelected] = useState<ManagerListItemData | null>(null);
   const search = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
   const page = search.page;
   const perPage = search.perPage;
   const sq = search.sq.trim();
   const hasSearch = sq.length > 0;
+  const locationId = search.locationId;
 
-  const { data } = useSuspenseQuery(listManagersQueryOptions({ page, perPage, sq }));
+  const { data } = useSuspenseQuery(listManagersQueryOptions({ page, perPage, sq, locationId }));
   const { items, total, totalPages } = data;
 
   return (
     <section className="flex h-full w-full flex-col gap-4" data-test="admin-managers-list">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <p className="text-muted-foreground font-mono text-xs">
-          {total} {total === 1 ? "person" : "people"}
-        </p>
+      <div className="flex flex-wrap items-center gap-2">
         <SearchBox
           keyword={inputValue}
           setKeyword={(value) => onSearchChange(value)}
           isDebouncing={isDebouncing}
           placeholder="Search by name or email"
+          className="w-56 max-w-full"
         />
+        <LocationFilterSheet
+          locationId={locationId}
+          triggerLabel="Filters"
+          showTimezone={false}
+          description="Search restaurants. The managers list shows people assigned to the location you pick."
+          searchTestId="admin-managers-location-search"
+          dataTest="admin-managers-location-filter"
+          onSelect={(nextId) => {
+            void navigate({
+              to: ".",
+              search: (prev) => ({ ...prev, locationId: nextId, page: 1 }),
+              replace: true,
+            });
+          }}
+        />
+        <p className="text-muted-foreground ml-auto font-mono text-xs">
+          {total} {total === 1 ? "person" : "people"}
+        </p>
       </div>
 
       {items.length === 0 ? (
-        <ManagerListEmpty hasSearch={hasSearch} query={sq} onClearSearch={clearSearch} />
+        <ManagerListEmpty
+          hasSearch={hasSearch}
+          hasLocation={Boolean(locationId)}
+          query={sq}
+          onClearSearch={clearSearch}
+        />
       ) : (
         <div className="overflow-hidden rounded-xl border" data-test="managers-table">
           <Table>

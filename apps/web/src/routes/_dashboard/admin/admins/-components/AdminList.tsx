@@ -1,4 +1,5 @@
 import { TSRListPagination } from "@/components/pagination/TSRListPagination";
+import { LocationFilterSheet } from "@/components/picker/LocationFilterSheet";
 import { SearchBox } from "@/components/search/SearchBox";
 import { usePageSearchQuery } from "@/components/search/use-page-search-query";
 import {
@@ -19,16 +20,21 @@ const routeApi = getRouteApi(ROUTE_ID);
 
 function AdminListEmpty({
   hasSearch,
+  hasLocation,
   query,
   onClearSearch,
 }: {
   hasSearch: boolean;
+  hasLocation: boolean;
   query: string;
   onClearSearch: () => void;
 }) {
   if (hasSearch) {
     return (
-      <Empty data-test="admins-search-empty" className="w-full h-full flex flex-col items-center justify-center min-h-[70dvh]">
+      <Empty
+        data-test="admins-search-empty"
+        className="flex h-full min-h-[70dvh] w-full flex-col items-center justify-center"
+      >
         <EmptyHeader>
           <EmptyTitle>No results for “{query}”</EmptyTitle>
           <EmptyDescription>Try a different name or email address.</EmptyDescription>
@@ -42,8 +48,27 @@ function AdminListEmpty({
     );
   }
 
+  if (hasLocation) {
+    return (
+      <Empty
+        data-test="admins-location-empty"
+        className="flex h-full min-h-[70dvh] w-full flex-col items-center justify-center"
+      >
+        <EmptyHeader>
+          <EmptyTitle>No admins at this location</EmptyTitle>
+          <EmptyDescription>
+            Corporate admins are not assigned to restaurants, so this filter is usually empty.
+          </EmptyDescription>
+        </EmptyHeader>
+      </Empty>
+    );
+  }
+
   return (
-    <Empty data-test="admins-empty" className="w-full h-full flex flex-col items-center justify-center min-h-[70dvh]">
+    <Empty
+      data-test="admins-empty"
+      className="flex h-full min-h-[70dvh] w-full flex-col items-center justify-center"
+    >
       <EmptyHeader>
         <EmptyTitle>No admins yet</EmptyTitle>
         <EmptyDescription>Admin accounts will show up here once they are created.</EmptyDescription>
@@ -55,30 +80,53 @@ function AdminListEmpty({
 export function AdminList() {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
   const search = routeApi.useSearch();
+  const navigate = routeApi.useNavigate();
   const page = search.page;
   const perPage = search.perPage;
   const sq = search.sq.trim();
   const hasSearch = sq.length > 0;
+  const locationId = search.locationId;
 
-  const { data } = useSuspenseQuery(listAdminsQueryOptions({ page, perPage, sq }));
+  const { data } = useSuspenseQuery(listAdminsQueryOptions({ page, perPage, sq, locationId }));
   const { items, total, totalPages } = data;
 
   return (
     <section className="flex h-full w-full flex-col gap-4" data-test="admin-admins-list">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <p className="text-muted-foreground font-mono text-xs">
-          {total} {total === 1 ? "person" : "people"}
-        </p>
+      <div className="flex flex-wrap items-center gap-2">
         <SearchBox
           keyword={inputValue}
           setKeyword={(value) => onSearchChange(value)}
           isDebouncing={isDebouncing}
           placeholder="Search by name or email"
+          className="w-56 max-w-full"
         />
+        <LocationFilterSheet
+          locationId={locationId}
+          triggerLabel="Filters"
+          showTimezone={false}
+          description="Search restaurants. Admins are usually not assigned to a location."
+          searchTestId="admin-admins-location-search"
+          dataTest="admin-admins-location-filter"
+          onSelect={(nextId) => {
+            void navigate({
+              to: ".",
+              search: (prev) => ({ ...prev, locationId: nextId, page: 1 }),
+              replace: true,
+            });
+          }}
+        />
+        <p className="text-muted-foreground ml-auto font-mono text-xs">
+          {total} {total === 1 ? "person" : "people"}
+        </p>
       </div>
 
       {items.length === 0 ? (
-        <AdminListEmpty hasSearch={hasSearch} query={sq} onClearSearch={clearSearch} />
+        <AdminListEmpty
+          hasSearch={hasSearch}
+          hasLocation={Boolean(locationId)}
+          query={sq}
+          onClearSearch={clearSearch}
+        />
       ) : (
         <div className="overflow-hidden rounded-xl border" data-test="admins-table">
           <Table>

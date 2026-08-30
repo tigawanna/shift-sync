@@ -55,9 +55,7 @@ export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
             >
               <SidebarMenuItem>
                 <CollapsibleTrigger
-                  render={
-                    <SidebarMenuButton isActive={sectionOpenDefault} tooltip={item.title} />
-                  }
+                  render={<SidebarMenuButton isActive={sectionOpenDefault} tooltip={item.title} />}
                 >
                   {item.icon && <item.icon />}
                   <span>{item.title}</span>
@@ -78,6 +76,7 @@ export function SidebarLinks({ links, isNested = false }: SidebarLinksProps) {
             <SidebarMenuButton
               isActive={isActive}
               tooltip={item.title}
+              className={isNested ? "data-active:bg-primary/40" : undefined}
               render={<Link to={item.href} activeOptions={{ exact: true }} />}
             >
               {item.icon && <item.icon />}

@@ -4,58 +4,32 @@ import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
 import { user as userTable } from "@/lib/drizzle/schema";
 import { createServerFn } from "@tanstack/react-start";
-import { and, count, desc, eq, like, or, type SQL } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { listUserLocationIds, replaceUserLocations } from "./locations.server";
+import { listUsersByRolePage } from "./people-list.server";
 
 export const listManagersInputSchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
   perPage: z.coerce.number().int().min(1).max(100).optional().default(ADMIN_LIST_PER_PAGE),
   sq: z.string().optional(),
+  locationId: z.string().optional(),
 });
 
 export type ListManagersInput = z.infer<typeof listManagersInputSchema>;
 export type ManagerListItem = typeof userTable.$inferSelect;
 
-function buildSearchFilter(sq: string | undefined): SQL | undefined {
-  const trimmed = sq?.trim();
-  if (!trimmed) return undefined;
-
-  const pattern = `%${trimmed}%`;
-  return or(like(userTable.name, pattern), like(userTable.email, pattern));
-}
-
 export const listManagers = createServerFn({ method: "GET" })
   .validator(listManagersInputSchema)
   .handler(async ({ data }) => {
     await requireSessionRoles([ROLE.admin]);
-
-    const page = data.page;
-    const perPage = data.perPage;
-    const offset = (page - 1) * perPage;
-    const where = and(eq(userTable.role, ROLE.manager), buildSearchFilter(data.sq));
-
-    const db = await getDb();
-    const [rows, totalRow] = await Promise.all([
-      db
-        .select()
-        .from(userTable)
-        .where(where)
-        .orderBy(desc(userTable.createdAt))
-        .limit(perPage)
-        .offset(offset),
-      db.select({ total: count() }).from(userTable).where(where),
-    ]);
-
-    const total = totalRow[0]?.total ?? 0;
-
-    return {
-      items: rows,
-      total,
-      page,
-      perPage,
-      totalPages: Math.max(1, Math.ceil(total / perPage)),
-    };
+    return listUsersByRolePage({
+      role: ROLE.manager,
+      page: data.page,
+      perPage: data.perPage,
+      sq: data.sq,
+      locationId: data.locationId,
+    });
   });
 
 export const getManagerLocationsInputSchema = z.object({
