@@ -98,6 +98,8 @@ async function loadMyStaffSchedule(month: string, userId: string) {
   const db = await getDb();
   const { rangeStart, rangeEnd } = monthUtcOverlapRange(month);
 
+  // const 
+
   // Assignments, published weeks, and certified-location count in one round.
   const [assignmentRows, publishedWeeks, certifiedLocationCount] = await Promise.all([
     selectMyAssignments(db, userId, month),
@@ -142,6 +144,7 @@ async function loadMyStaffSchedule(month: string, userId: string) {
       notes: row.shift.notes,
     };
   });
+
   // Staff only see published weeks.
   const publishedShifts = mapped.filter((shift) => shift.published);
   // SQL used a padded UTC window; keep only shifts whose local start is in this month.

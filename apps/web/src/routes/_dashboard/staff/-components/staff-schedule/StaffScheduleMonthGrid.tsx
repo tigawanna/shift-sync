@@ -1,8 +1,10 @@
 import type { StaffScheduleShift } from "@/routes/_dashboard/staff/-data-access-layer/staff-schedule.fn";
-import { formatDateInZone, formatDayLabel, yearMonthOf } from "@/lib/time/zoned";
+import { formatDateInZone, yearMonthOf } from "@/lib/time/zoned";
 import { cn } from "@/lib/utils";
+import { StaffScheduleDayCell } from "./StaffScheduleDayCell";
 import { ShiftSpanHover } from "./StaffScheduleShiftBar";
 import { WeekHoursCell } from "./StaffScheduleWeekHours";
+import type { DayAvailability } from "./staff-availability.day";
 import {
   LANE_PX,
   WEEK_GRID_COLS,
@@ -15,10 +17,20 @@ export function StaffScheduleMonthGrid({
   month,
   weeks,
   shifts,
+  availabilityByDate,
+  canEditAvailability,
+  onMarkAvailable,
+  onRequestOff,
+  onBlockHours,
 }: {
   month: string;
   weeks: string[][];
   shifts: StaffScheduleShift[];
+  availabilityByDate: Map<string, DayAvailability>;
+  canEditAvailability: boolean;
+  onMarkAvailable: (date: string) => void;
+  onRequestOff: (date: string) => void;
+  onBlockHours: (date: string) => void;
 }) {
   const today = formatDateInZone(new Date(), "UTC");
 
@@ -54,40 +66,27 @@ export function StaffScheduleMonthGrid({
                   style={{ height: bodyHeight }}
                 >
                   <div className="relative col-span-7 grid grid-cols-7 gap-0.5">
-                    {weekDates.map((date) => {
-                      const inMonth = yearMonthOf(date) === month;
-                      const isToday = date === today;
-
-                      return (
-                        <div
-                          key={date}
-                          aria-label={formatDayLabel(date)}
-                          className={cn(
-                            "h-full px-2 pt-1.5 ring-1 ring-foreground/30 ring-inset",
-                            inMonth ? "bg-card" : "bg-muted/50",
-                          )}
-                        >
-                          <time
-                            dateTime={date}
-                            className={cn(
-                              "inline-flex size-6 items-center justify-center text-sm tabular-nums",
-                              isToday ? "border-primary rounded-md border font-semibold" : "font-medium",
-                              !inMonth && "text-muted-foreground",
-                            )}
-                          >
-                            {date.slice(8)}
-                          </time>
-                        </div>
-                      );
-                    })}
+                    {weekDates.map((date) => (
+                      <StaffScheduleDayCell
+                        key={date}
+                        date={date}
+                        inMonth={yearMonthOf(date) === month}
+                        isToday={date === today}
+                        availability={availabilityByDate.get(date) ?? null}
+                        canEdit={canEditAvailability}
+                        onMarkAvailable={onMarkAvailable}
+                        onRequestOff={onRequestOff}
+                        onBlockHours={onBlockHours}
+                      />
+                    ))}
                     <div
-                      className="absolute inset-x-0 top-8 bottom-1.5 grid grid-cols-7 gap-x-0.5 px-0.5"
+                      className="pointer-events-none absolute inset-x-0 top-8 bottom-1.5 grid grid-cols-7 gap-x-0.5 px-0.5"
                       style={{ gridTemplateRows: `repeat(${Math.max(laneCount, 1)}, ${LANE_PX}px)` }}
                     >
                       {spans.map((span) => (
                         <div
                           key={span.id}
-                          className="min-w-0"
+                          className="pointer-events-auto min-w-0"
                           style={{
                             gridColumn: `${span.startCol + 1} / ${span.endCol + 2}`,
                             gridRow: span.lane + 1,
