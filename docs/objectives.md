@@ -47,11 +47,11 @@ Swap, drop, and pickup are staff-initiated, but they do not make sense until a m
 
 ### Notifications and live updates — **needs manager** (publish / assign / swap resolution)
 
-- [ ] Get notified when a week is published, a shift is assigned, or a shift changes
-- [ ] Get notified at each step of a swap/drop
-- [ ] See schedule changes without a full page refresh
-- [ ] Open a notification center (read / unread)
-- [ ] Choose in-app only vs in-app + email simulation
+- [x] Get notified when a week is published, a shift is assigned, or a shift changes
+- [x] Get notified at each step of a swap/drop
+- [x] See schedule changes without a full page refresh
+- [x] Open a notification center (read / unread)
+- [x] Choose in-app only vs in-app + email simulation
 
 ---
 
@@ -93,7 +93,7 @@ What a manager must be able to accomplish for the locations they run. Do this bl
 
 - [x] Approve or reject a swap/drop; original assignment stays until this happens
 - [x] Auto-cancel a pending swap if that shift is edited
-- [ ] Notify the parties when a pending swap is cancelled by an edit
+- [x] Notify the parties when a pending swap is cancelled by an edit
 
 ### Overtime and fairness
 
@@ -107,10 +107,10 @@ What a manager must be able to accomplish for the locations they run. Do this bl
 
 ### Live ops, comms, audit
 
-- [ ] Immediate conflict if two managers assign the same person at the same time
+- [x] Immediate conflict if two managers assign the same person at the same time
 - [x] “On duty now” for their locations (live)
-- [ ] Notifications: pending swap/drop, overtime warnings, staff availability changes
-- [ ] Notification center + in-app / email-simulation preference
+- [x] Notifications: pending swap/drop, overtime warnings, staff availability changes
+- [x] Notification center + in-app / email-simulation preference
 - [x] View the change history of any shift
 
 ---
@@ -143,4 +143,4 @@ What corporate admin must be able to accomplish across **all** locations.
 
 - [x] Every schedule change logged: who, when, before, after
 - [x] Export audit logs for a date range and location
-- [ ] Same notification center / preference model as other roles, scoped to org-wide events
+- [x] Same notification center / preference model as other roles, scoped to org-wide events

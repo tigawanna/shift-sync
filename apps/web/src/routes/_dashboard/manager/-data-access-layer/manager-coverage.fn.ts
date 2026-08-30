@@ -6,6 +6,7 @@ import { location as locationTable } from "@/lib/drizzle/schema/locations-schema
 import { shift as shiftTable } from "@/lib/drizzle/schema/schedule-schema";
 import { skill as skillTable } from "@/lib/drizzle/schema/skills-schema";
 import { COVERAGE_STATUS } from "@/lib/schedule/coverage";
+import { notifyUsers } from "@/lib/schedule/notify.server";
 import { recordScheduleAudit, snapshotShift } from "@/lib/schedule/audit.server";
 import { applyApprovedCoverage, getDbAndExpire } from "@/lib/schedule/coverage.server";
 import { createServerFn } from "@tanstack/react-start";
@@ -92,6 +93,12 @@ export const approveCoverage = createServerFn({ method: "POST" })
       after: await snapshotShift(db, row.request.shiftId),
     });
 
+    await notifyUsers(db, [row.request.fromUserId, row.request.toUserId ?? ""], {
+      kind: "coverage_approved",
+      title: "Coverage approved",
+      body: "A manager approved a swap or pickup. The assignment has moved.",
+    });
+
     return { ok: true as const };
   });
 
@@ -128,6 +135,12 @@ export const rejectCoverage = createServerFn({ method: "POST" })
         resolvedByUserId: session.user.id,
       })
       .where(eq(coverageRequest.id, row.request.id));
+
+    await notifyUsers(db, [row.request.fromUserId, row.request.toUserId ?? ""], {
+      kind: "coverage_rejected",
+      title: "Coverage rejected",
+      body: "A manager rejected a swap or pickup. The original assignment stays.",
+    });
 
     return { ok: true as const };
   });

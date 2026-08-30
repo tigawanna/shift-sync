@@ -54,7 +54,7 @@ Log schedule writes (who, when, before, after). Manager can open history on a sh
 - Tick Manager “view change history”
 - Tick Admin audit boxes
 
-## 8. Notifications, live refresh, concurrent assign
+## 8. Notifications, live refresh, concurrent assign — done
 
 In-app notification center (read/unread). Preference: in-app only vs in-app + email simulation (toast/log). Events: publish, assign, shift change, swap/drop steps, pending for managers, OT warnings, availability changes. Poll/invalidate so staff see schedule changes without a full reload. Assign re-checks constraints in the write so two managers cannot land the same person in an overlap.
 

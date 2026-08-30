@@ -1,3 +1,4 @@
+import { LIVE_SCHEDULE_REFETCH_MS } from "@/lib/schedule/oversight";
 import { queryOptions } from "@tanstack/react-query";
 import { listManagerShiftAudit } from "./manager-audit.fn";
 import { getManagerLaborReport } from "./manager-labor.fn";
@@ -20,6 +21,7 @@ export function managerWeekScheduleQueryOptions(input: ManagerWeekInput) {
   return queryOptions({
     queryKey: ["manager-schedule", input.locationId, input.weekStart],
     queryFn: () => getManagerWeekSchedule({ data: input }),
+    refetchInterval: LIVE_SCHEDULE_REFETCH_MS,
   });
 }
 

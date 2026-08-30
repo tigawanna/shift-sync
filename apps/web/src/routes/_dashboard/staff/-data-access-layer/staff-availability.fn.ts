@@ -6,6 +6,8 @@ import {
   userAvailabilityException as userAvailabilityExceptionTable,
 } from "@/lib/drizzle/schema/skills-schema";
 import { AVAILABILITY_EXCEPTION_KINDS } from "@/lib/schedule/availability";
+import { userLocation } from "@/lib/drizzle/schema/locations-schema";
+import { loadLocationManagerIds, notifyUsers } from "@/lib/schedule/notify.server";
 import { monthGridDates } from "@/lib/time/zoned";
 import { createServerFn } from "@tanstack/react-start";
 import { and, asc, eq, gte, lte } from "drizzle-orm";
@@ -13,7 +15,11 @@ import { z } from "zod";
 
 const monthSchema = z.string().regex(/^\d{4}-\d{2}$/, "Month must be YYYY-MM");
 const civilDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const minuteSchema = z.number().int().min(0).max(24 * 60);
+const minuteSchema = z
+  .number()
+  .int()
+  .min(0)
+  .max(24 * 60);
 
 export const listMyStaffAvailabilityInputSchema = z.object({
   month: monthSchema,
@@ -102,9 +108,7 @@ export type StaffAvailabilityException = StaffAvailabilityResult["exceptions"][n
 export type StaffWeeklyWindow = StaffAvailabilityResult["weeklyWindows"][number];
 
 export const listMyStaffAvailability = createServerFn({ method: "GET" })
-  .validator((data: ListMyStaffAvailabilityInput) =>
-    listMyStaffAvailabilityInputSchema.parse(data),
-  )
+  .validator((data: ListMyStaffAvailabilityInput) => listMyStaffAvailabilityInputSchema.parse(data))
   .handler(async ({ data }) => {
     const { session } = await requireSessionRoles([ROLE.staff]);
     return loadMyStaffAvailability(data.month, session.user.id);
@@ -127,6 +131,19 @@ export const addMyAvailabilityException = createServerFn({ method: "POST" })
       startMinute: data.startMinute,
       endMinute: data.endMinute,
       note: data.note?.trim() || null,
+    });
+
+    const locations = await db
+      .select({ locationId: userLocation.locationId })
+      .from(userLocation)
+      .where(eq(userLocation.userId, userId));
+    const managerIds = (
+      await Promise.all(locations.map((row) => loadLocationManagerIds(db, row.locationId)))
+    ).flat();
+    await notifyUsers(db, managerIds, {
+      kind: "availability",
+      title: "Staff availability changed",
+      body: `${session.user.name} added an availability exception.`,
     });
 
     return { ok: true as const };

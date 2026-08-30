@@ -220,6 +220,10 @@ The following are **deliberately unspecified**. Part of the evaluation is how yo
 
 **Schedule writes append an audit row** (actor, time, action, JSON before/after). Deleting a shift keeps the log (`shift_id` is not a foreign key). Admin export uses Coastal Eats HQ civil dates (`America/Los_Angeles`).
 
+**Live schedule views refetch every 15 seconds.** Assign re-checks overlapping shifts inside a write transaction so two managers cannot both land the same person in an overlap.
+
+**Notifications are in-app rows** (unread until opened). Optional “simulate email” stores a flag on the row. Events include publish, assign, coverage steps, edit-cancels-pending, overtime, and availability exceptions.
+
 ---
 
 ## Time Limit

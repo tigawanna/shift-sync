@@ -1,8 +1,9 @@
 import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
-import { cancelActiveCoverageForShift } from "@/lib/schedule/coverage.server";
 import { recordScheduleAudit, snapshotShift } from "@/lib/schedule/audit.server";
+import { cancelActiveCoverageForShift } from "@/lib/schedule/coverage.server";
+import { loadLocationManagerIds, notifyUsers } from "@/lib/schedule/notify.server";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
 import { location as locationTable, userLocation } from "@/lib/drizzle/schema/locations-schema";
 import {
@@ -20,6 +21,7 @@ import {
   clipWeeklyHours,
   evaluateAssignmentConstraints,
   formatAssignFailure,
+  WEEKLY_HOURS_LIMIT,
   type ShiftInterval,
 } from "@/lib/schedule/assign-constraints";
 import {
@@ -603,11 +605,65 @@ export const assignManagerShift = createServerFn({ method: "POST" })
       throw new Error(formatAssignFailure(hard, alternativeNames));
     }
 
-    await db.insert(shiftAssignmentTable).values({
-      id: crypto.randomUUID(),
-      shiftId: data.shiftId,
-      userId: data.userId,
-      overrideReason: data.overrideReason ?? null,
+    await db.transaction(async (tx) => {
+      const window = constraintWindow(
+        context.shift.startsAt,
+        context.shift.endsAt,
+        context.shift.location.timezone,
+      );
+      const liveRows = await tx
+        .select({
+          id: shiftTable.id,
+          startsAt: shiftTable.startsAt,
+          endsAt: shiftTable.endsAt,
+          locationName: locationTable.name,
+        })
+        .from(shiftAssignmentTable)
+        .innerJoin(shiftTable, eq(shiftTable.id, shiftAssignmentTable.shiftId))
+        .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
+        .where(
+          and(
+            eq(shiftAssignmentTable.userId, data.userId),
+            ne(shiftTable.id, context.shift.id),
+            lt(shiftTable.startsAt, window.rangeEnd),
+            gt(shiftTable.endsAt, window.rangeStart),
+          ),
+        );
+      const live = evaluateAssignmentConstraints({
+        candidateStartsAt: context.shift.startsAt,
+        candidateEndsAt: context.shift.endsAt,
+        locationTimezone: context.shift.location.timezone,
+        locationName: context.shift.location.name,
+        otherShifts: liveRows.map((row) => ({
+          id: row.id,
+          startsAt: row.startsAt,
+          endsAt: row.endsAt,
+          locationName: row.locationName,
+        })),
+        weekly: weeklyByUser.get(data.userId) ?? [],
+        exceptions: exceptionsByUser.get(data.userId) ?? [],
+      });
+      let liveFailures = live.failures;
+      if (live.requiresOverride) {
+        if (!data.overrideReason) {
+          throw new Error(formatAssignFailure(liveFailures, alternativeNames));
+        }
+        liveFailures = liveFailures.filter((issue) => issue.rule !== "consecutive_days");
+      }
+      const liveHard = liveFailures.filter((issue) => issue.rule !== "consecutive_days");
+      if (liveHard.length > 0) {
+        throw new Error(
+          liveHard.some((issue) => issue.rule === "double_booking")
+            ? "Someone else just assigned this person to an overlapping shift."
+            : formatAssignFailure(liveHard, alternativeNames),
+        );
+      }
+      await tx.insert(shiftAssignmentTable).values({
+        id: crypto.randomUUID(),
+        shiftId: data.shiftId,
+        userId: data.userId,
+        overrideReason: data.overrideReason ?? null,
+      });
     });
     await recordScheduleAudit(db, {
       locationId: context.shift.locationId,
@@ -616,6 +672,31 @@ export const assignManagerShift = createServerFn({ method: "POST" })
       action: "assign",
       after: await snapshotShift(db, data.shiftId),
     });
+    await notifyUsers(db, [data.userId], {
+      kind: "shift_assigned",
+      title: "You were assigned a shift",
+      body: `${context.shift.location.name} · a manager assigned you.`,
+    });
+    const weekStart = mondayOfWeekContaining(
+      context.shift.startsAt,
+      context.shift.location.timezone,
+    );
+    const weekHours = clipWeeklyHours(
+      [
+        ...(shiftsByUser.get(data.userId) ?? []),
+        { startsAt: context.shift.startsAt, endsAt: context.shift.endsAt },
+      ],
+      weekStart,
+      context.shift.location.timezone,
+    );
+    if (weekHours >= WEEKLY_HOURS_LIMIT) {
+      const managers = await loadLocationManagerIds(db, context.shift.locationId);
+      await notifyUsers(db, managers, {
+        kind: "overtime",
+        title: "Overtime warning",
+        body: `An assignment at ${context.shift.location.name} puts someone over ${WEEKLY_HOURS_LIMIT}h this week.`,
+      });
+    }
 
     return { ok: true as const };
   });

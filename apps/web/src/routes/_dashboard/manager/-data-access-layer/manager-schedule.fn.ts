@@ -2,6 +2,7 @@ import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
 import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
+import { notifyUsers } from "@/lib/schedule/notify.server";
 import { recordScheduleAudit } from "@/lib/schedule/audit.server";
 import { isPremiumStart } from "@/lib/schedule/labor";
 import {
@@ -350,6 +351,16 @@ export const publishManagerWeek = createServerFn({ method: "POST" })
         action: "publish",
         after: { weekStart },
       });
+      const week = await loadWeekSchedule(session.user.id, location.id, weekStart);
+      const staffIds = week.days.flatMap((day) =>
+        day.shifts.flatMap((shift) => shift.assignees.map((person) => person.id)),
+      );
+      await notifyUsers(db, staffIds, {
+        kind: "week_published",
+        title: "A schedule week was published",
+        body: `${location.name}: week of ${weekStart} is now visible.`,
+      });
+      return week;
     }
 
     return loadWeekSchedule(session.user.id, location.id, weekStart);

@@ -57,6 +57,13 @@
       "when": 1788100827423,
       "tag": "0007_slimy_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1788101107025,
+      "tag": "0008_large_vermin",
+      "breakpoints": true
     }
   ]
 }

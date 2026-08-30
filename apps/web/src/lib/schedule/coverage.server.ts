@@ -14,6 +14,7 @@ import {
   COVERAGE_STATUS,
   DROP_EXPIRE_HOURS,
 } from "@/lib/schedule/coverage";
+import { notifyUsers } from "@/lib/schedule/notify.server";
 import { mondayOfWeekContaining } from "@/lib/time/zoned";
 import { and, count, eq, inArray } from "drizzle-orm";
 
@@ -50,6 +51,19 @@ export async function cancelActiveCoverageForShift(
   shiftId: string,
   resolvedByUserId: string,
 ) {
+  const pending = await db
+    .select({
+      fromUserId: coverageRequest.fromUserId,
+      toUserId: coverageRequest.toUserId,
+    })
+    .from(coverageRequest)
+    .where(
+      and(
+        eq(coverageRequest.shiftId, shiftId),
+        inArray(coverageRequest.status, [...ACTIVE_COVERAGE_STATUSES]),
+      ),
+    );
+
   await db
     .update(coverageRequest)
     .set({
@@ -63,6 +77,13 @@ export async function cancelActiveCoverageForShift(
         inArray(coverageRequest.status, [...ACTIVE_COVERAGE_STATUSES]),
       ),
     );
+
+  const userIds = pending.flatMap((row) => [row.fromUserId, row.toUserId ?? ""]);
+  await notifyUsers(db, userIds, {
+    kind: "coverage_cancelled",
+    title: "Coverage request cancelled",
+    body: "A pending swap or drop was cancelled because that shift was edited.",
+  });
 }
 
 export async function countActiveCoverageForUser(db: AppDatabase, userId: string) {

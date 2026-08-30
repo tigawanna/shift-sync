@@ -16,6 +16,7 @@ import {
   getDbAndExpire,
   loadPublishedShift,
 } from "@/lib/schedule/coverage.server";
+import { loadLocationManagerIds, notifyUsers } from "@/lib/schedule/notify.server";
 import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { z } from "zod";
@@ -161,6 +162,11 @@ export const requestSwap = createServerFn({ method: "POST" })
       fromUserId: session.user.id,
       toUserId: data.toUserId,
     });
+    await notifyUsers(db, [data.toUserId], {
+      kind: "swap_incoming",
+      title: "Swap request",
+      body: "Someone asked to swap a shift with you.",
+    });
 
     return { ok: true as const };
   });
@@ -170,7 +176,7 @@ export const requestDrop = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { session } = await requireSessionRoles([ROLE.staff]);
     const db = await getDbAndExpire();
-    await loadPublishedShift(db, data.shiftId);
+    const published = await loadPublishedShift(db, data.shiftId);
     await assertAssignedToShift(db, data.shiftId, session.user.id);
     await assertPendingCapacity(db, session.user.id);
 
@@ -180,6 +186,12 @@ export const requestDrop = createServerFn({ method: "POST" })
       status: COVERAGE_STATUS.open,
       shiftId: data.shiftId,
       fromUserId: session.user.id,
+    });
+    const managers = await loadLocationManagerIds(db, published.location.id);
+    await notifyUsers(db, managers, {
+      kind: "coverage_pending",
+      title: "Drop request",
+      body: `${published.location.name}: a staff member offered a shift as a drop.`,
     });
 
     return { ok: true as const };
@@ -214,6 +226,14 @@ export const pickupDrop = createServerFn({ method: "POST" })
       })
       .where(eq(coverageRequest.id, row.id));
 
+    const published = await loadPublishedShift(db, row.shiftId);
+    const managers = await loadLocationManagerIds(db, published.location.id);
+    await notifyUsers(db, [...managers, row.fromUserId], {
+      kind: "coverage_pending",
+      title: "Pickup waiting on a manager",
+      body: `${published.location.name}: a drop was picked up and needs approval.`,
+    });
+
     return { ok: true as const };
   });
 
@@ -236,6 +256,14 @@ export const acceptIncomingSwap = createServerFn({ method: "POST" })
       .update(coverageRequest)
       .set({ status: COVERAGE_STATUS.pending_manager })
       .where(eq(coverageRequest.id, row.id));
+
+    const published = await loadPublishedShift(db, row.shiftId);
+    const managers = await loadLocationManagerIds(db, published.location.id);
+    await notifyUsers(db, [...managers, row.fromUserId], {
+      kind: "coverage_pending",
+      title: "Swap waiting on a manager",
+      body: `${published.location.name}: a swap was accepted and needs approval.`,
+    });
 
     return { ok: true as const };
   });

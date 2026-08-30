@@ -22,6 +22,7 @@ import { AppConfig } from "@/utils/system";
 import { Outlet } from "@tanstack/react-router";
 import { DashboardSidebarFooter } from "./DashboardSidebarFooter";
 import { DashboardSidebarHeader } from "./DashboardSidebarHeader";
+import { NotificationCenter } from "../NotificationCenter";
 import { getDashboardPrimaryRoutes } from "./dashboard_routes";
 
 interface DashboardLayoutProps {
@@ -76,6 +77,7 @@ export function DashboardLayout({
             <TSRBreadCrumbs />
           </div>
           <div className="ml-auto flex items-center gap-3 px-4">
+            <NotificationCenter />
             <span className="text-base-content/60 text-sm">{AppConfig.name}</span>
           </div>
         </header>
