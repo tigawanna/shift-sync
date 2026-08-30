@@ -1,17 +1,13 @@
 import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
-import { getDb } from "@/lib/drizzle/client";
-import {
-  userAvailability as userAvailabilityTable,
-  userAvailabilityException as userAvailabilityExceptionTable,
-} from "@/lib/drizzle/schema/skills-schema";
 import { AVAILABILITY_EXCEPTION_KINDS } from "@/lib/schedule/availability";
-import { userLocation } from "@/lib/drizzle/schema/locations-schema";
-import { loadLocationManagerIds, notifyUsers } from "@/lib/schedule/notify.server";
-import { monthGridDates } from "@/lib/time/zoned";
 import { createServerFn } from "@tanstack/react-start";
-import { and, asc, eq, gte, lte } from "drizzle-orm";
 import { z } from "zod";
+import {
+  deleteAvailabilityExceptionsOnDate,
+  insertAvailabilityException,
+  loadStaffAvailabilityForUser,
+} from "./staff-availability.server";
 
 const monthSchema = z.string().regex(/^\d{4}-\d{2}$/, "Month must be YYYY-MM");
 const civilDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -44,68 +40,7 @@ export const removeMyAvailabilityExceptionsInputSchema = z.object({
 
 export type ListMyStaffAvailabilityInput = z.infer<typeof listMyStaffAvailabilityInputSchema>;
 export type AddMyAvailabilityExceptionInput = z.infer<typeof addMyAvailabilityExceptionInputSchema>;
-
-function parseExceptionKind(kind: string) {
-  if (kind === "blocked" || kind === "extra") return kind;
-  return AVAILABILITY_EXCEPTION_KINDS[0];
-}
-
-export async function loadStaffAvailabilityForUser(month: string, userId: string) {
-  const db = await getDb();
-  const grid = monthGridDates(month);
-  const rangeStart = grid[0] ?? `${month}-01`;
-  const rangeEnd = grid[grid.length - 1] ?? `${month}-28`;
-
-  const [weeklyRows, exceptionRows] = await Promise.all([
-    db
-      .select({
-        weekday: userAvailabilityTable.weekday,
-        startMinute: userAvailabilityTable.startMinute,
-        endMinute: userAvailabilityTable.endMinute,
-      })
-      .from(userAvailabilityTable)
-      .where(eq(userAvailabilityTable.userId, userId))
-      .orderBy(asc(userAvailabilityTable.weekday), asc(userAvailabilityTable.startMinute)),
-    db
-      .select({
-        id: userAvailabilityExceptionTable.id,
-        date: userAvailabilityExceptionTable.date,
-        kind: userAvailabilityExceptionTable.kind,
-        startMinute: userAvailabilityExceptionTable.startMinute,
-        endMinute: userAvailabilityExceptionTable.endMinute,
-        note: userAvailabilityExceptionTable.note,
-      })
-      .from(userAvailabilityExceptionTable)
-      .where(
-        and(
-          eq(userAvailabilityExceptionTable.userId, userId),
-          gte(userAvailabilityExceptionTable.date, rangeStart),
-          lte(userAvailabilityExceptionTable.date, rangeEnd),
-        ),
-      )
-      .orderBy(
-        asc(userAvailabilityExceptionTable.date),
-        asc(userAvailabilityExceptionTable.startMinute),
-      ),
-  ]);
-
-  return {
-    month,
-    weeklyWindows: weeklyRows,
-    exceptions: exceptionRows.map((row) => ({
-      id: row.id,
-      date: row.date,
-      kind: parseExceptionKind(row.kind),
-      startMinute: row.startMinute,
-      endMinute: row.endMinute,
-      note: row.note ?? null,
-    })),
-  };
-}
-
-export type StaffAvailabilityResult = Awaited<ReturnType<typeof loadStaffAvailabilityForUser>>;
-export type StaffAvailabilityException = StaffAvailabilityResult["exceptions"][number];
-export type StaffWeeklyWindow = StaffAvailabilityResult["weeklyWindows"][number];
+export type { StaffAvailabilityException, StaffWeeklyWindow } from "./staff-availability.server";
 
 export const listMyStaffAvailability = createServerFn({ method: "GET" })
   .validator((data: ListMyStaffAvailabilityInput) => listMyStaffAvailabilityInputSchema.parse(data))
@@ -120,34 +55,15 @@ export const addMyAvailabilityException = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { session } = await requireSessionRoles([ROLE.staff]);
-    const db = await getDb();
-    const userId = session.user.id;
-
-    await db.transaction(async (tx) => {
-      await tx.insert(userAvailabilityExceptionTable).values({
-        id: crypto.randomUUID(),
-        userId,
-        date: data.date,
-        kind: data.kind,
-        startMinute: data.startMinute,
-        endMinute: data.endMinute,
-        note: data.note?.trim() || null,
-      });
-
-      const locations = await tx
-        .select({ locationId: userLocation.locationId })
-        .from(userLocation)
-        .where(eq(userLocation.userId, userId));
-      const managerIds = (
-        await Promise.all(locations.map((row) => loadLocationManagerIds(tx, row.locationId)))
-      ).flat();
-      await notifyUsers(tx, managerIds, {
-        kind: "availability",
-        title: "Staff availability changed",
-        body: `${session.user.name} added an availability exception.`,
-      });
+    await insertAvailabilityException({
+      userId: session.user.id,
+      userName: session.user.name,
+      date: data.date,
+      kind: data.kind,
+      startMinute: data.startMinute,
+      endMinute: data.endMinute,
+      note: data.note,
     });
-
     return { ok: true as const };
   });
 
@@ -155,18 +71,10 @@ export const removeMyAvailabilityExceptionsOnDate = createServerFn({ method: "PO
   .validator((data: unknown) => removeMyAvailabilityExceptionsInputSchema.parse(data))
   .handler(async ({ data }) => {
     const { session } = await requireSessionRoles([ROLE.staff]);
-    const db = await getDb();
-    const userId = session.user.id;
-
-    const filters = [
-      eq(userAvailabilityExceptionTable.userId, userId),
-      eq(userAvailabilityExceptionTable.date, data.date),
-    ];
-    if (data.kind) {
-      filters.push(eq(userAvailabilityExceptionTable.kind, data.kind));
-    }
-
-    await db.delete(userAvailabilityExceptionTable).where(and(...filters));
-
+    await deleteAvailabilityExceptionsOnDate({
+      userId: session.user.id,
+      date: data.date,
+      kind: data.kind,
+    });
     return { ok: true as const };
   });

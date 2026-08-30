@@ -9,9 +9,9 @@ import {
 } from "@/lib/drizzle/schema/schedule-schema";
 import { loadLocationManagerIds, notifyUsers } from "@/lib/schedule/notify.server";
 import { mondayOfWeekContaining } from "@/lib/time/zoned";
-import { loadStaffAvailabilityForUser } from "@/routes/_dashboard/staff/-data-access-layer/staff-availability.fn";
-import { loadDesiredHoursForMonth } from "@/routes/_dashboard/staff/-data-access-layer/staff-desired-hours.fn";
-import { loadStaffScheduleForUser } from "@/routes/_dashboard/staff/-data-access-layer/staff-schedule.fn";
+import { loadStaffAvailabilityForUser } from "@/routes/_dashboard/staff/-data-access-layer/staff-availability.server";
+import { loadDesiredHoursForMonth } from "@/routes/_dashboard/staff/-data-access-layer/staff-desired-hours.server";
+import { loadStaffScheduleForUser } from "@/routes/_dashboard/staff/-data-access-layer/staff-schedule.server";
 import { createServerFn } from "@tanstack/react-start";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";

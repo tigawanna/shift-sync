@@ -4,7 +4,6 @@ import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import evlog from "evlog/vite";
 import { nitro } from "nitro/vite";
-import vercel from "vite-plugin-vercel/vite";
 import { fileURLToPath, URL } from "url";
 import { defineConfig, lazyPlugins } from "vite-plus";
 
@@ -44,7 +43,6 @@ export default defineConfig({
     devtools(),
     evlog({ service: "shift-sync" }),
     nitro(),
-    vercel(),
     tailwindcss(),
     tanstackStart({
       importProtection: {
