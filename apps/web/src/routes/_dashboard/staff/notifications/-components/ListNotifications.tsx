@@ -9,8 +9,9 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { isCoverageNotification } from "@/lib/schedule/notification-href";
 import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
-import { getRouteApi } from "@tanstack/react-router";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import {
   markAllNotificationsRead,
   markNotificationRead,
@@ -26,6 +27,7 @@ export function ListNotifications() {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
   const search = routeApi.useSearch();
   const navigate = routeApi.useNavigate();
+  const goTo = useNavigate();
   const page = search.page;
   const perPage = search.perPage;
   const sq = search.sq.trim();
@@ -153,6 +155,14 @@ export function ListNotifications() {
                   className="hover:bg-muted/40 w-full rounded-xl border p-4 text-left"
                   onClick={() => {
                     if (unreadItem) markOne.mutate(item.id);
+                    if (isCoverageNotification(item.kind)) {
+                      void goTo({
+                        to: "/staff/coverage",
+                        search: { status: "pending", page: 1 },
+                      });
+                      return;
+                    }
+                    void goTo({ to: "/staff" });
                   }}
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">

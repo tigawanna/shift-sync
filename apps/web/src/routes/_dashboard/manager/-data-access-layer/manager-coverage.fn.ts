@@ -1,3 +1,4 @@
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
 import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
@@ -5,47 +6,129 @@ import { coverageRequest } from "@/lib/drizzle/schema/coverage-schema";
 import { location as locationTable } from "@/lib/drizzle/schema/locations-schema";
 import { shift as shiftTable } from "@/lib/drizzle/schema/schedule-schema";
 import { skill as skillTable } from "@/lib/drizzle/schema/skills-schema";
-import { COVERAGE_STATUS } from "@/lib/schedule/coverage";
+import { ACTIVE_COVERAGE_STATUSES, COVERAGE_STATUS } from "@/lib/schedule/coverage";
 import { notifyUsers } from "@/lib/schedule/notify.server";
-import { recordScheduleAudit, snapshotShift } from "@/lib/schedule/audit.server";
+import { snapshotShift } from "@/lib/schedule/audit.server";
+import { emitCoverageAudit } from "@/lib/schedule/coverage-audit.hooks";
 import { applyApprovedCoverage, getDbAndExpire } from "@/lib/schedule/coverage.server";
 import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray, like, notInArray, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import { z } from "zod";
 import { loadMyManagerLocations } from "./manager-locations.server";
 
 const requestIdSchema = z.object({ requestId: z.string().min(1) });
+const coverageToUser = alias(userTable, "coverage_to_user");
+const coverageResolvedBy = alias(userTable, "coverage_resolved_by");
 
-export const listManagerCoverage = createServerFn({ method: "GET" }).handler(async () => {
-  const { session } = await requireSessionRoles([ROLE.manager]);
-  const managed = await loadMyManagerLocations(session.user.id);
-  const locationIds = managed.map((location) => location.id);
-  if (locationIds.length === 0) return { items: [] };
-
-  const db = await getDbAndExpire();
-  const items = await db
-    .select({
-      request: coverageRequest,
-      shift: shiftTable,
-      locationName: locationTable.name,
-      skillName: skillTable.name,
-      fromName: userTable.name,
-    })
-    .from(coverageRequest)
-    .innerJoin(shiftTable, eq(shiftTable.id, coverageRequest.shiftId))
-    .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
-    .innerJoin(skillTable, eq(skillTable.id, shiftTable.skillId))
-    .innerJoin(userTable, eq(userTable.id, coverageRequest.fromUserId))
-    .where(
-      and(
-        inArray(shiftTable.locationId, locationIds),
-        eq(coverageRequest.status, COVERAGE_STATUS.pending_manager),
-      ),
-    )
-    .orderBy(desc(coverageRequest.updatedAt));
-
-  return { items };
+export const listManagerCoverageInputSchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  perPage: z.coerce.number().int().min(1).max(100).optional().default(ADMIN_LIST_PER_PAGE),
+  sq: z.string().optional().default(""),
+  status: z.enum(["all", "pending", "resolved"]).optional().default("pending"),
 });
+
+export type ListManagerCoverageInput = z.input<typeof listManagerCoverageInputSchema>;
+
+function coverageSearch(sq: string) {
+  const trimmed = sq.trim();
+  if (!trimmed) return undefined;
+  const pattern = `%${trimmed}%`;
+  return or(
+    like(locationTable.name, pattern),
+    like(skillTable.name, pattern),
+    like(userTable.name, pattern),
+    like(coverageToUser.name, pattern),
+    like(coverageRequest.kind, pattern),
+    like(coverageRequest.status, pattern),
+  );
+}
+
+export const listManagerCoverage = createServerFn({ method: "GET" })
+  .validator(listManagerCoverageInputSchema)
+  .handler(async ({ data }) => {
+    const { session } = await requireSessionRoles([ROLE.manager]);
+    const managed = await loadMyManagerLocations(session.user.id);
+    const locationIds = managed.map((location) => location.id);
+    const empty = {
+      items: [],
+      total: 0,
+      page: data.page,
+      perPage: data.perPage,
+      totalPages: 1,
+      pendingCount: 0,
+    };
+    if (locationIds.length === 0) return empty;
+
+    const db = await getDbAndExpire();
+    const page = data.page;
+    const perPage = data.perPage;
+    const statusWhere =
+      data.status === "pending"
+        ? eq(coverageRequest.status, COVERAGE_STATUS.pending_manager)
+        : data.status === "resolved"
+          ? notInArray(coverageRequest.status, [...ACTIVE_COVERAGE_STATUSES])
+          : undefined;
+    const where = and(
+      inArray(shiftTable.locationId, locationIds),
+      statusWhere,
+      coverageSearch(data.sq),
+    );
+    const pendingWhere = and(
+      inArray(shiftTable.locationId, locationIds),
+      eq(coverageRequest.status, COVERAGE_STATUS.pending_manager),
+    );
+
+    const [items, totalRow, pendingRow] = await Promise.all([
+      db
+        .select({
+          request: coverageRequest,
+          shift: shiftTable,
+          locationName: locationTable.name,
+          locationTimezone: locationTable.timezone,
+          skillName: skillTable.name,
+          fromName: userTable.name,
+          toName: coverageToUser.name,
+          resolvedByName: coverageResolvedBy.name,
+        })
+        .from(coverageRequest)
+        .innerJoin(shiftTable, eq(shiftTable.id, coverageRequest.shiftId))
+        .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
+        .innerJoin(skillTable, eq(skillTable.id, shiftTable.skillId))
+        .innerJoin(userTable, eq(userTable.id, coverageRequest.fromUserId))
+        .leftJoin(coverageToUser, eq(coverageToUser.id, coverageRequest.toUserId))
+        .leftJoin(coverageResolvedBy, eq(coverageResolvedBy.id, coverageRequest.resolvedByUserId))
+        .where(where)
+        .orderBy(desc(coverageRequest.updatedAt))
+        .limit(perPage)
+        .offset((page - 1) * perPage),
+      db
+        .select({ total: count() })
+        .from(coverageRequest)
+        .innerJoin(shiftTable, eq(shiftTable.id, coverageRequest.shiftId))
+        .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
+        .innerJoin(skillTable, eq(skillTable.id, shiftTable.skillId))
+        .innerJoin(userTable, eq(userTable.id, coverageRequest.fromUserId))
+        .leftJoin(coverageToUser, eq(coverageToUser.id, coverageRequest.toUserId))
+        .where(where),
+      db
+        .select({ total: count() })
+        .from(coverageRequest)
+        .innerJoin(shiftTable, eq(shiftTable.id, coverageRequest.shiftId))
+        .where(pendingWhere),
+    ]);
+
+    const total = totalRow[0]?.total ?? 0;
+
+    return {
+      items,
+      total,
+      page,
+      perPage,
+      totalPages: Math.max(1, Math.ceil(total / perPage)),
+      pendingCount: pendingRow[0]?.total ?? 0,
+    };
+  });
 
 export const approveCoverage = createServerFn({ method: "POST" })
   .validator(requestIdSchema)
@@ -84,7 +167,8 @@ export const approveCoverage = createServerFn({ method: "POST" })
         })
         .where(eq(coverageRequest.id, row.request.id));
     });
-    await recordScheduleAudit(db, {
+    await emitCoverageAudit({
+      db,
       locationId: row.locationId,
       shiftId: row.request.shiftId,
       actorUserId: session.user.id,
@@ -140,6 +224,14 @@ export const rejectCoverage = createServerFn({ method: "POST" })
       kind: "coverage_rejected",
       title: "Coverage rejected",
       body: "A manager rejected a swap or pickup. The original assignment stays.",
+    });
+    await emitCoverageAudit({
+      db,
+      locationId: row.locationId,
+      shiftId: row.request.shiftId,
+      actorUserId: session.user.id,
+      action: "coverage_reject",
+      after: { requestId: row.request.id, status: COVERAGE_STATUS.rejected },
     });
 
     return { ok: true as const };

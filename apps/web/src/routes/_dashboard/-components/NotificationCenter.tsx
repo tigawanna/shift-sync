@@ -1,7 +1,11 @@
-import { isStaffUser, useViewer } from "@/data-access-layer/auth/viewer";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { getUserAppRole, isStaffUser, useViewer } from "@/data-access-layer/auth/viewer";
+import { hrefForNotification } from "@/lib/schedule/notification-href";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Bell } from "lucide-react";
+import { useState } from "react";
 import {
   markAllNotificationsRead,
   markNotificationRead,
@@ -10,8 +14,11 @@ import {
 import { myNotificationsQueryOptions } from "../-data-access-layer/notifications.query-options";
 
 export function NotificationCenter() {
+  const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
   const { viewer } = useViewer();
+  const navigate = useNavigate();
+  const role = getUserAppRole(viewer.user);
   const query = useQuery(
     myNotificationsQueryOptions({ page: 1, perPage: 8, sq: "", unread: "all" }),
   );
@@ -35,26 +42,37 @@ export function NotificationCenter() {
   });
 
   return (
-    <details className="dropdown dropdown-end">
-      <summary className="btn btn-ghost btn-sm relative" data-test="notification-center">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="relative"
+            data-test="notification-center"
+          />
+        }
+      >
         <Bell className="size-4" />
         {unread > 0 ? (
           <span className="bg-primary text-primary-foreground absolute -top-1 -right-1 min-w-4 rounded-full px-1 text-[10px] font-semibold">
             {unread}
           </span>
         ) : null}
-      </summary>
-      <div className="dropdown-content bg-card z-50 mt-2 w-80 rounded-xl border p-3 shadow-lg">
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80 p-3">
         <div className="mb-2 flex items-center justify-between gap-2">
           <p className="text-sm font-semibold">Notifications</p>
-          <button
+          <Button
             type="button"
-            className="btn btn-ghost btn-xs"
+            size="xs"
+            variant="ghost"
             disabled={unread === 0 || markAll.isPending}
             onClick={() => markAll.mutate()}
           >
             Mark all read
-          </button>
+          </Button>
         </div>
         <label className="mb-3 flex items-center justify-between gap-2 text-xs">
           <span>Also simulate email</span>
@@ -76,6 +94,8 @@ export function NotificationCenter() {
                   className="hover:bg-muted/40 w-full rounded-lg p-2 text-left"
                   onClick={() => {
                     if (!item.readAt) markOne.mutate(item.id);
+                    setOpen(false);
+                    void navigate({ to: hrefForNotification(item.kind, role) });
                   }}
                 >
                   <p className="text-sm font-medium">
@@ -97,11 +117,12 @@ export function NotificationCenter() {
           <Link
             to="/staff/notifications"
             className="text-primary mt-3 block text-center text-xs font-medium"
+            onClick={() => setOpen(false)}
           >
             Open notification center
           </Link>
         ) : null}
-      </div>
-    </details>
+      </PopoverContent>
+    </Popover>
   );
 }

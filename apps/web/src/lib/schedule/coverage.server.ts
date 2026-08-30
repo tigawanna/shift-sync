@@ -14,6 +14,7 @@ import {
   COVERAGE_STATUS,
   DROP_EXPIRE_HOURS,
 } from "@/lib/schedule/coverage";
+import { auditCoverageChange } from "@/lib/schedule/coverage-audit.hooks";
 import { notifyUsers } from "@/lib/schedule/notify.server";
 import { mondayOfWeekContaining } from "@/lib/time/zoned";
 import { and, count, eq, inArray } from "drizzle-orm";
@@ -23,17 +24,18 @@ export async function expireOpenDrops(db: AppDatabase, now = new Date()) {
   const openDrops = await db
     .select({
       id: coverageRequest.id,
+      fromUserId: coverageRequest.fromUserId,
+      shiftId: coverageRequest.shiftId,
+      locationId: shiftTable.locationId,
       startsAt: shiftTable.startsAt,
     })
     .from(coverageRequest)
     .innerJoin(shiftTable, eq(shiftTable.id, coverageRequest.shiftId))
     .where(and(eq(coverageRequest.kind, "drop"), eq(coverageRequest.status, COVERAGE_STATUS.open)));
 
-  const expiredIds = openDrops
-    .filter((row) => row.startsAt.getTime() <= cutoff)
-    .map((row) => row.id);
+  const expired = openDrops.filter((row) => row.startsAt.getTime() <= cutoff);
 
-  if (expiredIds.length === 0) return 0;
+  if (expired.length === 0) return 0;
 
   await db
     .update(coverageRequest)
@@ -41,9 +43,26 @@ export async function expireOpenDrops(db: AppDatabase, now = new Date()) {
       status: COVERAGE_STATUS.expired,
       resolvedAt: now,
     })
-    .where(inArray(coverageRequest.id, expiredIds));
+    .where(
+      inArray(
+        coverageRequest.id,
+        expired.map((row) => row.id),
+      ),
+    );
 
-  return expiredIds.length;
+  await Promise.all(
+    expired.map((row) =>
+      auditCoverageChange(db, {
+        locationId: row.locationId,
+        shiftId: row.shiftId,
+        actorUserId: row.fromUserId,
+        action: "coverage_expire",
+        after: { requestId: row.id, status: COVERAGE_STATUS.expired },
+      }),
+    ),
+  );
+
+  return expired.length;
 }
 
 export async function cancelActiveCoverageForShift(
@@ -53,10 +72,13 @@ export async function cancelActiveCoverageForShift(
 ) {
   const pending = await db
     .select({
+      id: coverageRequest.id,
       fromUserId: coverageRequest.fromUserId,
       toUserId: coverageRequest.toUserId,
+      locationId: shiftTable.locationId,
     })
     .from(coverageRequest)
+    .innerJoin(shiftTable, eq(shiftTable.id, coverageRequest.shiftId))
     .where(
       and(
         eq(coverageRequest.shiftId, shiftId),
@@ -84,6 +106,17 @@ export async function cancelActiveCoverageForShift(
     title: "Coverage request cancelled",
     body: "A pending swap or drop was cancelled because that shift was edited.",
   });
+  await Promise.all(
+    pending.map((row) =>
+      auditCoverageChange(db, {
+        locationId: row.locationId,
+        shiftId,
+        actorUserId: resolvedByUserId,
+        action: "coverage_cancel",
+        after: { requestId: row.id, status: COVERAGE_STATUS.cancelled },
+      }),
+    ),
+  );
 }
 
 export async function countActiveCoverageForUser(db: AppDatabase, userId: string) {

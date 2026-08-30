@@ -16,6 +16,9 @@ export function useCoverageMutations(onSettledSuccess?: () => void) {
     await queryClient.invalidateQueries({ queryKey: ["staff-coverage-requests"] });
     await queryClient.invalidateQueries({ queryKey: ["staff-schedule"] });
     await queryClient.invalidateQueries({ queryKey: ["staff-swap-candidates"] });
+    await queryClient.invalidateQueries({ queryKey: ["admin-audit"] });
+    await queryClient.invalidateQueries({ queryKey: ["manager-shift-audit"] });
+    await queryClient.invalidateQueries({ queryKey: ["manager-coverage"] });
   };
 
   const onError = (error: unknown) => {

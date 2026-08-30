@@ -1,8 +1,10 @@
 import { formatDateInZone, formatTimeInZone } from "@/lib/time/zoned";
 
-export function coverageStatusLabel(status: string) {
+export function coverageStatusLabel(status: string, audience: "staff" | "manager" = "staff") {
   if (status === "pending_peer") return "Waiting on teammate";
-  if (status === "pending_manager") return "Waiting on manager";
+  if (status === "pending_manager") {
+    return audience === "manager" ? "Needs approval" : "Accepted — waiting on manager";
+  }
   if (status === "open") return "Open drop";
   if (status === "approved") return "Approved";
   if (status === "rejected") return "Rejected";

@@ -22,6 +22,7 @@ import {
   getDbAndExpire,
   loadPublishedShift,
 } from "@/lib/schedule/coverage.server";
+import { auditCoverageChange } from "@/lib/schedule/coverage-audit.hooks";
 import { loadLocationManagerIds, notifyUsers } from "@/lib/schedule/notify.server";
 import { createServerFn } from "@tanstack/react-start";
 import { and, asc, count, desc, eq, inArray, like, ne, notInArray, or } from "drizzle-orm";
@@ -315,15 +316,25 @@ export const requestSwap = createServerFn({ method: "POST" })
     await assertQualifiedForShift(db, data.toUserId, uniqueIds[0] ?? lead.shift.id);
     await assertPendingCapacity(db, session.user.id, uniqueIds.length);
 
-    await db.insert(coverageRequest).values(
-      uniqueIds.map((shiftId) => ({
-        id: crypto.randomUUID(),
-        kind: COVERAGE_KIND.swap,
-        status: COVERAGE_STATUS.pending_peer,
-        shiftId,
-        fromUserId: session.user.id,
-        toUserId: data.toUserId,
-      })),
+    const created = uniqueIds.map((shiftId) => ({
+      id: crypto.randomUUID(),
+      kind: COVERAGE_KIND.swap,
+      status: COVERAGE_STATUS.pending_peer,
+      shiftId,
+      fromUserId: session.user.id,
+      toUserId: data.toUserId,
+    }));
+    await db.insert(coverageRequest).values(created);
+    await Promise.all(
+      created.map((row) =>
+        auditCoverageChange(db, {
+          locationId: lead.location.id,
+          shiftId: row.shiftId,
+          actorUserId: session.user.id,
+          action: "coverage_request",
+          after: { request: row },
+        }),
+      ),
     );
     await notifyUsers(db, [data.toUserId], {
       kind: "swap_incoming",
@@ -345,14 +356,24 @@ export const requestDrop = createServerFn({ method: "POST" })
     const { uniqueIds, lead } = await loadMyPublishedShifts(db, session.user.id, data.shiftIds);
     await assertPendingCapacity(db, session.user.id, uniqueIds.length);
 
-    await db.insert(coverageRequest).values(
-      uniqueIds.map((shiftId) => ({
-        id: crypto.randomUUID(),
-        kind: COVERAGE_KIND.drop,
-        status: COVERAGE_STATUS.open,
-        shiftId,
-        fromUserId: session.user.id,
-      })),
+    const created = uniqueIds.map((shiftId) => ({
+      id: crypto.randomUUID(),
+      kind: COVERAGE_KIND.drop,
+      status: COVERAGE_STATUS.open,
+      shiftId,
+      fromUserId: session.user.id,
+    }));
+    await db.insert(coverageRequest).values(created);
+    await Promise.all(
+      created.map((row) =>
+        auditCoverageChange(db, {
+          locationId: lead.location.id,
+          shiftId: row.shiftId,
+          actorUserId: session.user.id,
+          action: "coverage_request",
+          after: { request: row },
+        }),
+      ),
     );
     const managers = await loadLocationManagerIds(db, lead.location.id);
     await notifyUsers(db, managers, {
@@ -403,6 +424,13 @@ export const pickupDrop = createServerFn({ method: "POST" })
       title: "Pickup waiting on a manager",
       body: `${published.location.name}: a drop was picked up and needs approval.`,
     });
+    await auditCoverageChange(db, {
+      locationId: published.location.id,
+      shiftId: row.shiftId,
+      actorUserId: session.user.id,
+      action: "coverage_pickup",
+      after: { requestId: row.id, status: COVERAGE_STATUS.pending_manager },
+    });
 
     return { ok: true as const };
   });
@@ -434,6 +462,13 @@ export const acceptIncomingSwap = createServerFn({ method: "POST" })
       title: "Swap waiting on a manager",
       body: `${published.location.name}: a swap was accepted and needs approval.`,
     });
+    await auditCoverageChange(db, {
+      locationId: published.location.id,
+      shiftId: row.shiftId,
+      actorUserId: session.user.id,
+      action: "coverage_accept",
+      after: { requestId: row.id, status: COVERAGE_STATUS.pending_manager },
+    });
 
     return { ok: true as const };
   });
@@ -461,6 +496,20 @@ export const declineIncomingSwap = createServerFn({ method: "POST" })
         resolvedByUserId: session.user.id,
       })
       .where(eq(coverageRequest.id, row.id));
+
+    const published = await loadPublishedShift(db, row.shiftId);
+    await notifyUsers(db, [row.fromUserId], {
+      kind: "coverage_rejected",
+      title: "Swap declined",
+      body: `${published.location.name}: a teammate declined the swap. You stay on the shift.`,
+    });
+    await auditCoverageChange(db, {
+      locationId: published.location.id,
+      shiftId: row.shiftId,
+      actorUserId: session.user.id,
+      action: "coverage_decline",
+      after: { requestId: row.id, status: COVERAGE_STATUS.rejected },
+    });
 
     return { ok: true as const };
   });
@@ -495,6 +544,20 @@ export const withdrawCoverage = createServerFn({ method: "POST" })
         resolvedByUserId: session.user.id,
       })
       .where(eq(coverageRequest.id, row.id));
+
+    const published = await loadPublishedShift(db, row.shiftId);
+    await notifyUsers(db, [row.toUserId ?? ""], {
+      kind: "coverage_cancelled",
+      title: "Coverage request withdrawn",
+      body: `${published.location.name}: a swap or drop was withdrawn. The original assignment stays.`,
+    });
+    await auditCoverageChange(db, {
+      locationId: published.location.id,
+      shiftId: row.shiftId,
+      actorUserId: session.user.id,
+      action: "coverage_withdraw",
+      after: { requestId: row.id, status: COVERAGE_STATUS.withdrawn },
+    });
 
     return { ok: true as const };
   });

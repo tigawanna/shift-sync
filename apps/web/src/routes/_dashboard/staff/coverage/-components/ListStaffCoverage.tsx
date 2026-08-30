@@ -14,10 +14,10 @@ import { COVERAGE_PENDING_LIMIT } from "@/lib/schedule/coverage";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
 import { useCoverageMutations } from "../../-components/staff-coverage/useCoverageMutations";
+import { CoverageStatusBadge } from "../../-components/staff-coverage/CoverageStatusBadge";
 import {
   coverageKindLabel,
   coverageShiftWhen,
-  coverageStatusLabel,
 } from "../../-components/staff-coverage/coverage-labels";
 import {
   myCoverageQueryOptions,
@@ -63,15 +63,24 @@ export function ListStaffCoverage() {
 
       {incoming.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium tracking-wide uppercase">Incoming swaps</p>
+          <div>
+            <p className="text-xs font-medium tracking-wide uppercase">Incoming swaps</p>
+            <p className="text-muted-foreground text-xs">
+              Accept sends this to a manager. You stay off the roster until they approve. Withdraw
+              or decline closes the request (resolved).
+            </p>
+          </div>
           {incoming.map((row) => (
             <div
               key={row.request.id}
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"
             >
-              <div>
-                <p className="font-medium">
-                  {row.fromName} wants to swap · {row.locationName}
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <p className="flex flex-wrap items-center gap-2 font-medium">
+                  <CoverageStatusBadge status={row.request.status} />
+                  <span>
+                    {row.fromName} wants to swap · {row.locationName}
+                  </span>
                 </p>
                 <p className="text-muted-foreground text-sm">
                   {row.skillName} ·{" "}
@@ -200,10 +209,12 @@ export function ListStaffCoverage() {
                 key={row.request.id}
                 className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"
               >
-                <div>
-                  <p className="font-medium">
-                    {coverageKindLabel(row.request.kind)} ·{" "}
-                    {coverageStatusLabel(row.request.status)} · {row.locationName}
+                <div className="flex min-w-0 flex-col gap-1.5">
+                  <p className="flex flex-wrap items-center gap-2 font-medium">
+                    <CoverageStatusBadge status={row.request.status} />
+                    <span>
+                      {coverageKindLabel(row.request.kind)} · {row.locationName}
+                    </span>
                   </p>
                   <p className="text-muted-foreground text-sm">
                     {row.fromName}
