@@ -46,8 +46,8 @@ function ManagerLocationsPage() {
                 <p className="text-muted-foreground mt-2 text-sm">{location.address}</p>
               ) : null}
               <Link
-                to="/manager/schedule"
-                search={{ locationId: location.id }}
+                to="/manager/schedule/$locationId"
+                params={{ locationId: location.id }}
                 className="btn btn-ghost btn-sm mt-4"
               >
                 View schedules
