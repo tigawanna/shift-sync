@@ -1,6 +1,6 @@
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@tanstack/react-router";
-import { MapPin, Users } from "lucide-react";
+import { ChevronRight, MapPin, Users } from "lucide-react";
 
 export function ManagerHomeCounts({
   staffCount,
@@ -20,6 +20,9 @@ export function ManagerHomeCounts({
             </div>
             <CardTitle className="font-heading text-3xl tabular-nums">{staffCount}</CardTitle>
             <CardDescription>Certified at your locations. Open the team list.</CardDescription>
+            <CardAction>
+              <ChevronRight className="text-muted-foreground size-5" aria-hidden />
+            </CardAction>
           </CardHeader>
         </Card>
       </Link>
@@ -32,6 +35,9 @@ export function ManagerHomeCounts({
             </div>
             <CardTitle className="font-heading text-3xl tabular-nums">{locationCount}</CardTitle>
             <CardDescription>Restaurants you run. Open the location list.</CardDescription>
+            <CardAction>
+              <ChevronRight className="text-muted-foreground size-5" aria-hidden />
+            </CardAction>
           </CardHeader>
         </Card>
       </Link>

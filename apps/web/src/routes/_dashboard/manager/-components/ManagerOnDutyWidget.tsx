@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@tanstack/react-router";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronRight } from "lucide-react";
 import type { loadManagerHome } from "../-data-access-layer/manager-home.fn";
 
 type Home = Awaited<ReturnType<typeof loadManagerHome>>;
@@ -31,7 +31,10 @@ export function ManagerOnDutyWidget({
               oversee · {onDutyTotal} on duty now
             </CardDescription>
           </div>
-          <span className="text-muted-foreground text-sm whitespace-nowrap">Open schedule</span>
+          <span className="text-muted-foreground inline-flex items-center gap-1 text-sm whitespace-nowrap">
+            Open schedule
+            <ChevronRight className="size-4" aria-hidden />
+          </span>
         </Link>
       </CardHeader>
       <CardContent>
@@ -45,15 +48,18 @@ export function ManagerOnDutyWidget({
                   to="/manager/team/$staffId"
                   params={{ staffId: item.userId }}
                   search={{ month: item.date.slice(0, 7) }}
-                  className="hover:bg-muted/40 -mx-2 flex flex-col gap-0.5 rounded-lg px-2 py-2.5 sm:flex-row sm:items-baseline sm:justify-between"
+                  className="hover:bg-muted/40 -mx-2 flex items-center gap-2 rounded-lg px-2 py-2.5"
                 >
-                  <p className="text-sm">
-                    {item.userName}{" "}
-                    <span className="text-muted-foreground">· {item.skillName}</span>
-                  </p>
-                  <p className="text-muted-foreground text-xs tabular-nums">
-                    {item.locationName} · {item.startTime}–{item.endTime}
-                  </p>
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:justify-between">
+                    <p className="text-sm">
+                      {item.userName}{" "}
+                      <span className="text-muted-foreground">· {item.skillName}</span>
+                    </p>
+                    <p className="text-muted-foreground text-xs tabular-nums">
+                      {item.locationName} · {item.startTime}–{item.endTime}
+                    </p>
+                  </div>
+                  <ChevronRight className="text-muted-foreground size-4 shrink-0" aria-hidden />
                 </Link>
               </li>
             ))}

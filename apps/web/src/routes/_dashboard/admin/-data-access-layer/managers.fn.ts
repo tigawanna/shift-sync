@@ -3,8 +3,10 @@ import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
 import { user as userTable } from "@/lib/drizzle/schema";
+import { location as locationTable } from "@/lib/drizzle/schema/locations-schema";
+import { queryManagerHome } from "@/lib/schedule/manager-home.server";
 import { createServerFn } from "@tanstack/react-start";
-import { eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { listUserLocationIds, replaceUserLocations } from "./locations.server";
 import { listUsersByRolePage } from "./people-list.server";
@@ -53,6 +55,40 @@ async function assertAdminManager(userId: string) {
     throw new Error("Manager not found.");
   }
 }
+
+export const getAdminManager = createServerFn({ method: "GET" })
+  .validator(z.object({ managerId: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await requireSessionRoles([ROLE.admin]);
+    const db = await getDb();
+    const [person] = await db
+      .select()
+      .from(userTable)
+      .where(eq(userTable.id, data.managerId))
+      .limit(1);
+    if (!person || person.role !== ROLE.manager) {
+      throw new Error("Manager not found.");
+    }
+    return person;
+  });
+
+export const loadAdminManagerHome = createServerFn({ method: "GET" })
+  .validator(z.object({ managerId: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    await assertAdminManager(data.managerId);
+    const locationIds = await listUserLocationIds(data.managerId);
+    const home = await queryManagerHome(locationIds);
+    if (locationIds.length === 0) {
+      return { ...home, locations: [] };
+    }
+    const db = await getDb();
+    const locations = await db
+      .select({ id: locationTable.id, name: locationTable.name })
+      .from(locationTable)
+      .where(inArray(locationTable.id, locationIds))
+      .orderBy(asc(locationTable.name));
+    return { ...home, locations };
+  });
 
 export const getManagerLocations = createServerFn({ method: "GET" })
   .validator(getManagerLocationsInputSchema)
