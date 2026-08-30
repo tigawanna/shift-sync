@@ -1,6 +1,6 @@
 import { PasswordInput } from "@/components/ui/password-input";
 import { viewerqueryOptions } from "@/data-access-layer/auth/viewer";
-import { authClient } from "@/lib/better-auth/client";
+import { authClient, authClientErrorMessage } from "@/lib/better-auth/client";
 import { getUserAppRole, resolveDashboardPath } from "@/lib/better-auth/roles";
 import { AppConfig } from "@/utils/system";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -45,7 +45,7 @@ export function SignupComponent() {
     },
     onError: (error: unknown) => {
       toast.error("Sign up failed", {
-        description: error instanceof Error ? error.message : undefined,
+        description: authClientErrorMessage(error),
       });
     },
     onSuccess: async () => {

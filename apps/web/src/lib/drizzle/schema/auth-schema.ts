@@ -90,6 +90,18 @@ export const verification = sqliteTable(
   (table) => [index("verification_identifier_idx").on(table.identifier)],
 );
 
+/** Better Auth rate-limit windows. Database storage so serverless instances share a counter. */
+export const rateLimit = sqliteTable(
+  "rate_limit",
+  {
+    id: text("id").primaryKey(),
+    key: text("key").notNull(),
+    count: integer("count").notNull(),
+    lastRequest: integer("last_request").notNull(),
+  },
+  (table) => [index("rate_limit_key_idx").on(table.key)],
+);
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),
