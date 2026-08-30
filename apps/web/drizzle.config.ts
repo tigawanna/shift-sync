@@ -12,6 +12,7 @@ export default defineConfig({
   schema: "./src/lib/drizzle/schema",
   out: "./drizzle",
   dialect: remote ? "turso" : "sqlite",
+  schemaFilter: ["public"],
   dbCredentials: remote
     ? {
         url: databaseUrl,

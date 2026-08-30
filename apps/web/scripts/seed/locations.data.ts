@@ -71,6 +71,15 @@ export function buildSeedUserLocations(
   }
 
   for (let i = 1; i <= staffCount; i += 1) {
+    // Staff 041 is the calendar pressure fixture: three sites, including a second timezone.
+    if (i === 41) {
+      assignments[staffEmail(i)] = [
+        "loc-pier-bistro",
+        "loc-harbor-house",
+        "loc-atlantic-table",
+      ];
+      continue;
+    }
     const locationCount = i % 3 === 0 ? 2 : 1;
     assignments[staffEmail(i)] = pickRandomLocations(i + 100, locationCount);
   }

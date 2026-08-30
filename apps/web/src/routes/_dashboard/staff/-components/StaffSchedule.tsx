@@ -4,6 +4,7 @@ import type {
   StaffScheduleQueryMeta,
   StaffScheduleShift,
 } from "@/routes/_dashboard/staff/-data-access-layer/staff-schedule.fn";
+import { WEEKLY_HOURS_LIMIT, WEEKLY_HOURS_RECOMMENDED } from "@/lib/schedule/constraints";
 import {
   addMonthsYm,
   currentYearMonth,
@@ -15,7 +16,7 @@ import {
 } from "@/lib/time/zoned";
 import { cn } from "@/lib/utils";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, TriangleAlert } from "lucide-react";
 import { useMemo } from "react";
 import { myStaffScheduleQueryOptions } from "../-data-access-layer/staff-schedule.query-options";
 import { Route } from "../index";
@@ -109,6 +110,72 @@ function weekSpans(weekDates: string[], shifts: StaffScheduleShift[]) {
   return packLanes(mergeAdjacent(clipped));
 }
 
+function weekScheduledHours(weekDates: string[], shifts: StaffScheduleShift[]) {
+  return shifts
+    .filter((shift) => clipShiftToWeek(shift, weekDates))
+    .reduce((total, shift) => total + shift.hours, 0);
+}
+
+function WeekHoursCell({ hours, weekStart }: { hours: number; weekStart: string }) {
+  const overLimit = hours >= WEEKLY_HOURS_LIMIT;
+  const overRecommended = hours > WEEKLY_HOURS_RECOMMENDED;
+  const hoursOverRecommended = hours - WEEKLY_HOURS_RECOMMENDED;
+  const hoursOverLimit = hours - WEEKLY_HOURS_LIMIT;
+
+  const hoursLabel = (
+    <span className="tabular-nums">
+      {hours === 0 ? "—" : `${hours.toFixed(1)}h`}
+    </span>
+  );
+
+  if (!overRecommended) {
+    return (
+      <div className="bg-card flex h-full flex-col items-center justify-center gap-0.5 px-1">
+        <p className="text-muted-foreground text-[11px] font-medium">{hoursLabel}</p>
+      </div>
+    );
+  }
+
+  const reason = overLimit
+    ? `This week is over the ${WEEKLY_HOURS_LIMIT}h weekly limit.`
+    : `This week is over the ${WEEKLY_HOURS_RECOMMENDED}h recommended load.`;
+
+  return (
+    <HoverCard>
+      <HoverCardTrigger
+        delay={0}
+        closeDelay={100}
+        render={
+          <button
+            type="button"
+            className={cn(
+              "flex h-full w-full flex-col items-center justify-center gap-0.5 px-1",
+              overLimit ? "bg-destructive/10 text-destructive" : "bg-card text-amber-600 dark:text-amber-400",
+            )}
+            aria-label={`${hours.toFixed(1)} hours the week of ${weekStart}, over the weekly limit`}
+          />
+        }
+      >
+        <span className="flex items-center gap-0.5 text-[11px] font-semibold">
+          <TriangleAlert className="size-3 shrink-0" />
+          {hoursLabel}
+        </span>
+      </HoverCardTrigger>
+      <HoverCardContent side="left" align="center" className="w-64 p-3">
+        <p className="font-medium">Week of {formatDayLabel(weekStart)}</p>
+        <p className="mt-1 text-sm">{reason}</p>
+        <p className="text-muted-foreground mt-2 text-xs tabular-nums">
+          {hours.toFixed(1)}h scheduled
+          {overLimit
+            ? ` · ${hoursOverLimit.toFixed(1)}h over the ${WEEKLY_HOURS_LIMIT}h limit`
+            : null}
+          {` · ${hoursOverRecommended.toFixed(1)}h over the ${WEEKLY_HOURS_RECOMMENDED}h recommended`}
+        </p>
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
 function QueryMetaPanel({
   meta,
   monthLabel,
@@ -186,19 +253,23 @@ function ShiftSpanHover({ span, side }: { span: CalendarSpan; side: "top" | "bot
           {lead.skillName} · {hours.toFixed(1)}h
         </p>
         <ul className="mt-2 flex flex-col gap-1.5">
-          {span.shifts.map((shift) => (
+          {span.shifts.map((shift) => {
+            const sameDay = shift.startDate === shift.endDate;
+            const dayLabel = sameDay
+              ? shift.startDate.slice(5) // e.g. 'MM-DD'
+              : `${shift.startDate.slice(5)}–${shift.endDate.slice(5)}`;
+       
+            return (
             <li key={shift.id} className="text-xs">
               <p className="tabular-nums">
-                {shift.startDate === shift.endDate
-                  ? formatDayLabel(shift.startDate)
-                  : `${shift.startDate.slice(5)}–${shift.endDate.slice(5)}`}
+                {dayLabel}
               </p>
               <p className="text-muted-foreground tabular-nums">
                 {shiftTimeLabel(shift)}
                 {shift.notes ? ` · ${shift.notes}` : ""}
               </p>
             </li>
-          ))}
+          )})}
         </ul>
         <p className="text-muted-foreground mt-2 text-[11px]">{lead.timezone}</p>
       </HoverCardContent>
@@ -270,9 +341,9 @@ export function StaffSchedule() {
       ) : null}
 
       <div className="-mx-1 overflow-x-auto px-1">
-        <div className="min-w-208">
+        <div className="min-w-232">
           <div className="overflow-hidden rounded-xl bg-foreground/50">
-          <div className="grid grid-cols-7 gap-0.5">
+          <div className="grid grid-cols-[repeat(7,minmax(0,1fr))_4.5rem] gap-0.5">
             {WEEKDAYS.map((label) => (
               <p
                 key={label}
@@ -281,20 +352,25 @@ export function StaffSchedule() {
                 {label}
               </p>
             ))}
+            <p className="text-muted-foreground bg-muted px-1 py-1.5 text-center text-[11px] font-medium tracking-wide uppercase">
+              Hours
+            </p>
           </div>
           <div className="mt-0.5 flex flex-col gap-0.5">
             {weeks.map((weekDates, weekIndex) => {
               const spans = weekSpans(weekDates, shifts);
               const laneCount = spans.reduce((max, span) => Math.max(max, span.lane + 1), 0);
               const bodyHeight = Math.max(64, 36 + laneCount * LANE_PX);
+              const hours = weekScheduledHours(weekDates, shifts);
+              const weekStart = weekDates[0] ?? "";
 
               return (
                 <div
-                  key={weekDates[0]}
-                  className="relative bg-foreground/50"
-                  style={{ minHeight: bodyHeight }}
+                  key={weekStart}
+                  className="grid grid-cols-[repeat(7,minmax(0,1fr))_4.5rem] gap-0.5 bg-foreground/50"
+                  style={{ height: bodyHeight }}
                 >
-                  <div className="grid h-full grid-cols-7 gap-0.5">
+                  <div className="relative col-span-7 grid grid-cols-7 gap-0.5">
                     {weekDates.map((date) => {
                       const inMonth = yearMonthOf(date) === month;
                       const isToday = date === today;
@@ -304,7 +380,7 @@ export function StaffSchedule() {
                           key={date}
                           aria-label={formatDayLabel(date)}
                           className={cn(
-                            "min-h-16 px-2 pt-1.5 ring-1 ring-foreground/30 ring-inset",
+                            "h-full px-2 pt-1.5 ring-1 ring-foreground/30 ring-inset",
                             inMonth ? "bg-card" : "bg-muted/50",
                           )}
                         >
@@ -323,27 +399,28 @@ export function StaffSchedule() {
                         </div>
                       );
                     })}
+                    <div
+                      className="absolute inset-x-0 top-8 bottom-1.5 grid grid-cols-7 gap-x-0.5 px-0.5"
+                      style={{ gridTemplateRows: `repeat(${Math.max(laneCount, 1)}, ${LANE_PX}px)` }}
+                    >
+                      {spans.map((span) => (
+                        <div
+                          key={span.id}
+                          className="min-w-0"
+                          style={{
+                            gridColumn: `${span.startCol + 1} / ${span.endCol + 2}`,
+                            gridRow: span.lane + 1,
+                          }}
+                        >
+                          <ShiftSpanHover
+                            span={span}
+                            side={weekIndex >= weeks.length - 2 ? "top" : "bottom"}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div
-                    className="absolute inset-x-0 top-8 bottom-1.5 grid grid-cols-7 gap-x-0.5 px-0.5"
-                    style={{ gridTemplateRows: `repeat(${Math.max(laneCount, 1)}, ${LANE_PX}px)` }}
-                  >
-                    {spans.map((span) => (
-                      <div
-                        key={span.id}
-                        className="min-w-0"
-                        style={{
-                          gridColumn: `${span.startCol + 1} / ${span.endCol + 2}`,
-                          gridRow: span.lane + 1,
-                        }}
-                      >
-                        <ShiftSpanHover
-                          span={span}
-                          side={weekIndex >= weeks.length - 2 ? "top" : "bottom"}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  <WeekHoursCell hours={hours} weekStart={weekStart} />
                 </div>
               );
             })}

@@ -245,6 +245,8 @@ function canWorkTemplate(email: string, template: ShiftTemplate) {
   return true;
 }
 
+const PRESSURE_STAFF_EMAIL = staffEmail(41);
+
 export function buildLocationWeekShifts(
   locationId: string,
   weekStart: string,
@@ -252,7 +254,7 @@ export function buildLocationWeekShifts(
 ): SeedShiftSpec[] {
   return WEEK_TEMPLATES.flatMap((template) => {
     const assigneeEmails = emailsWithSkill(staffEmails, template.skillId).filter((email) =>
-      canWorkTemplate(email, template),
+      canWorkTemplate(email, template) && email !== PRESSURE_STAFF_EMAIL,
     );
     if (assigneeEmails.length === 0) return [];
 
@@ -272,6 +274,144 @@ export function buildLocationWeekShifts(
   });
 }
 
+/** Half-shifts at three sites, timed to overlap in UTC (Pacific + Eastern). */
+function pressureShiftsForWeek(weekStart: string): SeedShiftSpec[] {
+  return [
+    {
+      id: `shift-loc-pier-bistro-${weekStart}-staff041-mon-half`,
+      locationId: "loc-pier-bistro",
+      skillId: "bartender",
+      dayOffset: 0,
+      startTime: "16:00",
+      endTime: "20:00",
+      headcountNeeded: 1,
+      notes: "Monday bar — first half",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+    {
+      id: `shift-loc-harbor-house-${weekStart}-staff041-mon-overlap`,
+      locationId: "loc-harbor-house",
+      skillId: "bartender",
+      dayOffset: 0,
+      startTime: "17:30",
+      endTime: "21:00",
+      headcountNeeded: 1,
+      notes: "Monday bar — overlapping half",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+    {
+      id: `shift-loc-pier-bistro-${weekStart}-staff041-tue-half`,
+      locationId: "loc-pier-bistro",
+      skillId: "bartender",
+      dayOffset: 1,
+      startTime: "16:00",
+      endTime: "20:00",
+      headcountNeeded: 1,
+      notes: "Tuesday bar — first half",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+    {
+      id: `shift-loc-harbor-house-${weekStart}-staff041-tue-overlap`,
+      locationId: "loc-harbor-house",
+      skillId: "bartender",
+      dayOffset: 1,
+      startTime: "17:30",
+      endTime: "21:00",
+      headcountNeeded: 1,
+      notes: "Tuesday bar — overlapping half",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+    {
+      id: `shift-loc-pier-bistro-${weekStart}-staff041-fri-half`,
+      locationId: "loc-pier-bistro",
+      skillId: "bartender",
+      dayOffset: 4,
+      startTime: "17:00",
+      endTime: "20:00",
+      headcountNeeded: 1,
+      notes: "Friday bar — first half",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+    {
+      id: `shift-loc-harbor-house-${weekStart}-staff041-fri-overlap`,
+      locationId: "loc-harbor-house",
+      skillId: "bartender",
+      dayOffset: 4,
+      startTime: "18:30",
+      endTime: "21:30",
+      headcountNeeded: 1,
+      notes: "Friday bar — overlapping half",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+    {
+      id: `shift-loc-atlantic-table-${weekStart}-staff041-fri-east`,
+      locationId: "loc-atlantic-table",
+      skillId: "bartender",
+      dayOffset: 4,
+      startTime: "20:00",
+      endTime: "23:00",
+      headcountNeeded: 1,
+      notes: "Friday bar — East Coast half (overlaps PT)",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+    {
+      id: `shift-loc-pier-bistro-${weekStart}-staff041-sat-half`,
+      locationId: "loc-pier-bistro",
+      skillId: "bartender",
+      dayOffset: 5,
+      startTime: "23:00",
+      endTime: "01:00",
+      headcountNeeded: 1,
+      notes: "Overnight close — first half",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+    {
+      id: `shift-loc-harbor-house-${weekStart}-staff041-sat-overlap`,
+      locationId: "loc-harbor-house",
+      skillId: "bartender",
+      dayOffset: 5,
+      startTime: "23:30",
+      endTime: "02:30",
+      headcountNeeded: 1,
+      notes: "Overnight close — overlapping half",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+    {
+      id: `shift-loc-pier-bistro-${weekStart}-staff041-sun-half`,
+      locationId: "loc-pier-bistro",
+      skillId: "bartender",
+      dayOffset: 6,
+      startTime: "10:00",
+      endTime: "13:00",
+      headcountNeeded: 1,
+      notes: "Sunday service — first half",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+    {
+      id: `shift-loc-harbor-house-${weekStart}-staff041-sun-overlap`,
+      locationId: "loc-harbor-house",
+      skillId: "bartender",
+      dayOffset: 6,
+      startTime: "12:00",
+      endTime: "16:00",
+      headcountNeeded: 1,
+      notes: "Sunday service — overlapping half",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+    {
+      id: `shift-loc-atlantic-table-${weekStart}-staff041-sun-east`,
+      locationId: "loc-atlantic-table",
+      skillId: "bartender",
+      dayOffset: 6,
+      startTime: "13:00",
+      endTime: "16:00",
+      headcountNeeded: 1,
+      notes: "Sunday brunch — East Coast half (overlaps PT)",
+      assigneeEmails: [PRESSURE_STAFF_EMAIL],
+    },
+  ];
+}
+
 export function buildSeedScheduleWeeks(anchorMonday: string) {
   const weekStarts = [-7, 0, 7].map((offset) => addDaysYmd(anchorMonday, offset));
 
@@ -282,7 +422,10 @@ export function buildSeedScheduleWeeks(anchorMonday: string) {
       location,
       weekStart,
       managerEmail,
-      shifts: buildLocationWeekShifts(location.id, weekStart, staffEmails),
+      shifts: [
+        ...buildLocationWeekShifts(location.id, weekStart, staffEmails),
+        ...pressureShiftsForWeek(weekStart).filter((shift) => shift.locationId === location.id),
+      ],
     }));
   });
 }
