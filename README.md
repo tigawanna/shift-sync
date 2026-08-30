@@ -69,9 +69,9 @@ Locations: Harbor House and Pier 39 Bistro (`America/Los_Angeles`); Atlantic Tab
 3. **Timezone tangle** — Availability is matched in the **shift location** timezone, not the browser. Staff 41’s “9–5” is 9–5 Pacific at Pier 39 and 9–5 Eastern at Atlantic Table.
 4. **Simultaneous assignment** — Two managers assigning the same person to overlapping times: the write re-reads overlaps in a transaction and rejects the second with a double-booking error.
 5. **Fairness complaint** — Manager week board: **Premium** on Fri/Sat starts at 16:00 local. Labor report: premium counts + fairness score 0–100.
-6. **Regret swap** — Staff A withdraws before manager approval. After approval, A cannot withdraw; a later shift edit does not unwind the swap (see [docs/requirements.md](./docs/requirements.md) decisions).
+6. **Regret swap** — Staff A withdraws before manager approval. After approval, A cannot withdraw; a later shift edit does not unwind the swap (see assumptions below).
 
-Assumptions and remaining product choices: [docs/requirements.md](./docs/requirements.md) (Intentional Ambiguities → Decisions). Role checklist: [docs/objectives.md](./docs/objectives.md).
+Role checklist: [docs/objectives.md](./docs/objectives.md). Full decision notes: [docs/requirements.md](./docs/requirements.md).
 
 ### Known limitations
 
@@ -79,6 +79,20 @@ Assumptions and remaining product choices: [docs/requirements.md](./docs/require
 - Live updates are a **15s refetch**, not websockets.
 - Admin schedules are oversight (who works where, labor, on duty), not the manager edit board.
 - Concurrent assign integrity is a transaction re-check on SQLite, not an exclusion constraint.
+
+### Assumptions (ambiguous requirements)
+
+The brief left these unspecified. Choices in the product:
+
+| Question | Decision |
+| --- | --- |
+| Historical data after de-certification | Cert removal does not rewrite `shift` / `shift_assignment`. Staff calendar only shows locations they are still certified for. Managers cannot assign them there again. |
+| Desired hours vs availability | Separate. Availability is *when* they can work; desired hours is a weekly target. Unset week = no target. Desired hours does not change assign eligibility. Empty weekly windows = open except blocked exceptions. |
+| Consecutive days (1h vs 11h) | Any assigned time on a civil date in the location week counts as a worked day. Overnight hours that land on a date count for that date. |
+| Edit after swap approval | Approval already moved the assignment. Later edit is a normal shift edit (48h cutoff still applies). Current assignee stays. Pending (not-yet-approved) swap/drop on that shift is cancelled and parties are notified. The approved swap is not unwound. |
+| Location spanning a timezone boundary | One IANA timezone per location. Shifts, availability, overnight splits, and weekly hours use that stored zone — not the browser and not a second zone for a nearby state. |
+
+Also: 40h is over the weekly limit with a confirm, not a hard assign block (12h daily is a hard block). OT is projected at **$22/h × 1.5** over 40h, summing hours at every location. Premium is Fri/Sat start at **16:00** location-local. Audit export uses Coastal Eats HQ dates (`America/Los_Angeles`).
 
 ## Deploy to Vercel
 
