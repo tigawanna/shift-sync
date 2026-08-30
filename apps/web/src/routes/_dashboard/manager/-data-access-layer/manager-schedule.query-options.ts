@@ -33,10 +33,11 @@ export function managerSkillsQueryOptions() {
   });
 }
 
-export function staffForManagerShiftQueryOptions(shiftId: string) {
+export function staffForManagerShiftQueryOptions(shiftId: string, q = "") {
+  const query = q.trim();
   return queryOptions({
-    queryKey: ["manager-shift-staff", shiftId],
-    queryFn: () => listStaffForManagerShift({ data: { shiftId } }),
+    queryKey: ["manager-shift-staff", shiftId, query],
+    queryFn: () => listStaffForManagerShift({ data: { shiftId, q: query } }),
     enabled: shiftId.length > 0,
   });
 }

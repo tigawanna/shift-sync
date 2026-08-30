@@ -1,0 +1,1 @@
+ALTER TABLE `shift_assignment` ADD `override_reason` text;

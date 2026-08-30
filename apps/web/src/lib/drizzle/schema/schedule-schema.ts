@@ -48,6 +48,7 @@ export const shiftAssignment = sqliteTable(
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
+    overrideReason: text("override_reason"),
   },
   (table) => [
     uniqueIndex("shift_assignment_shift_user_idx").on(table.shiftId, table.userId),

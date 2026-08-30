@@ -8,10 +8,40 @@ import {
   shift as shiftTable,
   shiftAssignment as shiftAssignmentTable,
 } from "@/lib/drizzle/schema/schedule-schema";
-import { skill as skillTable, userSkill } from "@/lib/drizzle/schema/skills-schema";
-import { addDaysYmd, mondayOfWeekContaining, zonedWallTimeToUtc } from "@/lib/time/zoned";
+import {
+  skill as skillTable,
+  userAvailability as userAvailabilityTable,
+  userAvailabilityException as userAvailabilityExceptionTable,
+  userSkill,
+} from "@/lib/drizzle/schema/skills-schema";
+import {
+  evaluateAssignmentConstraints,
+  formatAssignFailure,
+  type ShiftInterval,
+} from "@/lib/schedule/assign-constraints";
+import {
+  addDaysYmd,
+  formatDateInZone,
+  mondayOfWeekContaining,
+  zonedWallTimeToUtc,
+} from "@/lib/time/zoned";
 import { createServerFn } from "@tanstack/react-start";
-import { and, asc, eq, gt, lt, ne } from "drizzle-orm";
+import { SHIFT_ASSIGN_STAFF_LIMIT } from "@/components/pagination/constants";
+import {
+  and,
+  asc,
+  count,
+  eq,
+  gt,
+  gte,
+  inArray,
+  like,
+  lt,
+  lte,
+  ne,
+  notInArray,
+  or,
+} from "drizzle-orm";
 import { z } from "zod";
 import { assertManagerLocationAccess } from "./manager-locations.server";
 import { cutoffInstant, EDIT_CUTOFF_HOURS } from "./manager-schedule.fn";
@@ -41,9 +71,15 @@ export const updateManagerShiftInputSchema = z.object({
 
 const shiftIdSchema = z.object({ shiftId: z.string().min(1) });
 
+export const listStaffForManagerShiftInputSchema = z.object({
+  shiftId: z.string().min(1),
+  q: z.string().optional().default(""),
+});
+
 export const assignManagerShiftInputSchema = z.object({
   shiftId: z.string().min(1),
   userId: z.string().min(1),
+  overrideReason: z.string().trim().min(8).max(280).optional(),
 });
 
 function wallTime(value: string) {
@@ -107,6 +143,132 @@ async function getShiftContext(shiftId: string) {
   return { shift: row, weekStart, published: Boolean(publication) };
 }
 
+function constraintWindow(startsAt: Date, endsAt: Date, timezone: string) {
+  const weekStart = mondayOfWeekContaining(startsAt, timezone);
+  const weekEnd = addDaysYmd(weekStart, 7);
+  const restPad = 36 * 3_600_000;
+  const rangeStart = new Date(
+    Math.min(
+      zonedWallTimeToUtc(addDaysYmd(weekStart, -2), "00:00", timezone).getTime(),
+      startsAt.getTime() - restPad,
+    ),
+  );
+  const rangeEnd = new Date(
+    Math.max(
+      zonedWallTimeToUtc(addDaysYmd(weekEnd, 2), "00:00", timezone).getTime(),
+      endsAt.getTime() + restPad,
+    ),
+  );
+  return {
+    rangeStart,
+    rangeEnd,
+    exceptionStart: formatDateInZone(rangeStart, timezone),
+    exceptionEnd: formatDateInZone(rangeEnd, timezone),
+  };
+}
+
+async function loadConstraintInputs(
+  userIds: string[],
+  shiftId: string,
+  startsAt: Date,
+  endsAt: Date,
+  timezone: string,
+) {
+  const shiftsByUser = new Map<string, ShiftInterval[]>();
+  const weeklyByUser = new Map<
+    string,
+    { weekday: number; startMinute: number; endMinute: number }[]
+  >();
+  const exceptionsByUser = new Map<
+    string,
+    { date: string; kind: "blocked" | "extra"; startMinute: number; endMinute: number }[]
+  >();
+  for (const userId of userIds) {
+    shiftsByUser.set(userId, []);
+    weeklyByUser.set(userId, []);
+    exceptionsByUser.set(userId, []);
+  }
+  if (userIds.length === 0) {
+    return { shiftsByUser, weeklyByUser, exceptionsByUser };
+  }
+
+  const window = constraintWindow(startsAt, endsAt, timezone);
+  const db = await getDb();
+  const [shiftRows, weeklyRows, exceptionRows] = await Promise.all([
+    db
+      .select({
+        userId: shiftAssignmentTable.userId,
+        id: shiftTable.id,
+        startsAt: shiftTable.startsAt,
+        endsAt: shiftTable.endsAt,
+        locationName: locationTable.name,
+      })
+      .from(shiftAssignmentTable)
+      .innerJoin(shiftTable, eq(shiftTable.id, shiftAssignmentTable.shiftId))
+      .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
+      .where(
+        and(
+          inArray(shiftAssignmentTable.userId, userIds),
+          ne(shiftTable.id, shiftId),
+          lt(shiftTable.startsAt, window.rangeEnd),
+          gt(shiftTable.endsAt, window.rangeStart),
+        ),
+      ),
+    db
+      .select({
+        userId: userAvailabilityTable.userId,
+        weekday: userAvailabilityTable.weekday,
+        startMinute: userAvailabilityTable.startMinute,
+        endMinute: userAvailabilityTable.endMinute,
+      })
+      .from(userAvailabilityTable)
+      .where(inArray(userAvailabilityTable.userId, userIds)),
+    db
+      .select({
+        userId: userAvailabilityExceptionTable.userId,
+        date: userAvailabilityExceptionTable.date,
+        kind: userAvailabilityExceptionTable.kind,
+        startMinute: userAvailabilityExceptionTable.startMinute,
+        endMinute: userAvailabilityExceptionTable.endMinute,
+      })
+      .from(userAvailabilityExceptionTable)
+      .where(
+        and(
+          inArray(userAvailabilityExceptionTable.userId, userIds),
+          gte(userAvailabilityExceptionTable.date, window.exceptionStart),
+          lte(userAvailabilityExceptionTable.date, window.exceptionEnd),
+        ),
+      ),
+  ]);
+
+  for (const row of shiftRows) {
+    shiftsByUser.get(row.userId)?.push({
+      id: row.id,
+      startsAt: row.startsAt,
+      endsAt: row.endsAt,
+      locationName: row.locationName,
+    });
+  }
+  for (const row of weeklyRows) {
+    weeklyByUser.get(row.userId)?.push({
+      weekday: row.weekday,
+      startMinute: row.startMinute,
+      endMinute: row.endMinute,
+    });
+  }
+  for (const row of exceptionRows) {
+    const kind = row.kind === "extra" ? "extra" : "blocked";
+    exceptionsByUser.get(row.userId)?.push({
+      date: row.date,
+      kind,
+      startMinute: row.startMinute,
+      endMinute: row.endMinute,
+    });
+  }
+
+  return { shiftsByUser, weeklyByUser, exceptionsByUser };
+}
+
 export const listManagerSkills = createServerFn({ method: "GET" }).handler(async () => {
   await requireSessionRoles([ROLE.manager]);
   const db = await getDb();
@@ -116,40 +278,107 @@ export const listManagerSkills = createServerFn({ method: "GET" }).handler(async
     .orderBy(asc(skillTable.name));
 });
 
+function staffNameSearch(q: string) {
+  const trimmed = q.trim();
+  if (!trimmed) return undefined;
+  const pattern = `%${trimmed}%`;
+  return or(like(userTable.name, pattern), like(userTable.email, pattern));
+}
+
 export const listStaffForManagerShift = createServerFn({ method: "GET" })
-  .validator(shiftIdSchema)
+  .validator(listStaffForManagerShiftInputSchema)
   .handler(async ({ data }) => {
     const { session } = await requireSessionRoles([ROLE.manager]);
     const context = await getShiftContext(data.shiftId);
     await assertManagerLocationAccess(session.user.id, context.shift.locationId);
 
+    const assignedIds = context.shift.assignments?.map((row) => row.userId) ?? [];
     const db = await getDb();
-    const rows = await db
-      .select({
-        id: userTable.id,
-        name: userTable.name,
-        email: userTable.email,
-      })
-      .from(userTable)
-      .innerJoin(
-        userLocation,
-        and(
-          eq(userLocation.userId, userTable.id),
-          eq(userLocation.locationId, context.shift.locationId),
-        ),
-      )
-      .innerJoin(
-        userSkill,
-        and(eq(userSkill.userId, userTable.id), eq(userSkill.skillId, context.shift.skillId)),
-      )
-      .orderBy(asc(userTable.name));
+    const eligible = and(
+      eq(userLocation.locationId, context.shift.locationId),
+      eq(userSkill.skillId, context.shift.skillId),
+    );
 
-    const assigned = new Set(context.shift.assignments?.map((row) => row.userId) ?? []);
+    const assignedRows =
+      assignedIds.length === 0
+        ? []
+        : await db
+            .select({
+              id: userTable.id,
+              name: userTable.name,
+              email: userTable.email,
+            })
+            .from(userTable)
+            .where(inArray(userTable.id, assignedIds))
+            .orderBy(asc(userTable.name));
 
-    return rows.map((person) => ({
-      ...person,
-      assigned: assigned.has(person.id),
-    }));
+    const candidateWhere = and(
+      eligible,
+      assignedIds.length > 0 ? notInArray(userTable.id, assignedIds) : undefined,
+      staffNameSearch(data.q),
+    );
+
+    const [candidateRows, totalRow] = await Promise.all([
+      db
+        .select({
+          id: userTable.id,
+          name: userTable.name,
+          email: userTable.email,
+        })
+        .from(userTable)
+        .innerJoin(userLocation, eq(userLocation.userId, userTable.id))
+        .innerJoin(userSkill, eq(userSkill.userId, userTable.id))
+        .where(candidateWhere)
+        .orderBy(asc(userTable.name))
+        .limit(SHIFT_ASSIGN_STAFF_LIMIT),
+      db
+        .select({ total: count() })
+        .from(userTable)
+        .innerJoin(userLocation, eq(userLocation.userId, userTable.id))
+        .innerJoin(userSkill, eq(userSkill.userId, userTable.id))
+        .where(candidateWhere),
+    ]);
+
+    const { shiftsByUser, weeklyByUser, exceptionsByUser } = await loadConstraintInputs(
+      candidateRows.map((row) => row.id),
+      context.shift.id,
+      context.shift.startsAt,
+      context.shift.endsAt,
+      context.shift.location.timezone,
+    );
+
+    const candidates = candidateRows.map((person) => {
+      const result = evaluateAssignmentConstraints({
+        candidateStartsAt: context.shift.startsAt,
+        candidateEndsAt: context.shift.endsAt,
+        locationTimezone: context.shift.location.timezone,
+        locationName: context.shift.location.name,
+        otherShifts: shiftsByUser.get(person.id) ?? [],
+        weekly: weeklyByUser.get(person.id) ?? [],
+        exceptions: exceptionsByUser.get(person.id) ?? [],
+      });
+      return {
+        ...person,
+        assigned: false as const,
+        blockers: result.failures
+          .filter((issue) => issue.rule !== "consecutive_days")
+          .map((issue) => issue.message),
+        warnings: result.warnings.map((issue) => issue.message),
+        requiresOverride: result.requiresOverride,
+      };
+    });
+
+    return {
+      assigned: assignedRows.map((person) => ({
+        ...person,
+        assigned: true as const,
+        blockers: [] as string[],
+        warnings: [] as string[],
+        requiresOverride: false,
+      })),
+      candidates,
+      totalCandidates: totalRow[0]?.total ?? 0,
+    };
   });
 
 export const createManagerShift = createServerFn({ method: "POST" })
@@ -261,40 +490,90 @@ export const assignManagerShift = createServerFn({ method: "POST" })
       throw new Error("Only staff with this skill and location certification can be assigned.");
     }
 
-    const [overlap] = await db
-      .select({
-        locationName: locationTable.name,
-      })
-      .from(shiftAssignmentTable)
-      .innerJoin(shiftTable, eq(shiftTable.id, shiftAssignmentTable.shiftId))
-      .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
-      .where(
-        and(
-          eq(shiftAssignmentTable.userId, data.userId),
-          ne(shiftTable.id, data.shiftId),
-          lt(shiftTable.startsAt, context.shift.endsAt),
-          gt(shiftTable.endsAt, context.shift.startsAt),
-        ),
-      )
-      .limit(1);
+    const eligibleIds = (
+      await db
+        .select({ id: userTable.id, name: userTable.name })
+        .from(userTable)
+        .innerJoin(
+          userLocation,
+          and(
+            eq(userLocation.userId, userTable.id),
+            eq(userLocation.locationId, context.shift.locationId),
+          ),
+        )
+        .innerJoin(
+          userSkill,
+          and(eq(userSkill.userId, userTable.id), eq(userSkill.skillId, context.shift.skillId)),
+        )
+    ).map((row) => row);
 
-    if (overlap) {
-      throw new Error(
-        `Double-booking: this person is already assigned at ${overlap.locationName} during this time.`,
-      );
+    const { shiftsByUser, weeklyByUser, exceptionsByUser } = await loadConstraintInputs(
+      eligibleIds.map((row) => row.id),
+      context.shift.id,
+      context.shift.startsAt,
+      context.shift.endsAt,
+      context.shift.location.timezone,
+    );
+
+    const evaluations = new Map(
+      eligibleIds.map((person) => {
+        const result = evaluateAssignmentConstraints({
+          candidateStartsAt: context.shift.startsAt,
+          candidateEndsAt: context.shift.endsAt,
+          locationTimezone: context.shift.location.timezone,
+          locationName: context.shift.location.name,
+          otherShifts: shiftsByUser.get(person.id) ?? [],
+          weekly: weeklyByUser.get(person.id) ?? [],
+          exceptions: exceptionsByUser.get(person.id) ?? [],
+        });
+        return [person.id, result] as const;
+      }),
+    );
+
+    const candidate = evaluations.get(data.userId);
+    if (!candidate) {
+      throw new Error("Only staff with this skill and location certification can be assigned.");
+    }
+
+    const alternativeNames = eligibleIds
+      .filter((person) => {
+        if (person.id === data.userId) return false;
+        const other = evaluations.get(person.id);
+        if (!other) return false;
+        return other.failures.filter((issue) => issue.rule !== "consecutive_days").length === 0;
+      })
+      .map((person) => person.name);
+
+    let failures = candidate.failures;
+    if (candidate.requiresOverride) {
+      if (!data.overrideReason) {
+        throw new Error(formatAssignFailure(failures, alternativeNames));
+      }
+      failures = failures.filter((issue) => issue.rule !== "consecutive_days");
+    }
+
+    const hard = failures.filter((issue) => issue.rule !== "consecutive_days");
+    if (hard.length > 0) {
+      throw new Error(formatAssignFailure(hard, alternativeNames));
     }
 
     await db.insert(shiftAssignmentTable).values({
       id: crypto.randomUUID(),
       shiftId: data.shiftId,
       userId: data.userId,
+      overrideReason: data.overrideReason ?? null,
     });
 
     return { ok: true as const };
   });
 
+export const unassignManagerShiftInputSchema = z.object({
+  shiftId: z.string().min(1),
+  userId: z.string().min(1),
+});
+
 export const unassignManagerShift = createServerFn({ method: "POST" })
-  .validator(assignManagerShiftInputSchema)
+  .validator(unassignManagerShiftInputSchema)
   .handler(async ({ data }) => {
     const { session } = await requireSessionRoles([ROLE.manager]);
     const context = await getShiftContext(data.shiftId);

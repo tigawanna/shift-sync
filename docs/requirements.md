@@ -204,6 +204,12 @@ The following are **deliberately unspecified**. Part of the evaluation is how yo
 
 **De-certification does not rewrite history.** Removing a staff location cert (`user_location`) leaves `shift` and `shift_assignment` rows in place. The staff calendar only shows assignments at locations they are still certified for. Managers cannot assign them at that location again (skill + cert check). Published weeks at a dropped location leave their calendar. This keeps payroll/history intact without a soft-delete or archive table.
 
+**A 1-hour shift counts as a worked day.** Consecutive-day warnings and the 7th-day override use distinct civil dates in the **location** week (Monday–Sunday). Any assigned time on that date counts, including a 1-hour shift. Overnight hours that land on a date in that week count for that date.
+
+**Empty weekly availability is open.** Recurring windows are optional. If a staff member has no weekly windows, they are treated as available except where a blocked exception applies. Extra exceptions still add time on top of weekly windows.
+
+**40h is over the weekly limit, not a hard assign block.** Assign still goes through after a confirmation. Daily hours hard-block above 12h on a civil date in the location timezone.
+
 ---
 
 ## Time Limit

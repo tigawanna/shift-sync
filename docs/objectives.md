@@ -78,16 +78,16 @@ What a manager must be able to accomplish for the locations they run. Do this bl
 ### Constraints (block or warn at assign time)
 
 - [x] No double-booking (same person, overlapping times, any location)
-- [ ] At least **10 hours** rest between one shift ending and the next starting
+- [x] At least **10 hours** rest between one shift ending and the next starting
 - [x] Only assign staff who have the required skill
 - [x] Only assign staff certified at that location
-- [ ] Only assign inside the staff member’s availability
-- [ ] Weekly hours: warn at 35+, treat 40+ as over the weekly limit
-- [ ] Daily hours: warn over 8h, hard-block over 12h
-- [ ] Warn on the **6th** consecutive day in a week
-- [ ] Require a documented override for the **7th** consecutive day
-- [ ] When a rule fails, explain **which rule** and **why**
-- [ ] Suggest qualified alternatives when assignment fails
+- [x] Only assign inside the staff member’s availability
+- [x] Weekly hours: warn at 35+, treat 40+ as over the weekly limit
+- [x] Daily hours: warn over 8h, hard-block over 12h
+- [x] Warn on the **6th** consecutive day in a week
+- [x] Require a documented override for the **7th** consecutive day
+- [x] When a rule fails, explain **which rule** and **why**
+- [x] Suggest qualified alternatives when assignment fails
 
 ### Coverage approvals — pair with staff swap/drop
 
