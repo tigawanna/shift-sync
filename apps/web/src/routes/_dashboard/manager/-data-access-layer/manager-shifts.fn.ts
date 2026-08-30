@@ -2,7 +2,7 @@ import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
 import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
-import { userLocation } from "@/lib/drizzle/schema/locations-schema";
+import { location as locationTable, userLocation } from "@/lib/drizzle/schema/locations-schema";
 import {
   scheduleWeek as scheduleWeekTable,
   shift as shiftTable,
@@ -11,9 +11,9 @@ import {
 import { skill as skillTable, userSkill } from "@/lib/drizzle/schema/skills-schema";
 import { addDaysYmd, mondayOfWeekContaining, zonedWallTimeToUtc } from "@/lib/time/zoned";
 import { createServerFn } from "@tanstack/react-start";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gt, lt, ne } from "drizzle-orm";
 import { z } from "zod";
-import { assertManagerLocationAccess } from "./manager-locations.fn";
+import { assertManagerLocationAccess } from "./manager-locations.server";
 import { cutoffInstant, EDIT_CUTOFF_HOURS } from "./manager-schedule.fn";
 
 const ymdSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -259,6 +259,29 @@ export const assignManagerShift = createServerFn({ method: "POST" })
 
     if (!eligible) {
       throw new Error("Only staff with this skill and location certification can be assigned.");
+    }
+
+    const [overlap] = await db
+      .select({
+        locationName: locationTable.name,
+      })
+      .from(shiftAssignmentTable)
+      .innerJoin(shiftTable, eq(shiftTable.id, shiftAssignmentTable.shiftId))
+      .innerJoin(locationTable, eq(locationTable.id, shiftTable.locationId))
+      .where(
+        and(
+          eq(shiftAssignmentTable.userId, data.userId),
+          ne(shiftTable.id, data.shiftId),
+          lt(shiftTable.startsAt, context.shift.endsAt),
+          gt(shiftTable.endsAt, context.shift.startsAt),
+        ),
+      )
+      .limit(1);
+
+    if (overlap) {
+      throw new Error(
+        `Double-booking: this person is already assigned at ${overlap.locationName} during this time.`,
+      );
     }
 
     await db.insert(shiftAssignmentTable).values({

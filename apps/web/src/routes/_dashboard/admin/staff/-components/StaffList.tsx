@@ -11,7 +11,10 @@ import {
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
+import { useState } from "react";
 import { listStaffQueryOptions } from "../../-data-access-layer/staff.query-options";
+import type { StaffListItem as StaffListItemData } from "../../-data-access-layer/staff.fn";
+import { StaffDirectorySheet } from "./StaffDirectorySheet";
 import { StaffListItem } from "./StaffListItem";
 
 const ROUTE_ID = "/_dashboard/admin/staff/";
@@ -28,7 +31,10 @@ function StaffListEmpty({
 }) {
   if (hasSearch) {
     return (
-      <Empty data-test="staff-search-empty" className="w-full h-full flex flex-col items-center justify-center min-h-[70dvh]">
+      <Empty
+        data-test="staff-search-empty"
+        className="flex h-full min-h-[70dvh] w-full flex-col items-center justify-center"
+      >
         <EmptyHeader>
           <EmptyTitle>No results for “{query}”</EmptyTitle>
           <EmptyDescription>Try a different name or email address.</EmptyDescription>
@@ -43,7 +49,10 @@ function StaffListEmpty({
   }
 
   return (
-    <Empty data-test="staff-empty" className="w-full h-full flex flex-col items-center justify-center min-h-[70dvh]">
+    <Empty
+      data-test="staff-empty"
+      className="flex h-full min-h-[70dvh] w-full flex-col items-center justify-center"
+    >
       <EmptyHeader>
         <EmptyTitle>No staff yet</EmptyTitle>
         <EmptyDescription>Staff accounts will show up here once they are created.</EmptyDescription>
@@ -54,6 +63,7 @@ function StaffListEmpty({
 
 export function StaffList() {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
+  const [selected, setSelected] = useState<StaffListItemData | null>(null);
   const search = routeApi.useSearch();
   const page = search.page;
   const perPage = search.perPage;
@@ -100,7 +110,11 @@ export function StaffList() {
             </TableHeader>
             <TableBody>
               {items.map((staff) => (
-                <StaffListItem key={staff.id} staff={staff} />
+                <StaffListItem
+                  key={staff.id}
+                  staff={staff}
+                  onEditDirectory={() => setSelected(staff)}
+                />
               ))}
             </TableBody>
           </Table>
@@ -108,6 +122,7 @@ export function StaffList() {
       )}
 
       <TSRListPagination routeID={ROUTE_ID} totalPages={totalPages} />
+      <StaffDirectorySheet staff={selected} onClose={() => setSelected(null)} />
     </section>
   );
 }

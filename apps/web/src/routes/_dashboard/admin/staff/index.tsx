@@ -3,7 +3,11 @@ import { AppConfig } from "@/utils/system";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
-import { listStaffQueryOptions } from "../-data-access-layer/staff.query-options";
+import { locationOptionsQueryOptions } from "../-data-access-layer/locations.query-options";
+import {
+  listStaffQueryOptions,
+  skillOptionsQueryOptions,
+} from "../-data-access-layer/staff.query-options";
 import { DashboardPageHeader } from "../../-components/DashboardPageHeader";
 import { StaffList } from "./-components/StaffList";
 import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
@@ -11,7 +15,7 @@ import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
 const staffSearchSchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
   perPage: z.coerce.number().int().min(1).max(100).optional().default(ADMIN_LIST_PER_PAGE),
-  sq: z.string().optional().default(''),
+  sq: z.string().optional().default(""),
 });
 
 export const Route = createFileRoute("/_dashboard/admin/staff/")({
@@ -22,13 +26,17 @@ export const Route = createFileRoute("/_dashboard/admin/staff/")({
     sq: search.sq,
   }),
   loader: async ({ context, deps }) => {
-    await context.queryClient.ensureQueryData(
-      listStaffQueryOptions({
-        page: deps.page,
-        perPage: deps.perPage,
-        sq: deps.sq,
-      }),
-    );
+    await Promise.all([
+      context.queryClient.ensureQueryData(
+        listStaffQueryOptions({
+          page: deps.page,
+          perPage: deps.perPage,
+          sq: deps.sq,
+        }),
+      ),
+      context.queryClient.ensureQueryData(locationOptionsQueryOptions()),
+      context.queryClient.ensureQueryData(skillOptionsQueryOptions()),
+    ]);
   },
   component: AdminStaffPage,
   head: () => ({

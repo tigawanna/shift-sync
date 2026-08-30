@@ -200,7 +200,9 @@ The following are **deliberately unspecified**. Part of the evaluation is how yo
 - If a shift is edited after swap approval but before it occurs, what should happen?
 - How should the system handle a location that spans a timezone boundary (e.g., a restaurant near a state line)?
 
-Document your decisions.
+### Decisions
+
+**De-certification does not rewrite history.** Removing a staff location cert (`user_location`) leaves `shift` and `shift_assignment` rows in place. The staff calendar only shows assignments at locations they are still certified for. Managers cannot assign them at that location again (skill + cert check). Published weeks at a dropped location leave their calendar. This keeps payroll/history intact without a soft-delete or archive table.
 
 ---
 

@@ -68,8 +68,8 @@ What a manager must be able to accomplish for the locations they run. Do this bl
 
 ### Build and publish a week
 
-- [ ] Create a shift: location, date/time, required skill, headcount
-- [ ] Assign a specific staff member to a shift by hand
+- [x] Create a shift: location, date/time, required skill, headcount
+- [x] Assign a specific staff member to a shift by hand
 - [x] Publish a location-week so staff can see it
 - [x] Unpublish before the cutoff (default **48 hours** before the shift; editing a published shift is still open)
 - [x] Keep overnight shifts as a single shift
@@ -77,10 +77,10 @@ What a manager must be able to accomplish for the locations they run. Do this bl
 
 ### Constraints (block or warn at assign time)
 
-- [ ] No double-booking (same person, overlapping times, any location)
+- [x] No double-booking (same person, overlapping times, any location)
 - [ ] At least **10 hours** rest between one shift ending and the next starting
-- [ ] Only assign staff who have the required skill
-- [ ] Only assign staff certified at that location
+- [x] Only assign staff who have the required skill
+- [x] Only assign staff certified at that location
 - [ ] Only assign inside the staff member’s availability
 - [ ] Weekly hours: warn at 35+, treat 40+ as over the weekly limit
 - [ ] Daily hours: warn over 8h, hard-block over 12h
@@ -125,11 +125,11 @@ What corporate admin must be able to accomplish across **all** locations.
 - [x] List managers
 - [x] List other admins
 - [x] List locations (name, timezone, address)
-- [ ] Create / edit locations
-- [ ] Assign managers to locations (scope that managers later honor)
-- [ ] Assign staff skills
-- [ ] Certify staff at one or more locations
-- [ ] Decide what happens to history when a staff member is de-certified (document the choice in [requirements.md](./requirements.md) ambiguities)
+- [x] Create / edit locations
+- [x] Assign managers to locations (scope that managers later honor)
+- [x] Assign staff skills
+- [x] Certify staff at one or more locations
+- [x] Decide what happens to history when a staff member is de-certified (document the choice in [requirements.md](./requirements.md) ambiguities)
 
 ### Oversight
 

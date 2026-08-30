@@ -4,9 +4,10 @@ import type { LocationListItem as LocationListItemData } from "../../-data-acces
 
 type LocationListItemProps = {
   location: LocationListItemData;
+  onEdit: () => void;
 };
 
-export function LocationListItem({ location }: LocationListItemProps) {
+export function LocationListItem({ location, onEdit }: LocationListItemProps) {
   return (
     <TableRow data-test="location-list-item">
       <TableCell className="px-4 py-3">
@@ -20,6 +21,11 @@ export function LocationListItem({ location }: LocationListItemProps) {
       </TableCell>
       <TableCell className="text-muted-foreground px-4 py-3">
         {formatDate(location.createdAt)}
+      </TableCell>
+      <TableCell className="px-4 py-3">
+        <button type="button" className="btn btn-ghost btn-xs" onClick={onEdit}>
+          Edit
+        </button>
       </TableCell>
     </TableRow>
   );

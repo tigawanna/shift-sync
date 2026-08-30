@@ -1,5 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
-import { listManagers, type ListManagersInput } from "./managers.fn";
+import { getManagerLocations, listManagers, type ListManagersInput } from "./managers.fn";
 
 export function listManagersQueryOptions(input: ListManagersInput) {
   const page = input.page;
@@ -9,5 +9,12 @@ export function listManagersQueryOptions(input: ListManagersInput) {
   return queryOptions({
     queryKey: ["admin-managers", page, perPage, sq],
     queryFn: () => listManagers({ data: { page, perPage, sq } }),
+  });
+}
+
+export function managerLocationsQueryOptions(userId: string) {
+  return queryOptions({
+    queryKey: ["admin-manager-locations", userId],
+    queryFn: () => getManagerLocations({ data: { userId } }),
   });
 }

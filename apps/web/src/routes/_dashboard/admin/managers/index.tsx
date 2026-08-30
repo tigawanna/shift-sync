@@ -3,6 +3,7 @@ import { AppConfig } from "@/utils/system";
 import { createFileRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { z } from "zod";
+import { locationOptionsQueryOptions } from "../-data-access-layer/locations.query-options";
 import { listManagersQueryOptions } from "../-data-access-layer/managers.query-options";
 import { DashboardPageHeader } from "../../-components/DashboardPageHeader";
 import { ManagerList } from "./-components/ManagerList";
@@ -22,13 +23,16 @@ export const Route = createFileRoute("/_dashboard/admin/managers/")({
     sq: search.sq,
   }),
   loader: async ({ context, deps }) => {
-    await context.queryClient.ensureQueryData(
-      listManagersQueryOptions({
-        page: deps.page,
-        perPage: deps.perPage,
-        sq: deps.sq,
-      }),
-    );
+    await Promise.all([
+      context.queryClient.ensureQueryData(
+        listManagersQueryOptions({
+          page: deps.page,
+          perPage: deps.perPage,
+          sq: deps.sq,
+        }),
+      ),
+      context.queryClient.ensureQueryData(locationOptionsQueryOptions()),
+    ]);
   },
   component: AdminManagersPage,
   head: () => ({

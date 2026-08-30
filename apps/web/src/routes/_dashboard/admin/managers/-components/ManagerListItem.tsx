@@ -7,9 +7,10 @@ import type { ManagerListItem as ManagerListItemData } from "../../-data-access-
 
 type ManagerListItemProps = {
   manager: ManagerListItemData;
+  onEditLocations: () => void;
 };
 
-export function ManagerListItem({ manager }: ManagerListItemProps) {
+export function ManagerListItem({ manager, onEditLocations }: ManagerListItemProps) {
   return (
     <TableRow data-test="manager-list-item">
       <TableCell className="px-4 py-3">
@@ -26,7 +27,12 @@ export function ManagerListItem({ manager }: ManagerListItemProps) {
         {formatDate(manager.createdAt)}
       </TableCell>
       <TableCell className="px-4 py-3">
-        <ImpersonateUserButton user={manager} />
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" className="btn btn-ghost btn-xs" onClick={onEditLocations}>
+            Locations
+          </button>
+          <ImpersonateUserButton user={manager} />
+        </div>
       </TableCell>
     </TableRow>
   );

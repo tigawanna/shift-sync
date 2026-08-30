@@ -19,7 +19,7 @@ import {
 import { createServerFn } from "@tanstack/react-start";
 import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
 import { z } from "zod";
-import { assertManagerLocationAccess, loadMyManagerLocations } from "./manager-locations.fn";
+import { assertManagerLocationAccess, loadMyManagerLocations } from "./manager-locations.server";
 
 export const EDIT_CUTOFF_HOURS = 48;
 

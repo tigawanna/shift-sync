@@ -7,9 +7,10 @@ import type { StaffListItem as StaffListItemData } from "../../-data-access-laye
 
 type StaffListItemProps = {
   staff: StaffListItemData;
+  onEditDirectory: () => void;
 };
 
-export function StaffListItem({ staff }: StaffListItemProps) {
+export function StaffListItem({ staff, onEditDirectory }: StaffListItemProps) {
   return (
     <TableRow data-test="staff-list-item">
       <TableCell className="px-4 py-3">
@@ -26,7 +27,12 @@ export function StaffListItem({ staff }: StaffListItemProps) {
         {formatDate(staff.createdAt)}
       </TableCell>
       <TableCell className="px-4 py-3">
-        <ImpersonateUserButton user={staff} />
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" className="btn btn-ghost btn-xs" onClick={onEditDirectory}>
+            Skills & certs
+          </button>
+          <ImpersonateUserButton user={staff} />
+        </div>
       </TableCell>
     </TableRow>
   );

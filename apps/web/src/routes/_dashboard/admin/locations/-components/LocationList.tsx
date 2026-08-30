@@ -11,8 +11,11 @@ import {
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
+import { useState } from "react";
 import { listLocationsQueryOptions } from "../../-data-access-layer/locations.query-options";
+import type { LocationListItem as LocationListItemData } from "../../-data-access-layer/locations.fn";
 import { LocationListItem } from "./LocationListItem";
+import { LocationSheet, type LocationSheetPanel } from "./LocationSheet";
 
 const ROUTE_ID = "/_dashboard/admin/locations/";
 const routeApi = getRouteApi(ROUTE_ID);
@@ -52,14 +55,21 @@ function LocationListEmpty({
     >
       <EmptyHeader>
         <EmptyTitle>No locations yet</EmptyTitle>
-        <EmptyDescription>Restaurants will show up here once they are added.</EmptyDescription>
+        <EmptyDescription>Add a restaurant to start scheduling it.</EmptyDescription>
       </EmptyHeader>
     </Empty>
   );
 }
 
-export function LocationList() {
+export function LocationList({
+  createOpen,
+  onCreateOpenChange,
+}: {
+  createOpen: boolean;
+  onCreateOpenChange: (open: boolean) => void;
+}) {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
+  const [editLocation, setEditLocation] = useState<LocationListItemData | null>(null);
   const search = routeApi.useSearch();
   const page = search.page;
   const perPage = search.perPage;
@@ -99,11 +109,18 @@ export function LocationList() {
                 <TableHead className="text-muted-foreground px-4 py-3 text-xs font-medium tracking-wide uppercase">
                   Added
                 </TableHead>
+                <TableHead className="text-muted-foreground px-4 py-3 text-xs font-medium tracking-wide uppercase">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((location) => (
-                <LocationListItem key={location.id} location={location} />
+                <LocationListItem
+                  key={location.id}
+                  location={location}
+                  onEdit={() => setEditLocation(location)}
+                />
               ))}
             </TableBody>
           </Table>
@@ -111,6 +128,19 @@ export function LocationList() {
       )}
 
       <TSRListPagination routeID={ROUTE_ID} totalPages={totalPages} />
+      <LocationSheet
+        panel={
+          (createOpen
+            ? { kind: "create" }
+            : editLocation
+              ? { kind: "edit", location: editLocation }
+              : null) satisfies LocationSheetPanel | null
+        }
+        onClose={() => {
+          onCreateOpenChange(false);
+          setEditLocation(null);
+        }}
+      />
     </section>
   );
 }

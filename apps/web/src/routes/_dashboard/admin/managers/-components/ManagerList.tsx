@@ -11,8 +11,11 @@ import {
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi } from "@tanstack/react-router";
+import { useState } from "react";
 import { listManagersQueryOptions } from "../../-data-access-layer/managers.query-options";
+import type { ManagerListItem as ManagerListItemData } from "../../-data-access-layer/managers.fn";
 import { ManagerListItem } from "./ManagerListItem";
+import { ManagerLocationsSheet } from "./ManagerLocationsSheet";
 
 const ROUTE_ID = "/_dashboard/admin/managers/";
 const routeApi = getRouteApi(ROUTE_ID);
@@ -62,6 +65,7 @@ function ManagerListEmpty({
 
 export function ManagerList() {
   const { inputValue, onSearchChange, isDebouncing, clearSearch } = usePageSearchQuery(ROUTE_ID);
+  const [selected, setSelected] = useState<ManagerListItemData | null>(null);
   const search = routeApi.useSearch();
   const page = search.page;
   const perPage = search.perPage;
@@ -108,7 +112,11 @@ export function ManagerList() {
             </TableHeader>
             <TableBody>
               {items.map((manager) => (
-                <ManagerListItem key={manager.id} manager={manager} />
+                <ManagerListItem
+                  key={manager.id}
+                  manager={manager}
+                  onEditLocations={() => setSelected(manager)}
+                />
               ))}
             </TableBody>
           </Table>
@@ -116,6 +124,7 @@ export function ManagerList() {
       )}
 
       <TSRListPagination routeID={ROUTE_ID} totalPages={totalPages} />
+      <ManagerLocationsSheet manager={selected} onClose={() => setSelected(null)} />
     </section>
   );
 }
