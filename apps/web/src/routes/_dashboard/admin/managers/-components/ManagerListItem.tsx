@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { formatDate } from "@/utils/date";
 import { initials } from "@/utils/strings";
-import { ImpersonateUserButton } from "../../../-components/ImpersonateUserButton";
+import { AdminListRowMenu } from "../../-components/AdminListRowMenu";
 import type { ManagerListItem as ManagerListItemData } from "../../-data-access-layer/managers.fn";
 
 type ManagerListItemProps = {
@@ -27,12 +27,11 @@ export function ManagerListItem({ manager, onEditLocations }: ManagerListItemPro
         {formatDate(manager.createdAt)}
       </TableCell>
       <TableCell className="px-4 py-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" className="btn btn-ghost btn-xs" onClick={onEditLocations}>
-            Locations
-          </button>
-          <ImpersonateUserButton user={manager} />
-        </div>
+        <AdminListRowMenu
+          label={`Actions for ${manager.name}`}
+          impersonate={manager}
+          actions={[{ label: "Locations", onSelect: onEditLocations }]}
+        />
       </TableCell>
     </TableRow>
   );

@@ -1,4 +1,5 @@
 import { TableCell, TableRow } from "@/components/ui/table";
+import { AdminListRowMenu } from "../../-components/AdminListRowMenu";
 import { formatDate, formatTimezone } from "@/utils/date";
 import type { LocationListItem as LocationListItemData } from "../../-data-access-layer/locations.fn";
 
@@ -23,9 +24,10 @@ export function LocationListItem({ location, onEdit }: LocationListItemProps) {
         {formatDate(location.createdAt)}
       </TableCell>
       <TableCell className="px-4 py-3">
-        <button type="button" className="btn btn-ghost btn-xs" onClick={onEdit}>
-          Edit
-        </button>
+        <AdminListRowMenu
+          label={`Actions for ${location.name}`}
+          actions={[{ label: "Edit", onSelect: onEdit }]}
+        />
       </TableCell>
     </TableRow>
   );
