@@ -1,10 +1,10 @@
+import { hmToMinutes, timeInputToEndMinutes } from "@/lib/schedule/availability";
+import { addMonthsYm, currentYearMonth, formatMonthLabel, monthGridDates } from "@/lib/time/zoned";
 import {
   addMyAvailabilityException,
   removeMyAvailabilityExceptionsOnDate,
 } from "@/routes/_dashboard/staff/-data-access-layer/staff-availability.fn";
 import { myStaffAvailabilityQueryOptions } from "@/routes/_dashboard/staff/-data-access-layer/staff-availability.query-options";
-import { hmToMinutes, timeInputToEndMinutes } from "@/lib/schedule/availability";
-import { addMonthsYm, currentYearMonth, formatMonthLabel, monthGridDates } from "@/lib/time/zoned";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -14,7 +14,6 @@ import { Route } from "../index";
 import { StaffScheduleBlockHoursDialog } from "./staff-schedule/StaffScheduleBlockHoursDialog";
 import { StaffScheduleLegend } from "./staff-schedule/StaffScheduleLegend";
 import { StaffScheduleMonthGrid } from "./staff-schedule/StaffScheduleMonthGrid";
-import { QueryMetaPanel } from "./staff-schedule/StaffScheduleQueryMeta";
 import { summarizeDayAvailability } from "./staff-schedule/staff-availability.day";
 import { monthWeeks } from "./staff-schedule/staff-schedule.spans";
 
@@ -34,10 +33,7 @@ export function StaffSchedule() {
   };
 
   const weeks = useMemo(() => monthWeeks(monthGridDates(month)), [month]);
-  const shifts = useMemo(
-    () => schedule?.days.flatMap((day) => day.shifts) ?? [],
-    [schedule?.days],
-  );
+  const shifts = useMemo(() => schedule?.days.flatMap((day) => day.shifts) ?? [], [schedule?.days]);
   const availabilityByDate = useMemo(() => {
     const map = new Map<string, ReturnType<typeof summarizeDayAvailability>>();
     const weekly = availabilityQuery.data?.weeklyWindows ?? [];
@@ -119,6 +115,14 @@ export function StaffSchedule() {
   const monthlyHours = schedule?.monthlyHours ?? 0;
   const shiftCount = schedule?.meta.monthShiftCount;
 
+  let scheduleStatus = `${shiftCount} published shifts · ${monthlyHours.toFixed(1)} hours`;
+  if (scheduleQuery.isPending) scheduleStatus = "Loading shifts…";
+  if (scheduleQuery.isError) scheduleStatus = "Shifts could not be loaded";
+
+  let availabilityStatus = "";
+  if (availabilityQuery.isPending) availabilityStatus = " · Loading availability…";
+  if (availabilityQuery.isError) availabilityStatus = " · Availability could not be loaded";
+
   return (
     <div className="flex flex-col gap-6" data-test="staff-schedule">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -142,27 +146,10 @@ export function StaffSchedule() {
           </button>
         </div>
         <p className="text-muted-foreground text-sm">
-          {scheduleQuery.isError
-            ? "Shifts could not be loaded"
-            : scheduleQuery.isPending
-              ? "Loading shifts…"
-              : `${shiftCount} published shifts · ${monthlyHours.toFixed(1)} hours`}
-          {availabilityQuery.isError
-            ? " · Availability could not be loaded"
-            : availabilityQuery.isPending
-              ? " · Loading availability…"
-              : null}
+          {scheduleStatus}
+          {availabilityStatus}
         </p>
       </div>
-
-      {schedule ? (
-        <QueryMetaPanel
-          meta={schedule.meta}
-          monthLabel={schedule.monthLabel}
-          monthlyHours={schedule.monthlyHours}
-        />
-      ) : null}
-
       {schedule && schedule.days.length === 0 ? (
         <p className="text-muted-foreground text-sm">
           No published shifts this month. When a manager publishes a week you are assigned to, those
