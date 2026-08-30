@@ -1,4 +1,9 @@
 import { viewerMiddleware } from "@/data-access-layer/auth/viewer.middleware";
+import {
+  getHomePathForRole,
+  getUserAppRole,
+  isDashboardPathAllowedForRole,
+} from "@/lib/better-auth/roles";
 import { RouterNotFoundComponent } from "@/lib/tanstack/router/RouterNotFoundComponent";
 import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { RouterErrorComponent } from "@/lib/tanstack/router/routerErrorComponent";
@@ -19,6 +24,10 @@ export const Route = createFileRoute("/_dashboard")({
   beforeLoad: ({ context, location }) => {
     if (!context.viewer?.user) {
       throw redirect({ to: "/auth", search: { returnTo: location.href } });
+    }
+    const role = getUserAppRole(context.viewer.user);
+    if (!isDashboardPathAllowedForRole(location.pathname, role)) {
+      throw redirect({ to: getHomePathForRole(role) });
     }
   },
   head: () => ({

@@ -25,7 +25,7 @@ What a staff person must be able to do for themselves.
 
 ### Own schedule
 
-- [x] See assigned shifts only after the location-week is **published** (seeded weeks today; manager publish UI still open)
+- [x] See assigned shifts only after the location-week is **published**
 - [x] See shift times in **that location’s timezone**, not the staff member’s browser timezone
 - [x] Treat an overnight shift (e.g. 11pm–3am) as one shift
 - [x] See weekly hours on their calendar, with a 35h warning and 40h limit readout
@@ -61,19 +61,19 @@ What a manager must be able to accomplish for the locations they run. Do this bl
 
 ### Scope
 
-- [ ] Sign in as manager and land on a manager dashboard (routes are not in the app yet)
-- [ ] See and manage **only** locations they are assigned to
+- [x] Sign in as manager and land on a manager dashboard
+- [x] See and manage **only** locations they are assigned to
 - [ ] See the team for those locations
-- [ ] See those locations’ details
+- [x] See those locations’ details
 
 ### Build and publish a week
 
 - [ ] Create a shift: location, date/time, required skill, headcount
 - [ ] Assign a specific staff member to a shift by hand
-- [ ] Publish a location-week so staff can see it
-- [ ] Unpublish or edit before the cutoff (default **48 hours** before the shift)
-- [ ] Keep overnight shifts as a single shift
-- [ ] Show all times in the **location** timezone
+- [x] Publish a location-week so staff can see it
+- [x] Unpublish before the cutoff (default **48 hours** before the shift; editing a published shift is still open)
+- [x] Keep overnight shifts as a single shift
+- [x] Show all times in the **location** timezone
 
 ### Constraints (block or warn at assign time)
 

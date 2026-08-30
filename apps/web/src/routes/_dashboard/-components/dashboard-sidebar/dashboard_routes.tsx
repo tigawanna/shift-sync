@@ -20,7 +20,6 @@ export function getDashboardPrimaryRoutes(role: AppRole): SidebarItem[] {
     return [
       { title: "Overview", href: "/manager", icon: LayoutDashboard },
       { title: "Schedule", href: "/manager/schedule", icon: CalendarDays },
-      { title: "Team", href: "/manager/team", icon: Users },
       { title: "Locations", href: "/manager/locations", icon: MapPin },
     ];
   }
