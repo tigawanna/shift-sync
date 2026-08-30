@@ -1,13 +1,10 @@
 import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
-import { user as userTable } from "@/lib/drizzle/schema/auth-schema";
 import {
   scheduleWeek as scheduleWeekTable,
   shift as shiftTable,
-  shiftAssignment as shiftAssignmentTable,
 } from "@/lib/drizzle/schema/schedule-schema";
-import { skill as skillTable } from "@/lib/drizzle/schema/skills-schema";
 import {
   addDaysYmd,
   eachYmdInclusive,
@@ -19,7 +16,7 @@ import {
   zonedWallTimeToUtc,
 } from "@/lib/time/zoned";
 import { createServerFn } from "@tanstack/react-start";
-import { and, asc, eq, gt, inArray, lt } from "drizzle-orm";
+import { and, asc, eq, gte, lt } from "drizzle-orm";
 import { z } from "zod";
 import { assertManagerLocationAccess } from "./manager-locations.fn";
 
@@ -42,11 +39,11 @@ function snapToMonday(weekStart: string, timezone: string) {
   return mondayOfWeekContaining(zonedWallTimeToUtc(weekStart, "12:00", timezone), timezone);
 }
 
-function weekUtcRange(weekStart: string, timezone: string) {
-  const weekEnd = addDaysYmd(weekStart, 7);
+/** Shifts belong to the week of their location-local start, not by overlap. */
+function weekStartUtcRange(weekStart: string, timezone: string) {
   return {
-    rangeStart: zonedWallTimeToUtc(addDaysYmd(weekStart, -1), "00:00", timezone),
-    rangeEnd: zonedWallTimeToUtc(addDaysYmd(weekEnd, 1), "00:00", timezone),
+    rangeStart: zonedWallTimeToUtc(weekStart, "00:00", timezone),
+    rangeEnd: zonedWallTimeToUtc(addDaysYmd(weekStart, 7), "00:00", timezone),
   };
 }
 
@@ -72,83 +69,69 @@ async function loadPublication(
   return row ?? null;
 }
 
+function selectWeekShifts(
+  db: Awaited<ReturnType<typeof getDb>>,
+  locationId: string,
+  rangeStart: Date,
+  rangeEnd: Date,
+) {
+  return db.query.shift.findMany({
+    columns: {
+      id: true,
+      startsAt: true,
+      endsAt: true,
+      headcountNeeded: true,
+      notes: true,
+    },
+    where: and(
+      eq(shiftTable.locationId, locationId),
+      gte(shiftTable.startsAt, rangeStart),
+      lt(shiftTable.startsAt, rangeEnd),
+    ),
+    orderBy: [asc(shiftTable.startsAt)],
+    with: {
+      skill: { columns: { name: true } },
+      assignments: {
+        columns: {},
+        with: {
+          user: { columns: { id: true, name: true } },
+        },
+      },
+    },
+  });
+}
+
 async function loadWeekSchedule(userId: string, locationId: string, requestedWeek: string) {
   const location = await assertManagerLocationAccess(userId, locationId);
   const weekStart = snapToMonday(requestedWeek, location.timezone);
   const weekDates = eachYmdInclusive(weekStart, addDaysYmd(weekStart, 6));
-  const { rangeStart, rangeEnd } = weekUtcRange(weekStart, location.timezone);
+  const { rangeStart, rangeEnd } = weekStartUtcRange(weekStart, location.timezone);
+  const cutoff = cutoffInstant();
   const db = await getDb();
 
-  const [publication, shiftRows] = await Promise.all([
+  const [publication, weekShifts] = await Promise.all([
     loadPublication(db, location.id, weekStart),
-    db
-      .select({
-        shift: shiftTable,
-        skillName: skillTable.name,
-      })
-      .from(shiftTable)
-      .innerJoin(skillTable, eq(shiftTable.skillId, skillTable.id))
-      .where(
-        and(
-          eq(shiftTable.locationId, location.id),
-          lt(shiftTable.startsAt, rangeEnd),
-          gt(shiftTable.endsAt, rangeStart),
-        ),
-      )
-      .orderBy(asc(shiftTable.startsAt)),
+    selectWeekShifts(db, location.id, rangeStart, rangeEnd),
   ]);
 
-  const weekShifts = shiftRows.filter(
-    (row) => mondayOfWeekContaining(row.shift.startsAt, location.timezone) === weekStart,
-  );
+  // Empty Mon–Sun columns so days with no shifts still render.
+  const days = weekDates.map((date) => ({
+    date,
+    weekday: formatWeekdayYmd(date),
+    label: formatDayLabel(date),
+    shifts: [] as ReturnType<typeof toBoardShift>[],
+  }));
+  const dayByDate = new Map(days.map((day) => [day.date, day]));
+  let lockedShiftCount = 0;
 
-  const shiftIds = weekShifts.map((row) => row.shift.id);
-  const assignmentRows =
-    shiftIds.length === 0
-      ? []
-      : await db
-          .select({
-            shiftId: shiftAssignmentTable.shiftId,
-            userId: userTable.id,
-            name: userTable.name,
-          })
-          .from(shiftAssignmentTable)
-          .innerJoin(userTable, eq(shiftAssignmentTable.userId, userTable.id))
-          .where(inArray(shiftAssignmentTable.shiftId, shiftIds))
-          .orderBy(asc(userTable.name));
-
-  const assigneesByShift = new Map<string, Array<Pick<typeof userTable.$inferSelect, "id" | "name">>>();
-  for (const row of assignmentRows) {
-    const list = assigneesByShift.get(row.shiftId) ?? [];
-    list.push({ id: row.userId, name: row.name });
-    assigneesByShift.set(row.shiftId, list);
+  // Civil times in the location zone; bucket by local start; tally cutoff locks.
+  for (const row of weekShifts) {
+    const shift = toBoardShift(row, location.timezone, cutoff);
+    if (shift.locked) lockedShiftCount += 1;
+    dayByDate.get(shift.startDate)?.shifts.push(shift);
   }
 
-  const mapped = weekShifts.map((row) => {
-    const startsAt = row.shift.startsAt;
-    const endsAt = row.shift.endsAt;
-    const startDate = formatDateInZone(startsAt, location.timezone);
-    const endDate = formatDateInZone(endsAt, location.timezone);
-    return {
-      id: row.shift.id,
-      skillName: row.skillName,
-      startsAt,
-      endsAt,
-      startDate,
-      endDate,
-      startTime: formatTimeInZone(startsAt, location.timezone),
-      endTime: formatTimeInZone(endsAt, location.timezone),
-      overnight: startDate !== endDate,
-      hours: (endsAt.getTime() - startsAt.getTime()) / 3_600_000,
-      headcountNeeded: row.shift.headcountNeeded,
-      notes: row.shift.notes,
-      assignees: assigneesByShift.get(row.shift.id) ?? [],
-      locked: startsAt.getTime() < cutoffInstant().getTime(),
-    };
-  });
-
   const published = Boolean(publication);
-  const lockedShiftCount = mapped.filter((shift) => shift.locked).length;
 
   return {
     location,
@@ -159,12 +142,34 @@ async function loadWeekSchedule(userId: string, locationId: string, requestedWee
     canUnpublish: published && lockedShiftCount === 0,
     lockedShiftCount,
     cutoffHours: EDIT_CUTOFF_HOURS,
-    days: weekDates.map((date) => ({
-      date,
-      weekday: formatWeekdayYmd(date),
-      label: formatDayLabel(date),
-      shifts: mapped.filter((shift) => shift.startDate === date),
-    })),
+    days,
+  };
+}
+
+function toBoardShift(
+  row: Awaited<ReturnType<typeof selectWeekShifts>>[number],
+  timezone: string,
+  cutoff: Date,
+) {
+  const startDate = formatDateInZone(row.startsAt, timezone);
+  const endDate = formatDateInZone(row.endsAt, timezone);
+  return {
+    id: row.id,
+    skillName: row.skill.name,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
+    startDate,
+    endDate,
+    startTime: formatTimeInZone(row.startsAt, timezone),
+    endTime: formatTimeInZone(row.endsAt, timezone),
+    overnight: startDate !== endDate,
+    hours: (row.endsAt.getTime() - row.startsAt.getTime()) / 3_600_000,
+    headcountNeeded: row.headcountNeeded,
+    notes: row.notes,
+    assignees: row.assignments
+      .map((assignment) => assignment.user)
+      .sort((left, right) => left.name.localeCompare(right.name)),
+    locked: row.startsAt.getTime() < cutoff.getTime(),
   };
 }
 
