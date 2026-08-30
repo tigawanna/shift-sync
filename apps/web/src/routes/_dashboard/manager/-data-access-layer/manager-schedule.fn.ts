@@ -32,16 +32,16 @@ export const managerWeekInputSchema = z.object({
 
 export type ManagerWeekInput = z.infer<typeof managerWeekInputSchema>;
 
-function cutoffInstant() {
+export function cutoffInstant() {
   return new Date(Date.now() + EDIT_CUTOFF_HOURS * 3_600_000);
 }
 
-function snapToMonday(weekStart: string, timezone: string) {
+export function snapToMonday(weekStart: string, timezone: string) {
   return mondayOfWeekContaining(zonedWallTimeToUtc(weekStart, "12:00", timezone), timezone);
 }
 
 /** Shifts belong to the week of their location-local start, not by overlap. */
-function weekStartUtcRange(weekStart: string, timezone: string) {
+export function weekStartUtcRange(weekStart: string, timezone: string) {
   return {
     rangeStart: zonedWallTimeToUtc(weekStart, "00:00", timezone),
     rangeEnd: zonedWallTimeToUtc(addDaysYmd(weekStart, 7), "00:00", timezone),
@@ -79,6 +79,7 @@ function selectWeekShifts(
   return db.query.shift.findMany({
     columns: {
       id: true,
+      skillId: true,
       startsAt: true,
       endsAt: true,
       headcountNeeded: true,
@@ -156,6 +157,7 @@ function toBoardShift(
   const endDate = formatDateInZone(row.endsAt, timezone);
   return {
     id: row.id,
+    skillId: row.skillId,
     skillName: row.skill.name,
     startsAt: row.startsAt,
     endsAt: row.endsAt,

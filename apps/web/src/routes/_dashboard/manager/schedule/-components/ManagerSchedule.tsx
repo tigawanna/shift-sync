@@ -4,6 +4,7 @@ import { formatTimezone } from "@/utils/date";
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { getRouteApi, Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { myManagerLocationsQueryOptions } from "../../-data-access-layer/manager-locations.query-options";
 import {
@@ -13,6 +14,7 @@ import {
 } from "../../-data-access-layer/manager-schedule.fn";
 import { managerWeekScheduleQueryOptions } from "../../-data-access-layer/manager-schedule.query-options";
 import { ManagerScheduleWeekBoard } from "./ManagerScheduleWeekBoard";
+import { ManagerShiftSheet, type ManagerShiftPanel } from "./ManagerShiftSheet";
 
 const ROUTE_ID = "/_dashboard/manager/schedule/$locationId/$weekStart";
 const routeApi = getRouteApi(ROUTE_ID);
@@ -24,6 +26,8 @@ export function ManagerSchedule() {
   const { data: locationsData } = useSuspenseQuery(myManagerLocationsQueryOptions());
   const locations = locationsData.items;
   const selectedLocation = locations.find((location) => location.id === locationId);
+  const [editing, setEditing] = useState(false);
+  const [panel, setPanel] = useState<ManagerShiftPanel | null>(null);
 
   const scheduleQuery = useQuery(managerWeekScheduleQueryOptions({ locationId, weekStart }));
   const schedule = scheduleQuery.data;
@@ -156,9 +160,36 @@ export function ManagerSchedule() {
           {` · ${formatTimezone(selectedLocation.timezone)}`}
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <a href="#week-board" className="btn btn-outline btn-sm" data-test="manager-edit-week">
-            Edit
-          </a>
+          <button
+            type="button"
+            className={editing ? "btn btn-primary btn-sm" : "btn btn-outline btn-sm"}
+            data-test="manager-edit-week"
+            onClick={() => {
+              setEditing((current) => {
+                const next = !current;
+                if (!next) setPanel(null);
+                return next;
+              });
+            }}
+          >
+            {editing ? "Done" : "Edit"}
+          </button>
+          {editing ? (
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              data-test="manager-add-shift"
+              onClick={() =>
+                setPanel({
+                  kind: "create",
+                  locationId: selectedLocation.id,
+                  startDate: weekStart,
+                })
+              }
+            >
+              Add shift
+            </button>
+          ) : null}
           {published ? (
             <button
               type="button"
@@ -219,9 +250,40 @@ export function ManagerSchedule() {
         </p>
       ) : null}
 
-      {schedule ? (
-        <ManagerScheduleWeekBoard days={schedule.days} timezone={schedule.location.timezone} />
+      {editing ? (
+        <p className="text-muted-foreground text-xs">
+          Click a shift to edit it, or a day to add one.
+        </p>
       ) : null}
+
+      {schedule ? (
+        <ManagerScheduleWeekBoard
+          days={schedule.days}
+          timezone={schedule.location.timezone}
+          editing={editing}
+          onSelectShift={(shiftId) => {
+            const shift = schedule.days
+              .flatMap((day) => day.shifts)
+              .find((item) => item.id === shiftId);
+            if (!shift) return;
+            setPanel({
+              kind: "edit",
+              locationId: selectedLocation.id,
+              shift,
+              published,
+            });
+          }}
+          onAddDay={(date) =>
+            setPanel({
+              kind: "create",
+              locationId: selectedLocation.id,
+              startDate: date,
+            })
+          }
+        />
+      ) : null}
+
+      <ManagerShiftSheet panel={panel} onClose={() => setPanel(null)} />
     </div>
   );
 }

@@ -7,9 +7,15 @@ import { LANE_PX, weekSpans } from "./manager-schedule.spans";
 export function ManagerScheduleWeekBoard({
   days,
   timezone,
+  editing,
+  onSelectShift,
+  onAddDay,
 }: {
   days: ManagerWeekSchedule["days"];
   timezone: string;
+  editing: boolean;
+  onSelectShift: (shiftId: string) => void;
+  onAddDay: (date: string) => void;
 }) {
   const weekDates = days.map((day) => day.date);
   const shifts = days.flatMap((day) => day.shifts);
@@ -20,8 +26,13 @@ export function ManagerScheduleWeekBoard({
 
   return (
     <div className="-mx-1 overflow-x-auto px-1" data-test="manager-schedule-week" id="week-board">
-      <div className="min-w-224">
-        <div className="bg-foreground/50 overflow-hidden rounded-xl">
+      <div className="min-w-4xl">
+        <div
+          className={cn(
+            "bg-foreground/50 overflow-hidden rounded-xl",
+            editing && "ring-2 ring-primary ring-offset-2 ring-offset-background",
+          )}
+        >
           <div className="grid grid-cols-7 gap-0.5">
             {days.map((day) => (
               <p
@@ -38,9 +49,13 @@ export function ManagerScheduleWeekBoard({
                 key={day.date}
                 className={cn(
                   "bg-card flex h-full flex-col px-2 pt-1.5 ring-1 ring-foreground/30 ring-inset",
-                  day.date === today && "ring-[#e08a52]",
+                  day.date === today && "ring-primary",
+                  editing && "cursor-pointer",
                 )}
                 data-test="manager-schedule-day"
+                onClick={() => {
+                  if (editing) onAddDay(day.date);
+                }}
               >
                 <p
                   className={cn(
@@ -65,7 +80,12 @@ export function ManagerScheduleWeekBoard({
                     gridRow: span.lane + 1,
                   }}
                 >
-                  <ManagerScheduleShiftBar span={span} side="bottom" />
+                  <ManagerScheduleShiftBar
+                    span={span}
+                    side="bottom"
+                    editing={editing}
+                    onSelect={onSelectShift}
+                  />
                 </div>
               ))}
             </div>

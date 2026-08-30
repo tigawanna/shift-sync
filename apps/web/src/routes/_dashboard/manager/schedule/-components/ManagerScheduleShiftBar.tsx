@@ -5,9 +5,13 @@ import { shiftTimeLabel } from "./manager-schedule.spans";
 export function ManagerScheduleShiftBar({
   span,
   side,
+  editing,
+  onSelect,
 }: {
   span: ManagerWeekSpan;
   side: "top" | "bottom";
+  editing: boolean;
+  onSelect?: (shiftId: string) => void;
 }) {
   const { shift } = span;
   const filled = `${shift.assignees.length}/${shift.headcountNeeded}`;
@@ -19,7 +23,10 @@ export function ManagerScheduleShiftBar({
           <button
             type="button"
             data-test="manager-schedule-shift"
-            className="flex h-6 w-full items-center truncate rounded-md bg-[#9c4524] px-2 text-left text-[11px] font-semibold text-[#fff7f0] hover:bg-[#863b1f] focus-visible:ring-2 focus-visible:ring-[#e08a52] focus-visible:outline-none"
+            className="bg-primary text-primary-foreground hover:bg-primary/80 focus-visible:ring-ring flex h-6 w-full items-center truncate rounded-md px-2 text-left text-[11px] font-semibold focus-visible:ring-2 focus-visible:outline-none"
+            onClick={() => {
+              if (editing) onSelect?.(shift.id);
+            }}
           />
         }
       >
