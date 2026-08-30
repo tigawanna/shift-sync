@@ -1,3 +1,4 @@
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
 import { requireSessionRoles } from "@/data-access-layer/auth/roles";
 import { ROLE } from "@/lib/better-auth/roles";
 import { getDb } from "@/lib/drizzle/client";
@@ -16,9 +17,9 @@ import {
   zonedWallTimeToUtc,
 } from "@/lib/time/zoned";
 import { createServerFn } from "@tanstack/react-start";
-import { and, asc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
 import { z } from "zod";
-import { assertManagerLocationAccess } from "./manager-locations.fn";
+import { assertManagerLocationAccess, loadMyManagerLocations } from "./manager-locations.fn";
 
 export const EDIT_CUTOFF_HOURS = 48;
 
@@ -176,6 +177,144 @@ function toBoardShift(
 export type ManagerWeekSchedule = Awaited<ReturnType<typeof loadWeekSchedule>>;
 export type ManagerWeekShift = ManagerWeekSchedule["days"][number]["shifts"][number];
 
+export const listManagerSchedulesInputSchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  perPage: z.coerce.number().int().min(1).max(100).optional().default(ADMIN_LIST_PER_PAGE),
+  sq: z.string().optional(),
+  locationId: z.string().optional(),
+});
+
+export type ListManagerSchedulesInput = z.infer<typeof listManagerSchedulesInputSchema>;
+
+async function loadManagerScheduleList(userId: string, input: ListManagerSchedulesInput) {
+  const page = input.page;
+  const perPage = input.perPage;
+  const locations = await loadMyManagerLocations(userId);
+  const scoped = input.locationId
+    ? locations.filter((location) => location.id === input.locationId)
+    : locations;
+
+  if (scoped.length === 0) {
+    return { items: [], total: 0, page, perPage, totalPages: 1 };
+  }
+
+  const locationIds = scoped.map((location) => location.id);
+  const locationById = new Map(scoped.map((location) => [location.id, location]));
+  const db = await getDb();
+  const cutoff = cutoffInstant();
+
+  const [shiftRows, publications] = await Promise.all([
+    db
+      .select({
+        id: shiftTable.id,
+        locationId: shiftTable.locationId,
+        startsAt: shiftTable.startsAt,
+      })
+      .from(shiftTable)
+      .where(inArray(shiftTable.locationId, locationIds)),
+    db
+      .select({
+        locationId: scheduleWeekTable.locationId,
+        weekStartDate: scheduleWeekTable.weekStartDate,
+      })
+      .from(scheduleWeekTable)
+      .where(inArray(scheduleWeekTable.locationId, locationIds)),
+  ]);
+
+  // Week key is location + Monday in that location's zone; SQLite cannot group that.
+  const weeks = new Map<
+    string,
+    { locationId: string; weekStart: string; shiftCount: number; lockedCount: number }
+  >();
+
+  for (const row of shiftRows) {
+    const location = locationById.get(row.locationId);
+    if (!location) continue;
+    const weekStart = mondayOfWeekContaining(row.startsAt, location.timezone);
+    const key = `${location.id}:${weekStart}`;
+    const current = weeks.get(key) ?? {
+      locationId: location.id,
+      weekStart,
+      shiftCount: 0,
+      lockedCount: 0,
+    };
+    current.shiftCount += 1;
+    if (row.startsAt.getTime() < cutoff.getTime()) current.lockedCount += 1;
+    weeks.set(key, current);
+  }
+
+  for (const publication of publications) {
+    const key = `${publication.locationId}:${publication.weekStartDate}`;
+    if (weeks.has(key) || !locationById.has(publication.locationId)) continue;
+    weeks.set(key, {
+      locationId: publication.locationId,
+      weekStart: publication.weekStartDate,
+      shiftCount: 0,
+      lockedCount: 0,
+    });
+  }
+
+  const publishedKeys = new Set(
+    publications.map((row) => `${row.locationId}:${row.weekStartDate}`),
+  );
+  const query = input.sq?.trim().toLowerCase() ?? "";
+
+  const allItems = [...weeks.values()]
+    .map((week) => {
+      const location = locationById.get(week.locationId);
+      if (!location) return null;
+      const published = publishedKeys.has(`${week.locationId}:${week.weekStart}`);
+      return {
+        locationId: location.id,
+        locationName: location.name,
+        timezone: location.timezone,
+        weekStart: week.weekStart,
+        weekEnd: addDaysYmd(week.weekStart, 6),
+        published,
+        shiftCount: week.shiftCount,
+        canUnpublish: published && week.lockedCount === 0,
+        canDelete: week.lockedCount === 0,
+      };
+    })
+    .filter((item) => item !== null)
+    .filter((item) => {
+      if (!query) return true;
+      const status = item.published ? "published" : "draft";
+      return (
+        item.locationName.toLowerCase().includes(query) ||
+        item.weekStart.includes(query) ||
+        item.weekEnd.includes(query) ||
+        status.includes(query)
+      );
+    })
+    .sort((left, right) => {
+      const byWeek = right.weekStart.localeCompare(left.weekStart);
+      if (byWeek !== 0) return byWeek;
+      return left.locationName.localeCompare(right.locationName);
+    });
+
+  const total = allItems.length;
+  const offset = (page - 1) * perPage;
+
+  return {
+    items: allItems.slice(offset, offset + perPage),
+    total,
+    page,
+    perPage,
+    totalPages: Math.max(1, Math.ceil(total / perPage)),
+  };
+}
+
+export const listManagerSchedules = createServerFn({ method: "GET" })
+  .validator(listManagerSchedulesInputSchema)
+  .handler(async ({ data }) => {
+    const { session } = await requireSessionRoles([ROLE.manager]);
+    return loadManagerScheduleList(session.user.id, data);
+  });
+
+export type ManagerScheduleList = Awaited<ReturnType<typeof loadManagerScheduleList>>;
+export type ManagerScheduleListItem = ManagerScheduleList["items"][number];
+
 export const getManagerWeekSchedule = createServerFn({ method: "GET" })
   .validator(managerWeekInputSchema)
   .handler(async ({ data }) => {
@@ -232,4 +371,41 @@ export const unpublishManagerWeek = createServerFn({ method: "POST" })
       );
 
     return loadWeekSchedule(session.user.id, week.location.id, week.weekStart);
+  });
+
+export const deleteManagerWeek = createServerFn({ method: "POST" })
+  .validator(managerWeekInputSchema)
+  .handler(async ({ data }) => {
+    const { session } = await requireSessionRoles([ROLE.manager]);
+    const week = await loadWeekSchedule(session.user.id, data.locationId, data.weekStart);
+
+    if (week.lockedShiftCount > 0) {
+      throw new Error(
+        `Cannot delete: at least one shift in this week is inside the ${EDIT_CUTOFF_HOURS}-hour cutoff.`,
+      );
+    }
+
+    const { rangeStart, rangeEnd } = weekStartUtcRange(week.weekStart, week.location.timezone);
+    const db = await getDb();
+
+    await db
+      .delete(shiftTable)
+      .where(
+        and(
+          eq(shiftTable.locationId, week.location.id),
+          gte(shiftTable.startsAt, rangeStart),
+          lt(shiftTable.startsAt, rangeEnd),
+        ),
+      );
+
+    await db
+      .delete(scheduleWeekTable)
+      .where(
+        and(
+          eq(scheduleWeekTable.locationId, week.location.id),
+          eq(scheduleWeekTable.weekStartDate, week.weekStart),
+        ),
+      );
+
+    return { locationId: week.location.id, weekStart: week.weekStart };
   });

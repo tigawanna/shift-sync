@@ -1,50 +1,54 @@
-import { mondayOfWeekContaining } from "@/lib/time/zoned";
+import { ADMIN_LIST_PER_PAGE } from "@/components/pagination/constants";
+import { RouterPendingComponent } from "@/lib/tanstack/router/RouterPendingComponent";
 import { AppConfig } from "@/utils/system";
 import { createFileRoute } from "@tanstack/react-router";
+import { Suspense } from "react";
 import { z } from "zod";
 import { DashboardPageHeader } from "../../-components/DashboardPageHeader";
-import { myManagerLocationsQueryOptions } from "../-data-access-layer/manager-locations.query-options";
-import { managerWeekScheduleQueryOptions } from "../-data-access-layer/manager-schedule.query-options";
-import { ManagerSchedule } from "../-components/ManagerSchedule";
+import { listManagerSchedulesQueryOptions } from "../-data-access-layer/manager-schedule.query-options";
+import { ListSchedules } from "./-components/ListSchedules";
 
 const scheduleSearchSchema = z.object({
+  page: z.coerce.number().int().min(1).optional(),
+  perPage: z.coerce.number().int().min(1).max(100).optional(),
+  sq: z.string().optional(),
   locationId: z.string().optional(),
-  week: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
 });
 
 export const Route = createFileRoute("/_dashboard/manager/schedule/")({
   validateSearch: (search) => scheduleSearchSchema.parse(search),
   loaderDeps: ({ search }) => ({
+    page: search.page,
+    perPage: search.perPage,
+    sq: search.sq,
     locationId: search.locationId,
-    week: search.week,
   }),
   loader: async ({ context, deps }) => {
-    const locations = await context.queryClient.ensureQueryData(myManagerLocationsQueryOptions());
-    const location =
-      locations.items.find((item) => item.id === deps.locationId) ?? locations.items[0];
-    if (!location) return;
-    const weekStart = deps.week ?? mondayOfWeekContaining(new Date(), location.timezone);
     await context.queryClient.ensureQueryData(
-      managerWeekScheduleQueryOptions({ locationId: location.id, weekStart }),
+      listManagerSchedulesQueryOptions({
+        page: deps.page ?? 1,
+        perPage: deps.perPage ?? ADMIN_LIST_PER_PAGE,
+        sq: deps.sq,
+        locationId: deps.locationId,
+      }),
     );
   },
-  component: ManagerSchedulePage,
+  component: ManagerSchedulesPage,
   head: () => ({
     meta: [{ title: `${AppConfig.name} | Schedule` }],
   }),
 });
 
-function ManagerSchedulePage() {
+function ManagerSchedulesPage() {
   return (
     <div className="flex flex-col gap-8">
       <DashboardPageHeader
         title="Schedule"
-        description="Draft weeks stay hidden from staff until you publish. Times follow the location timezone."
+        description="Every location-week you manage. Open one to edit shifts, publish, unpublish, or delete."
       />
-      <ManagerSchedule />
+      <Suspense fallback={<RouterPendingComponent />}>
+        <ListSchedules />
+      </Suspense>
     </div>
   );
 }

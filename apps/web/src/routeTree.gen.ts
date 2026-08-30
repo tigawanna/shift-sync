@@ -30,6 +30,7 @@ import { Route as DashboardAdminSchedulesIndexRouteImport } from './routes/_dash
 import { Route as DashboardAdminStaffIndexRouteImport } from './routes/_dashboard/admin/staff/index'
 import { Route as DashboardManagerLocationsIndexRouteImport } from './routes/_dashboard/manager/locations/index'
 import { Route as DashboardManagerScheduleIndexRouteImport } from './routes/_dashboard/manager/schedule/index'
+import { Route as DashboardManagerScheduleLocationIdWeekStartRouteImport } from './routes/_dashboard/manager/schedule/$locationId/$weekStart'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -142,6 +143,12 @@ const DashboardManagerScheduleIndexRoute =
     path: '/manager/schedule/',
     getParentRoute: () => DashboardLayoutRoute,
   } as any)
+const DashboardManagerScheduleLocationIdWeekStartRoute =
+  DashboardManagerScheduleLocationIdWeekStartRouteImport.update({
+    id: '/manager/schedule/$locationId/$weekStart',
+    path: '/manager/schedule/$locationId/$weekStart',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -164,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/admin/staff/': typeof DashboardAdminStaffIndexRoute
   '/manager/locations/': typeof DashboardManagerLocationsIndexRoute
   '/manager/schedule/': typeof DashboardManagerScheduleIndexRoute
+  '/manager/schedule/$locationId/$weekStart': typeof DashboardManagerScheduleLocationIdWeekStartRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -185,6 +193,7 @@ export interface FileRoutesByTo {
   '/admin/staff': typeof DashboardAdminStaffIndexRoute
   '/manager/locations': typeof DashboardManagerLocationsIndexRoute
   '/manager/schedule': typeof DashboardManagerScheduleIndexRoute
+  '/manager/schedule/$locationId/$weekStart': typeof DashboardManagerScheduleLocationIdWeekStartRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -209,6 +218,7 @@ export interface FileRoutesById {
   '/_dashboard/admin/staff/': typeof DashboardAdminStaffIndexRoute
   '/_dashboard/manager/locations/': typeof DashboardManagerLocationsIndexRoute
   '/_dashboard/manager/schedule/': typeof DashboardManagerScheduleIndexRoute
+  '/_dashboard/manager/schedule/$locationId/$weekStart': typeof DashboardManagerScheduleLocationIdWeekStartRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | '/admin/staff/'
     | '/manager/locations/'
     | '/manager/schedule/'
+    | '/manager/schedule/$locationId/$weekStart'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -254,6 +265,7 @@ export interface FileRouteTypes {
     | '/admin/staff'
     | '/manager/locations'
     | '/manager/schedule'
+    | '/manager/schedule/$locationId/$weekStart'
   id:
     | '__root__'
     | '/'
@@ -277,6 +289,7 @@ export interface FileRouteTypes {
     | '/_dashboard/admin/staff/'
     | '/_dashboard/manager/locations/'
     | '/_dashboard/manager/schedule/'
+    | '/_dashboard/manager/schedule/$locationId/$weekStart'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -438,6 +451,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardManagerScheduleIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/_dashboard/manager/schedule/$locationId/$weekStart': {
+      id: '/_dashboard/manager/schedule/$locationId/$weekStart'
+      path: '/manager/schedule/$locationId/$weekStart'
+      fullPath: '/manager/schedule/$locationId/$weekStart'
+      preLoaderRoute: typeof DashboardManagerScheduleLocationIdWeekStartRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
   }
 }
 
@@ -452,6 +472,7 @@ interface DashboardLayoutRouteChildren {
   DashboardAdminStaffIndexRoute: typeof DashboardAdminStaffIndexRoute
   DashboardManagerLocationsIndexRoute: typeof DashboardManagerLocationsIndexRoute
   DashboardManagerScheduleIndexRoute: typeof DashboardManagerScheduleIndexRoute
+  DashboardManagerScheduleLocationIdWeekStartRoute: typeof DashboardManagerScheduleLocationIdWeekStartRoute
 }
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
@@ -465,6 +486,8 @@ const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardAdminStaffIndexRoute: DashboardAdminStaffIndexRoute,
   DashboardManagerLocationsIndexRoute: DashboardManagerLocationsIndexRoute,
   DashboardManagerScheduleIndexRoute: DashboardManagerScheduleIndexRoute,
+  DashboardManagerScheduleLocationIdWeekStartRoute:
+    DashboardManagerScheduleLocationIdWeekStartRoute,
 }
 
 const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(

@@ -23,7 +23,7 @@ function ManagerLocationsPage() {
     <div className="flex flex-col gap-8">
       <DashboardPageHeader
         title="Locations"
-        description="Only the restaurants assigned to you. Open a location to publish its week."
+        description="Only the restaurants assigned to you. Open a location to see its weeks."
       />
       {locationsQuery.isPending ? (
         <p className="text-muted-foreground text-sm">Loading locations…</p>
@@ -32,9 +32,7 @@ function ManagerLocationsPage() {
         <p className="text-destructive text-sm">Locations could not be loaded.</p>
       ) : null}
       {locationsQuery.isSuccess && locations.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          You are not assigned to any locations yet.
-        </p>
+        <p className="text-muted-foreground text-sm">You are not assigned to any locations yet.</p>
       ) : null}
       {locations.length > 0 ? (
         <ul className="grid gap-3 sm:grid-cols-2" data-test="manager-locations">
@@ -52,7 +50,7 @@ function ManagerLocationsPage() {
                 search={{ locationId: location.id }}
                 className="btn btn-ghost btn-sm mt-4"
               >
-                Open schedule
+                View schedules
               </Link>
             </li>
           ))}

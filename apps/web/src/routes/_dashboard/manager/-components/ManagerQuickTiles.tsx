@@ -5,7 +5,7 @@ const tiles = [
   {
     to: "/manager/schedule",
     title: "Schedule",
-    description: "Review a location week, then publish it so assigned staff can see their shifts.",
+    description: "Open a location-week to edit, publish, unpublish, or delete it.",
     icon: CalendarDays,
   },
   {
