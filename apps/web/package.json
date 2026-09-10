@@ -41,7 +41,7 @@
     "drizzle-orm": "^0.45.2",
     "embla-carousel-react": "^8.6.0",
     "evlog": "^2.18.1",
-    "hono": "^4.12.18",
+    "hono": "^4.13.5",
     "input-otp": "^1.5.0",
     "jose": "^6.2.8",
     "lucide-react": "^0.561.0",
